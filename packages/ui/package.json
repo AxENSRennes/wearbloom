@@ -5,6 +5,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./button": "./src/button.tsx",
+    "./text": "./src/text.tsx",
+    "./spinner": "./src/spinner.tsx",
+    "./toast": "./src/toast.tsx",
     "./gluestack-config": "./src/gluestack-config.ts"
   },
   "license": "MIT",

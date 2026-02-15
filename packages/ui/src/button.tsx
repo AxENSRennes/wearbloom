@@ -17,16 +17,16 @@ import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 // ---------------------------------------------------------------------------
 
 const buttonStyle = tva({
-  base: "items-center justify-center rounded-lg px-6 py-3",
+  base: "items-center justify-center rounded-xl px-6 w-full",
   variants: {
     variant: {
-      primary: "bg-primary-600 active:bg-primary-700",
+      primary: "bg-[#1A1A1A] h-[52px] active:opacity-90",
       secondary:
-        "bg-neutral-200 border border-neutral-300 active:bg-neutral-300",
-      ghost: "bg-transparent active:bg-neutral-100",
+        "bg-white border border-[#1A1A1A] h-[52px] active:opacity-90",
+      ghost: "bg-transparent h-[44px]",
     },
     isDisabled: {
-      true: "opacity-50",
+      true: "opacity-40",
     },
   },
   defaultVariants: {
@@ -39,8 +39,8 @@ const buttonTextStyle = tva({
   variants: {
     variant: {
       primary: "text-white",
-      secondary: "text-neutral-800",
-      ghost: "text-primary-600",
+      secondary: "text-[#1A1A1A]",
+      ghost: "text-[#6B6B6B]",
     },
   },
   defaultVariants: {
@@ -105,27 +105,40 @@ interface ButtonProps {
   variant?: ButtonVariant;
   onPress?: () => void;
   disabled?: boolean;
+  isLoading?: boolean;
   className?: string;
 }
+
+const SPINNER_COLORS: Record<ButtonVariant, string> = {
+  primary: "#FFFFFF",
+  secondary: "#1A1A1A",
+  ghost: "#6B6B6B",
+};
 
 export function Button({
   label,
   variant = "primary",
   onPress,
   disabled = false,
+  isLoading = false,
   className,
 }: ButtonProps) {
   return (
     <GluestackButton
-      className={buttonStyle({ variant, isDisabled: disabled, className })}
+      className={buttonStyle({ variant, isDisabled: disabled || isLoading, className })}
       onPress={onPress}
-      isDisabled={disabled}
+      isDisabled={disabled || isLoading}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
-      <GluestackButton.Text
-        className={buttonTextStyle({ variant })}
-      >
-        {label}
-      </GluestackButton.Text>
+      {isLoading ? (
+        <ActivityIndicator color={SPINNER_COLORS[variant]} size="small" />
+      ) : (
+        <GluestackButton.Text className={buttonTextStyle({ variant })}>
+          {label}
+        </GluestackButton.Text>
+      )}
     </GluestackButton>
   );
 }

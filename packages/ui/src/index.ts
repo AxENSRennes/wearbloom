@@ -26,6 +26,16 @@ export {
   buttonTextStyle,
 } from "./button";
 
+export {
+  ThemedText,
+  themedTextStyle,
+} from "./text";
+export type { ThemedTextProps, ThemedTextVariant } from "./text";
+
+export { Spinner } from "./spinner";
+
+export { ToastProvider, showToast } from "./toast";
+
 // ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
