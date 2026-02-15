@@ -1,25 +1,53 @@
-import { sql } from "drizzle-orm";
 import { pgTable } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
 
-export const Post = pgTable("post", (t) => ({
-  id: t.uuid().notNull().primaryKey().defaultRandom(),
-  title: t.varchar({ length: 256 }).notNull(),
-  content: t.text().notNull(),
+export const users = pgTable("users", (t) => ({
+  id: t.text().primaryKey(),
+  name: t.text(),
+  email: t.text().unique(),
+  emailVerified: t.boolean().default(false),
+  image: t.text(),
   createdAt: t.timestamp().defaultNow().notNull(),
-  updatedAt: t
-    .timestamp({ mode: "date", withTimezone: true })
-    .$onUpdateFn(() => sql`now()`),
+  updatedAt: t.timestamp().defaultNow().notNull(),
 }));
 
-export const CreatePostSchema = createInsertSchema(Post, {
-  title: z.string().max(256),
-  content: z.string().max(256),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const sessions = pgTable("sessions", (t) => ({
+  id: t.text().primaryKey(),
+  expiresAt: t.timestamp().notNull(),
+  token: t.text().notNull().unique(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
+  ipAddress: t.text(),
+  userAgent: t.text(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+}));
 
-export * from "./auth-schema";
+export const accounts = pgTable("accounts", (t) => ({
+  id: t.text().primaryKey(),
+  accountId: t.text().notNull(),
+  providerId: t.text().notNull(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  accessToken: t.text(),
+  refreshToken: t.text(),
+  idToken: t.text(),
+  accessTokenExpiresAt: t.timestamp(),
+  refreshTokenExpiresAt: t.timestamp(),
+  scope: t.text(),
+  password: t.text(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
+}));
+
+export const verifications = pgTable("verifications", (t) => ({
+  id: t.text().primaryKey(),
+  identifier: t.text().notNull(),
+  value: t.text().notNull(),
+  expiresAt: t.timestamp().notNull(),
+  createdAt: t.timestamp(),
+  updatedAt: t.timestamp(),
+}));

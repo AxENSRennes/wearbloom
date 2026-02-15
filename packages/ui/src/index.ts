@@ -1,4 +1,7 @@
-import { cx } from "class-variance-authority";
 import { twMerge } from "tailwind-merge";
 
-export const cn = (...inputs: Parameters<typeof cx>) => twMerge(cx(inputs));
+export const cn = (...inputs: string[]) => twMerge(...inputs);
+
+export { Button } from "./button";
+export { wearbloomTheme } from "./gluestack-config";
+export type { WearbloomTheme } from "./gluestack-config";

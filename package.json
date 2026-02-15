@@ -1,8 +1,8 @@
 {
-  "name": "create-t3-turbo",
+  "name": "wearbloom",
   "private": true,
   "engines": {
-    "node": "^22.21.0",
+    "node": ">=20.0.0",
     "pnpm": "^10.19.0"
   },
   "packageManager": "pnpm@10.19.0",
@@ -10,11 +10,11 @@
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
-    "auth:generate": "pnpm -F @acme/auth generate",
     "db:push": "turbo -F @acme/db push",
     "db:studio": "turbo -F @acme/db studio",
     "dev": "turbo watch dev --continue",
-    "dev:next": "turbo watch dev -F @acme/nextjs...",
+    "dev:expo": "turbo watch dev -F @acme/expo...",
+    "dev:server": "turbo watch dev -F @acme/server...",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
@@ -22,7 +22,6 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
-    "ui-add": "turbo run ui-add",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },

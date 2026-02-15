@@ -1,10 +1,9 @@
 {
   "extends": "@acme/tsconfig/base.json",
   "compilerOptions": {
-    "lib": ["ES2022", "dom", "dom.iterable"],
-    "jsx": "preserve",
+    "jsx": "react-native",
     "rootDir": "."
   },
-  "include": ["src"],
+  "include": ["src", "nativewind-env.d.ts"],
   "exclude": ["node_modules"]
 }

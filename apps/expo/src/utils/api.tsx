@@ -5,7 +5,6 @@ import superjson from "superjson";
 
 import type { AppRouter } from "@acme/api";
 
-import { authClient } from "./auth";
 import { getBaseUrl } from "./base-url";
 
 export const queryClient = new QueryClient({
@@ -16,9 +15,6 @@ export const queryClient = new QueryClient({
   },
 });
 
-/**
- * A set of typesafe hooks for consuming your API.
- */
 export const trpc = createTRPCOptionsProxy<AppRouter>({
   client: createTRPCClient({
     links: [
@@ -34,11 +30,6 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
         headers() {
           const headers = new Map<string, string>();
           headers.set("x-trpc-source", "expo-react");
-
-          const cookies = authClient.getCookie();
-          if (cookies) {
-            headers.set("Cookie", cookies);
-          }
           return headers;
         },
       }),
