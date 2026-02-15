@@ -1,4 +1,24 @@
 import { mock } from "bun:test";
+import { plugin } from "bun";
+
+// ---------------------------------------------------------------------------
+// Image asset loader — Metro resolves require("*.png") to numeric IDs at build
+// time. Bun doesn't understand binary image files, so intercept and return a
+// mock numeric ID for each image.
+// ---------------------------------------------------------------------------
+let imageIdCounter = 1;
+plugin({
+  name: "image-loader",
+  setup(build) {
+    build.onLoad(
+      { filter: /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/ },
+      () => ({
+        contents: `export default ${imageIdCounter++};`,
+        loader: "js",
+      }),
+    );
+  },
+});
 
 // Define globals normally provided by Metro/React Native bundler
 // @ts-expect-error -- __DEV__ is a global set by Metro bundler
@@ -64,7 +84,26 @@ mock.module("react-native", () => ({
   TouchableOpacity: mockComponent("TouchableOpacity"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Image: mockComponent("Image"),
-  FlatList: mockComponent("FlatList"),
+  FlatList: React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      const { data, renderItem, keyExtractor, ...rest } = props as {
+        data?: unknown[];
+        renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
+        keyExtractor?: (item: unknown, index: number) => string;
+        [key: string]: unknown;
+      };
+      const items = Array.isArray(data) && renderItem
+        ? data.map((item, index) =>
+            React.createElement(
+              "mock-FlatListItem",
+              { key: keyExtractor ? keyExtractor(item, index) : index },
+              renderItem({ item, index }),
+            ),
+          )
+        : null;
+      return React.createElement("mock-FlatList", { ...rest, ref }, items);
+    },
+  ),
   Animated: {
     Value: class AnimatedValue {
       _value: number;
@@ -334,4 +373,144 @@ mock.module("@trpc/tanstack-react-query", () => ({
 
 mock.module("superjson", () => ({
   default: { serialize: (v: unknown) => v, deserialize: (v: unknown) => v },
+}));
+
+// ---------------------------------------------------------------------------
+// react-native-reanimated — animation library mocks
+// ---------------------------------------------------------------------------
+mock.module("react-native-reanimated", () => {
+  const AnimatedView = mockComponent("AnimatedView");
+  const AnimatedImage = mockComponent("AnimatedImage");
+  return {
+    default: {
+      View: AnimatedView,
+      Image: AnimatedImage,
+      createAnimatedComponent: (comp: unknown) => comp,
+    },
+    useSharedValue: (initial: number) => ({ value: initial }),
+    useAnimatedStyle: (fn: () => Record<string, unknown>) => fn(),
+    withTiming: (toValue: number) => toValue,
+    withRepeat: (animation: unknown) => animation,
+    withSequence: (...args: unknown[]) => args[0],
+    withSpring: (toValue: number) => toValue,
+    useReducedMotion: () => false,
+    runOnJS: (fn: (...args: unknown[]) => unknown) => fn,
+    Easing: { bezier: () => (t: number) => t, linear: (t: number) => t, ease: (t: number) => t },
+    FadeIn: { duration: () => ({ delay: () => ({}) }) },
+    FadeOut: { duration: () => ({}) },
+    interpolate: (value: number, inputRange: number[], outputRange: number[]) => {
+      const i = inputRange.indexOf(value);
+      return i >= 0 ? outputRange[i] : outputRange[0];
+    },
+    Extrapolation: { CLAMP: "clamp" },
+  };
+});
+
+// ---------------------------------------------------------------------------
+// react-native-reanimated-carousel — carousel component mock
+// ---------------------------------------------------------------------------
+mock.module("react-native-reanimated-carousel", () => {
+  const CarouselComponent = React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      const { data, renderItem, ...rest } = props as {
+        data: unknown[];
+        renderItem: (info: { item: unknown; index: number }) => React.ReactNode;
+        [key: string]: unknown;
+      };
+      React.useImperativeHandle(ref, () => ({
+        scrollTo: mock(() => {}),
+        getCurrentIndex: () => 0,
+      }));
+      const items = Array.isArray(data)
+        ? data.map((item, index) =>
+            React.createElement(
+              "mock-CarouselPage",
+              { key: index },
+              renderItem({ item, index }),
+            ),
+          )
+        : null;
+      return React.createElement("mock-Carousel", rest, items);
+    },
+  );
+  (CarouselComponent as { displayName?: string }).displayName = "Carousel";
+
+  const PaginationBasic = (props: Record<string, unknown>) =>
+    React.createElement("mock-PaginationBasic", props);
+
+  return {
+    default: CarouselComponent,
+    Pagination: { Basic: PaginationBasic },
+  };
+});
+
+// ---------------------------------------------------------------------------
+// react-native-worklets — required by carousel
+// ---------------------------------------------------------------------------
+mock.module("react-native-worklets", () => ({}));
+
+// ---------------------------------------------------------------------------
+// expo-image — optimized image component mock
+// ---------------------------------------------------------------------------
+mock.module("expo-image", () => ({
+  Image: mockComponent("ExpoImage"),
+  ImageBackground: mockComponent("ExpoImageBackground"),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-image-picker — camera/gallery mock
+// ---------------------------------------------------------------------------
+mock.module("expo-image-picker", () => ({
+  launchCameraAsync: mock(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [{ uri: "file:///mock-camera-photo.jpg", width: 800, height: 1200 }],
+    }),
+  ),
+  launchImageLibraryAsync: mock(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [{ uri: "file:///mock-gallery-photo.jpg", width: 800, height: 1200 }],
+    }),
+  ),
+  requestCameraPermissionsAsync: mock(() =>
+    Promise.resolve({ status: "granted", granted: true }),
+  ),
+  requestMediaLibraryPermissionsAsync: mock(() =>
+    Promise.resolve({ status: "granted", granted: true }),
+  ),
+  MediaTypeOptions: { Images: "Images", Videos: "Videos", All: "All" },
+}));
+
+// ---------------------------------------------------------------------------
+// expo-haptics — haptic feedback mock
+// ---------------------------------------------------------------------------
+mock.module("expo-haptics", () => ({
+  impactAsync: mock(() => Promise.resolve()),
+  notificationAsync: mock(() => Promise.resolve()),
+  selectionAsync: mock(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+}));
+
+// ---------------------------------------------------------------------------
+// @react-native-async-storage/async-storage — in-memory mock
+// ---------------------------------------------------------------------------
+const asyncStore = new Map<string, string>();
+mock.module("@react-native-async-storage/async-storage", () => ({
+  default: {
+    getItem: mock(async (key: string) => asyncStore.get(key) ?? null),
+    setItem: mock(async (key: string, value: string) => { asyncStore.set(key, value); }),
+    removeItem: mock(async (key: string) => { asyncStore.delete(key); }),
+    clear: mock(async () => { asyncStore.clear(); }),
+    getAllKeys: mock(async () => [...asyncStore.keys()]),
+  },
+  __asyncStore: asyncStore,
+}));
+
+// ---------------------------------------------------------------------------
+// better-auth/client/plugins — anonymousClient plugin import
+// ---------------------------------------------------------------------------
+mock.module("better-auth/client/plugins", () => ({
+  anonymousClient: () => ({ id: "anonymousClient" }),
 }));
