@@ -427,6 +427,7 @@ logger.info({ userId: user.id }, "User created");
 - Follow ALL rules exactly as documented
 - When in doubt, prefer the more restrictive option
 - Update this file if new patterns emerge
+- Search the web when needed to verify APIs, check library docs, or resolve ambiguities
 
 **For Humans:**
 - Keep this file lean and focused on agent needs
