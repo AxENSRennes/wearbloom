@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button, ThemedText } from "@acme/ui";
+import { Button, ThemedPressable, ThemedText } from "@acme/ui";
 
 import { setConsentAccepted } from "~/utils/consent-store";
 
@@ -31,16 +31,16 @@ export default function ConsentScreen() {
             data is stored securely and never shared with third parties.
           </ThemedText>
 
-          <ThemedText
-            variant="body"
-            className="text-text-secondary underline"
+          <ThemedPressable
+            onPress={() => router.push("/(public)/privacy")}
             accessible
             accessibilityRole="link"
             accessibilityLabel="Read our Privacy Policy"
-            onPress={() => router.push("/(public)/privacy")}
           >
-            Read our Privacy Policy
-          </ThemedText>
+            <ThemedText variant="body" className="text-text-secondary underline">
+              Read our Privacy Policy
+            </ThemedText>
+          </ThemedPressable>
         </View>
       </View>
 

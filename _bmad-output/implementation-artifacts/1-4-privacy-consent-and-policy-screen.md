@@ -1,6 +1,6 @@
 # Story 1.4: Privacy Consent & Policy Screen
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -391,3 +391,4 @@ Claude Opus 4.6
 ## Change Log
 
 - 2026-02-15: Initial implementation of Story 1.4 — Privacy Consent & Policy Screen. Added consent storage utility, consent screen with accept gate, full privacy policy content, profile screen privacy link, and comprehensive test suite (13 tests). Established Expo app test infrastructure (bunfig.toml + test preload).
+- 2026-02-15: Code review fixes (3H/4M/3L). H1: Replaced ThemedText+onPress with ThemedPressable for privacy link (proper press feedback). H2: Added _layout.test.tsx with 5 consent gate tests (AC#2 coverage). H3: Partially addressed — new gate tests improve depth. M1: Fixed useMutation mock spreading opts into return value. M2/M3: Fixed NativeEventEmitter + expanded test mocks — all 20 tests pass (was 10/13). M4: Acknowledged — Redirect+Slot pattern is standard Expo Router approach.

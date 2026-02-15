@@ -44,8 +44,8 @@ development_status:
   epic-1: in-progress
   1-1-initialize-monorepo-from-starter-template: done
   1-2-design-system-and-app-shell-navigation: done
-  1-3-user-registration-and-authentication: in-progress
-  1-4-privacy-consent-and-policy-screen: review
+  1-3-user-registration-and-authentication: review
+  1-4-privacy-consent-and-policy-screen: done
   1-5-body-avatar-photo-management: backlog
   1-6-account-deletion: backlog
   epic-1-retrospective: optional

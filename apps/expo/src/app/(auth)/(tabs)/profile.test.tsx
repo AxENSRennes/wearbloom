@@ -22,4 +22,14 @@ describe("ProfileScreen", () => {
     const html = render(createElement(ProfileScreen));
     expect(html).toContain("Legal");
   });
+
+  test("renders Sign Out button", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Sign Out");
+  });
+
+  test("renders Profile heading", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Profile");
+  });
 });

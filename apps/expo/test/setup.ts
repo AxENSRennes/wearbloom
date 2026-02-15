@@ -1,5 +1,24 @@
 import { mock } from "bun:test";
 
+// Define globals normally provided by Metro/React Native bundler
+// @ts-expect-error -- __DEV__ is a global set by Metro bundler
+globalThis.__DEV__ = true;
+// @ts-expect-error -- EXPO_OS is inlined by babel-preset-expo
+globalThis.process.env.EXPO_OS = "ios";
+// @ts-expect-error -- expo global is set by expo-modules-core native runtime
+globalThis.expo = {
+  EventEmitter: class MockEventEmitter {
+    addListener() { return { remove: () => {} }; }
+    removeAllListeners() {}
+    emit() {}
+    listenerCount() { return 0; }
+  },
+  modules: {},
+  uuidv4: () => "mock-uuid",
+  uuidv5: () => "mock-uuid",
+  getViewConfig: () => ({}),
+};
+
 const React = await import("react");
 
 // ---------------------------------------------------------------------------
@@ -39,9 +58,13 @@ function mockComponent(name: string) {
 mock.module("react-native", () => ({
   View: mockComponent("View"),
   Text: mockComponent("Text"),
+  TextInput: mockComponent("TextInput"),
   ScrollView: mockComponent("ScrollView"),
   Pressable: mockComponent("Pressable"),
+  TouchableOpacity: mockComponent("TouchableOpacity"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
+  Image: mockComponent("Image"),
+  FlatList: mockComponent("FlatList"),
   Animated: {
     Value: class AnimatedValue {
       _value: number;
@@ -64,11 +87,31 @@ mock.module("react-native", () => ({
   },
   StyleSheet: {
     create: <T extends Record<string, unknown>>(styles: T): T => styles,
+    flatten: (s: unknown) => s,
   },
   Platform: {
     OS: "ios",
     select: (obj: Record<string, unknown>) => obj.ios ?? obj.default,
+    Version: 17,
   },
+  TurboModuleRegistry: { get: () => null, getEnforcing: () => ({}) },
+  NativeModules: {},
+  NativeEventEmitter: class NativeEventEmitter {
+    addListener() { return { remove: () => {} }; }
+    removeAllListeners() {}
+    listenerCount() { return 0; }
+  },
+  AppState: { currentState: "active", addEventListener: () => ({ remove: () => {} }) },
+  Dimensions: { get: () => ({ width: 375, height: 812, scale: 2, fontScale: 1 }) },
+  PixelRatio: { get: () => 2, getPixelSizeForLayoutSize: (s: number) => s * 2 },
+  Appearance: { getColorScheme: () => "light", addChangeListener: () => ({ remove: () => {} }) },
+  Linking: { openURL: mock(() => Promise.resolve()), canOpenURL: mock(() => Promise.resolve(true)) },
+  Alert: { alert: mock(() => {}) },
+  I18nManager: { isRTL: false },
+  StatusBar: mockComponent("RNStatusBar"),
+  useWindowDimensions: () => ({ width: 375, height: 812 }),
+  useColorScheme: () => "light",
+  processColor: (color: unknown) => color,
 }));
 
 mock.module("react-native-safe-area-context", () => ({
@@ -122,6 +165,17 @@ mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-constants — mock Constants for base URL resolution
+// ---------------------------------------------------------------------------
+mock.module("expo-constants", () => ({
+  default: {
+    expoConfig: {
+      hostUri: "localhost:3000",
+    },
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // Expo Router — mock navigation primitives
 // ---------------------------------------------------------------------------
 const routerMock = {
@@ -151,4 +205,127 @@ mock.module("lucide-react-native", () => ({
   Plus: mockComponent("Icon-Plus"),
   User: mockComponent("Icon-User"),
   ChevronRight: mockComponent("Icon-ChevronRight"),
+}));
+
+// ---------------------------------------------------------------------------
+// better-auth — mock auth client and server (third-party with side effects)
+// ---------------------------------------------------------------------------
+const mockAuthClient = {
+  useSession: () => ({ data: null, isPending: false, error: null }),
+  signIn: {
+    email: mock(() => Promise.resolve({ data: null, error: null })),
+    social: mock(() => Promise.resolve({ data: null, error: null })),
+  },
+  signUp: {
+    email: mock(() => Promise.resolve({ data: null, error: null })),
+  },
+  signOut: mock(() => Promise.resolve()),
+  getCookie: () => null,
+};
+
+mock.module("better-auth/react", () => ({
+  createAuthClient: () => mockAuthClient,
+}));
+
+mock.module("@better-auth/expo/client", () => ({
+  expoClient: () => ({ id: "expoClient" }),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-apple-authentication — mock Apple Sign-In SDK
+// ---------------------------------------------------------------------------
+mock.module("expo-apple-authentication", () => ({
+  signInAsync: mock(() =>
+    Promise.resolve({
+      identityToken: "mock-apple-id-token",
+      fullName: { givenName: "Test", familyName: "User" },
+      email: "test@privaterelay.appleid.com",
+    }),
+  ),
+  AppleAuthenticationButton: mockComponent("AppleAuthenticationButton"),
+  AppleAuthenticationButtonType: { SIGN_IN: 0, SIGN_UP: 1 },
+  AppleAuthenticationButtonStyle: { BLACK: 0, WHITE: 1 },
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+}));
+
+// ---------------------------------------------------------------------------
+// @tanstack/react-query — mock useMutation for auth screens
+// ---------------------------------------------------------------------------
+mock.module("@tanstack/react-query", () => ({
+  QueryClient: class MockQueryClient {
+    defaultOptions = {};
+    constructor() {}
+  },
+  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  useMutation: () => ({
+    mutate: mock(() => {}),
+    mutateAsync: mock(() => Promise.resolve()),
+    isPending: false,
+    isError: false,
+    error: null,
+    data: null,
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// Expo SDK modules — fonts, splash screen, status bar
+// ---------------------------------------------------------------------------
+mock.module("@expo-google-fonts/dm-serif-display", () => ({
+  useFonts: () => [true, null],
+  DMSerifDisplay_400Regular: "DMSerifDisplay_400Regular",
+}));
+
+mock.module("expo-splash-screen", () => ({
+  preventAutoHideAsync: () => Promise.resolve(),
+  hideAsync: () => Promise.resolve(),
+}));
+
+mock.module("expo-status-bar", () => ({
+  StatusBar: ({ style: _style, ...rest }: Record<string, unknown>) =>
+    React.createElement("mock-StatusBar", rest),
+}));
+
+// ---------------------------------------------------------------------------
+// @acme/ui — mock all exported components and utilities
+// ---------------------------------------------------------------------------
+const MockButton = Object.assign(mockComponent("Button"), {
+  Text: mockComponent("ButtonText"),
+});
+mock.module("@acme/ui", () => ({
+  cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
+  tva: (config: Record<string, unknown>) => () => (config.base as string) ?? "",
+  withStyleContext: () => (comp: unknown) => comp,
+  useStyleContext: () => ({}),
+  Button: MockButton,
+  GluestackButton: MockButton,
+  buttonStyle: () => "",
+  buttonTextStyle: () => "",
+  ThemedText: mockComponent("ThemedText"),
+  themedTextStyle: () => "",
+  Spinner: mockComponent("Spinner"),
+  ThemedPressable: mockComponent("ThemedPressable"),
+  ToastProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  showToast: mock(() => {}),
+  wearbloomTheme: {
+    colors: { primary: "#4c6ef5", neutral: "#868e96" },
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// tRPC and superjson — imported transitively via ~/utils/api
+// ---------------------------------------------------------------------------
+mock.module("@trpc/client", () => ({
+  createTRPCClient: () => ({}),
+  httpBatchLink: () => ({}),
+  loggerLink: () => ({}),
+}));
+
+mock.module("@trpc/tanstack-react-query", () => ({
+  createTRPCOptionsProxy: () => ({}),
+}));
+
+mock.module("superjson", () => ({
+  default: { serialize: (v: unknown) => v, deserialize: (v: unknown) => v },
 }));
