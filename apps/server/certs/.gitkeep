@@ -1,0 +1,6 @@
+# Apple Root CA Certificates
+# Download from https://www.apple.com/certificateauthority/
+# Required files:
+#   - AppleRootCA-G3.cer
+#   - AppleComputerRootCertificate.cer
+#   - AppleIncRootCertificate.cer

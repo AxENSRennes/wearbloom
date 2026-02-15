@@ -268,6 +268,14 @@ mock.module("@tanstack/react-query", () => ({
     error: null,
     data: null,
   }),
+  useQuery: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+    error: null,
+    isPending: false,
+    isFetching: false,
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -328,8 +336,22 @@ mock.module("@trpc/client", () => ({
   loggerLink: () => ({}),
 }));
 
+// trpc proxy mock — supports chained property access returning { queryOptions, mutationOptions }
+function createTrpcProxy(): unknown {
+  const handler: ProxyHandler<CallableFunction> = {
+    get: (_target, prop) => {
+      if (prop === "queryOptions" || prop === "mutationOptions") {
+        return () => ({});
+      }
+      return createTrpcProxy();
+    },
+    apply: () => ({}),
+  };
+  return new Proxy(() => {}, handler);
+}
+
 mock.module("@trpc/tanstack-react-query", () => ({
-  createTRPCOptionsProxy: () => ({}),
+  createTRPCOptionsProxy: () => createTrpcProxy(),
 }));
 
 mock.module("superjson", () => ({

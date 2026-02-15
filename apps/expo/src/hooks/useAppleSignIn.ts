@@ -4,10 +4,14 @@ import { useMutation } from "@tanstack/react-query";
 
 import { showToast } from "@acme/ui";
 
+import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 
 export function useAppleSignIn() {
   const router = useRouter();
+  const grantCredits = useMutation(
+    trpc.subscription.grantInitialCredits.mutationOptions(),
+  );
 
   return useMutation({
     mutationFn: async () => {
@@ -45,7 +49,12 @@ export function useAppleSignIn() {
 
       return result.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        await grantCredits.mutateAsync();
+      } catch {
+        // Non-critical — idempotent grant, credits may already exist
+      }
       router.replace("/(auth)/(tabs)");
     },
     onError: (error: Error) => {

@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
 
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
+import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 
 const PLACEHOLDER_COLOR = wearbloomTheme.colors["text-tertiary"];
@@ -19,13 +20,22 @@ export default function SignInScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
+  const grantCredits = useMutation(
+    trpc.subscription.grantInitialCredits.mutationOptions(),
+  );
+
   const emailSignIn = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
       const result = await authClient.signIn.email(data);
       if (result.error) throw new Error(result.error.message);
       return result.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        await grantCredits.mutateAsync();
+      } catch {
+        // Non-critical — idempotent grant, credits may already exist
+      }
       router.replace("/(auth)/(tabs)");
     },
     onError: (error: Error) => {

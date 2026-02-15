@@ -16,9 +16,25 @@ export interface AuthInstance {
   };
 }
 
+export interface AppleIapDeps {
+  verifier: {
+    verifyAndDecodeNotification: (
+      signedPayload: string,
+    ) => Promise<{ notificationType?: string; subtype?: string; data?: unknown }>;
+    verifyAndDecodeTransaction: (
+      signedTransaction: string,
+    ) => Promise<Record<string, unknown>>;
+  };
+  client: {
+    requestTestNotification: () => Promise<unknown>;
+  };
+}
+
 export const createTRPCContext = async (opts: {
   headers: Headers;
   auth: AuthInstance;
+  freeCreditsCount?: number;
+  appleIap?: AppleIapDeps;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -26,6 +42,8 @@ export const createTRPCContext = async (opts: {
     session,
     auth: opts.auth,
     headers: opts.headers,
+    freeCreditsCount: opts.freeCreditsCount ?? 3,
+    appleIap: opts.appleIap,
   };
 };
 

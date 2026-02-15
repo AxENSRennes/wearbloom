@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { Button, ThemedPressable, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
 
+import { CreditCounter } from "~/components/subscription/CreditCounter";
 import { authClient } from "~/utils/auth";
 
 export default function ProfileScreen() {
@@ -48,6 +49,13 @@ export default function ProfileScreen() {
 
         <View className="mt-auto gap-2 pb-4">
           <ThemedText variant="caption" className="px-1 text-text-secondary">
+            Subscription
+          </ThemedText>
+          <View className="rounded-xl bg-surface px-4 py-3">
+            <CreditCounter />
+          </View>
+
+          <ThemedText variant="caption" className="mt-2 px-1 text-text-secondary">
             Legal
           </ThemedText>
           <ThemedPressable
