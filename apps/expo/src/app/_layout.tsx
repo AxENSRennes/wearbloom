@@ -20,6 +20,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
+      if (fontError) {
+        console.warn("Failed to load DM Serif Display font:", fontError);
+      }
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);

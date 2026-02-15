@@ -4,7 +4,7 @@ import { tva } from "@gluestack-ui/utils/nativewind-utils";
 import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 
 const themedTextStyle = tva({
-  base: "text-[#1A1A1A]",
+  base: "text-text-primary",
   variants: {
     variant: {
       display: "text-[28px] leading-[34px] font-normal",

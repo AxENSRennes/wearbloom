@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 
+import { wearbloomTheme } from "./gluestack-config";
+
 type ToastVariant = "success" | "error" | "info";
 
 interface ToastConfig {
@@ -13,10 +15,10 @@ interface ToastEntry extends ToastConfig {
   id: number;
 }
 
-const VARIANT_STYLES: Record<ToastVariant, { borderColor: string; defaultDuration: number }> = {
-  success: { borderColor: "#4CAF82", defaultDuration: 2000 },
-  error: { borderColor: "#D45555", defaultDuration: 4000 },
-  info: { borderColor: "#A3A3A3", defaultDuration: 3000 },
+export const VARIANT_STYLES: Record<ToastVariant, { borderColor: string; defaultDuration: number }> = {
+  success: { borderColor: wearbloomTheme.colors.success, defaultDuration: 2000 },
+  error: { borderColor: wearbloomTheme.colors.error, defaultDuration: 4000 },
+  info: { borderColor: wearbloomTheme.colors["text-tertiary"], defaultDuration: 3000 },
 };
 
 let globalShow: ((config: ToastConfig) => void) | null = null;
@@ -83,9 +85,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           }}
         >
           <Pressable
+            accessible
+            accessibilityRole="alert"
+            accessibilityLabel={toast.message}
             onPress={dismiss}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: wearbloomTheme.colors.background,
               borderRadius: 12,
               paddingVertical: 14,
               paddingHorizontal: 16,
@@ -98,7 +103,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               elevation: 4,
             }}
           >
-            <Text style={{ color: "#1A1A1A", fontSize: 15, lineHeight: 22 }}>
+            <Text style={{ color: wearbloomTheme.colors["text-primary"], fontSize: 15, lineHeight: 22 }}>
               {toast.message}
             </Text>
           </Pressable>

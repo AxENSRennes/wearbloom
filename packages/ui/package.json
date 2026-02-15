@@ -8,6 +8,7 @@
     "./text": "./src/text.tsx",
     "./spinner": "./src/spinner.tsx",
     "./toast": "./src/toast.tsx",
+    "./pressable": "./src/pressable.tsx",
     "./gluestack-config": "./src/gluestack-config.ts"
   },
   "license": "MIT",
@@ -15,6 +16,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "test": "bun test",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

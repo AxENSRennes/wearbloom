@@ -34,6 +34,9 @@ export type { ThemedTextProps, ThemedTextVariant } from "./text";
 
 export { Spinner } from "./spinner";
 
+export { ThemedPressable } from "./pressable";
+export type { ThemedPressableProps } from "./pressable";
+
 export { ToastProvider, showToast } from "./toast";
 
 // ---------------------------------------------------------------------------

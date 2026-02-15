@@ -12,6 +12,8 @@ import { createButton } from "@gluestack-ui/core";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 
+import { wearbloomTheme } from "./gluestack-config";
+
 // ---------------------------------------------------------------------------
 // Style definitions using Gluestack tva (Tailwind Variant Authority)
 // ---------------------------------------------------------------------------
@@ -20,9 +22,9 @@ const buttonStyle = tva({
   base: "items-center justify-center rounded-xl px-6 w-full",
   variants: {
     variant: {
-      primary: "bg-[#1A1A1A] h-[52px] active:opacity-90",
+      primary: "bg-accent h-[52px] active:opacity-90",
       secondary:
-        "bg-white border border-[#1A1A1A] h-[52px] active:opacity-90",
+        "bg-background border border-accent h-[52px] active:opacity-90",
       ghost: "bg-transparent h-[44px]",
     },
     isDisabled: {
@@ -40,7 +42,7 @@ const buttonTextStyle = tva({
     variant: {
       primary: "text-white",
       secondary: "text-[#1A1A1A]",
-      ghost: "text-[#6B6B6B]",
+      ghost: "text-text-secondary",
     },
   },
   defaultVariants: {
@@ -110,9 +112,9 @@ interface ButtonProps {
 }
 
 const SPINNER_COLORS: Record<ButtonVariant, string> = {
-  primary: "#FFFFFF",
-  secondary: "#1A1A1A",
-  ghost: "#6B6B6B",
+  primary: wearbloomTheme.colors.background,
+  secondary: wearbloomTheme.colors.accent,
+  ghost: wearbloomTheme.colors["text-secondary"],
 };
 
 export function Button({
@@ -131,6 +133,7 @@ export function Button({
       accessible
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || isLoading, busy: isLoading }}
     >
       {isLoading ? (
         <ActivityIndicator color={SPINNER_COLORS[variant]} size="small" />
@@ -145,4 +148,4 @@ export function Button({
 
 // Also export the raw Gluestack button for advanced usage
 export { GluestackButton };
-export { buttonStyle, buttonTextStyle };
+export { buttonStyle, buttonTextStyle, SPINNER_COLORS };
