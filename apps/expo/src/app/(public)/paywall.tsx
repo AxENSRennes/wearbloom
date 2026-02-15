@@ -1,17 +1,28 @@
-import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
-import { ThemedText } from "@acme/ui";
+import { PaywallScreen } from "~/components/subscription/PaywallScreen";
 
-export default function PaywallScreen() {
+export default function PaywallRoute() {
+  const router = useRouter();
+  const { garmentId } = useLocalSearchParams<{ garmentId?: string }>();
+
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(auth)/(tabs)/");
+    }
+  };
+
+  const handleSuccess = () => {
+    router.replace("/(auth)/(tabs)/");
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-center p-4">
-        <ThemedText variant="display">Upgrade</ThemedText>
-        <ThemedText variant="body" className="mt-2 text-text-secondary">
-          Unlock unlimited try-ons
-        </ThemedText>
-      </View>
-    </SafeAreaView>
+    <PaywallScreen
+      onClose={handleClose}
+      onSuccess={handleSuccess}
+      garmentId={garmentId}
+    />
   );
 }

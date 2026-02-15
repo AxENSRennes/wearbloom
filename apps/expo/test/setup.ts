@@ -189,6 +189,7 @@ mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
+  useLocalSearchParams: () => ({}),
   Redirect: mockComponent("Redirect"),
   Slot: mockComponent("Slot"),
   Stack: Object.assign(mockComponent("Stack"), {
@@ -206,6 +207,19 @@ mock.module("lucide-react-native", () => ({
   Plus: mockComponent("Icon-Plus"),
   User: mockComponent("Icon-User"),
   ChevronRight: mockComponent("Icon-ChevronRight"),
+  Check: mockComponent("Icon-Check"),
+  X: mockComponent("Icon-X"),
+  CircleCheck: mockComponent("Icon-CircleCheck"),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-haptics — mock haptic feedback
+// ---------------------------------------------------------------------------
+mock.module("expo-haptics", () => ({
+  impactAsync: mock(() => Promise.resolve()),
+  notificationAsync: mock(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
 }));
 
 // ---------------------------------------------------------------------------
@@ -324,6 +338,33 @@ mock.module("@acme/ui", () => ({
       neutral: "#868e96",
       "text-tertiary": "#A3A3A3",
     },
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// expo-iap — mock IAP module (native module not available in test)
+// ---------------------------------------------------------------------------
+mock.module("expo-iap", () => ({
+  useIAP: () => ({
+    connected: false,
+    subscriptions: [],
+    fetchProducts: mock(() => Promise.resolve()),
+    requestPurchase: mock(() => Promise.resolve()),
+    finishTransaction: mock(() => Promise.resolve()),
+    restorePurchases: mock(() => Promise.resolve()),
+  }),
+  getAvailablePurchases: mock(() => Promise.resolve([])),
+  ErrorCode: {
+    ActivityUnavailable: "activity-unavailable",
+    AlreadyOwned: "already-owned",
+    BillingUnavailable: "billing-unavailable",
+    DeferredPayment: "deferred-payment",
+    ItemUnavailable: "item-unavailable",
+    NetworkError: "network-error",
+    PurchaseError: "purchase-error",
+    Unknown: "unknown",
+    UserCancelled: "user-cancelled",
+    UserError: "user-error",
   },
 }));
 
