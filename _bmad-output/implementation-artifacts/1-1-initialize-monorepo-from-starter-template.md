@@ -1,6 +1,6 @@
 # Story 1.1: Initialize Monorepo from Starter Template
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -317,6 +317,17 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-15: Story 1.1 implemented — monorepo foundation established from create-t3-turbo with all 7 required modifications
+- 2026-02-15: Code review (AI) — 10 issues found (3H/5M/2L), all fixed automatically:
+  - H1: turbo.json stale env vars (POSTGRES_URL, Discord, Vercel) → cleaned up
+  - H2: Gluestack UI packages installed but never used → rewrote Button with createButton + tva
+  - H3: Dockerfile used node:20-alpine instead of oven/bun:1-alpine → proper multi-stage build
+  - M1: tooling/typescript/server.json missing → created, server tsconfig updated
+  - M2: Hardcoded pink header color → changed to Wearbloom primary-600
+  - M3: DB client used raw process.env → added Zod validation
+  - M4: Zero test files → added env validation smoke tests (4 tests passing)
+  - M5: cn() utility type too restrictive → uses ClassNameValue from tailwind-merge
+  - L1: Dockerfile COPY . . bloated image → selective COPY of server-relevant files only
+  - L2: Stale JSDoc referencing deleted post router → updated to auth router
 
 ### File List
 
