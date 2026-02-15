@@ -11,6 +11,7 @@
     "ios": "expo run:ios",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "@trpc/tanstack-react-query": "catalog:",
     "better-auth": "catalog:",
     "expo": "~54.0.20",
+    "expo-apple-authentication": "^8.0.8",
     "expo-constants": "~18.0.10",
     "expo-dev-client": "~6.0.16",
     "expo-font": "^14.0.11",
