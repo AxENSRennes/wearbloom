@@ -10,6 +10,7 @@ import { db } from "@acme/db/client";
 
 import { env } from "./env";
 import { createImageHandler } from "./routes/images";
+import { nodeHeadersToHeaders } from "./utils/headers";
 
 const logger = pino({ name: "wearbloom-server" });
 
@@ -30,23 +31,6 @@ const imageStorage = createImageStorage({
 });
 
 const imageHandler = createImageHandler({ db, auth, imageStorage });
-
-function nodeHeadersToHeaders(
-  nodeHeaders: http.IncomingHttpHeaders,
-): Headers {
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(nodeHeaders)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const v of value) {
-        headers.append(key, v);
-      }
-    } else {
-      headers.set(key, value);
-    }
-  }
-  return headers;
-}
 
 const trpcHandler = createHTTPHandler({
   router: appRouter,

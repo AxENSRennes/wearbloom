@@ -3,6 +3,8 @@ import type http from "node:http";
 import { eq } from "@acme/db";
 import { bodyPhotos } from "@acme/db/schema";
 
+import { nodeHeadersToHeaders } from "../utils/headers";
+
 interface ImageHandlerImageStorage {
   streamFile(filePath: string): ReadableStream;
 }
@@ -20,23 +22,6 @@ interface ImageHandlerDeps {
     };
   };
   imageStorage: ImageHandlerImageStorage;
-}
-
-function nodeHeadersToHeaders(
-  nodeHeaders: http.IncomingHttpHeaders,
-): Headers {
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(nodeHeaders)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const v of value) {
-        headers.append(key, v);
-      }
-    } else {
-      headers.set(key, value);
-    }
-  }
-  return headers;
 }
 
 export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps) {
@@ -85,22 +70,22 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
     }
 
     // Stream the file
-    const stream = imageStorage.streamFile(photo.filePath as string);
+    const stream = imageStorage.streamFile(photo.filePath);
     res.writeHead(200, {
-      "Content-Type": (photo.mimeType as string) || "image/jpeg",
+      "Content-Type": photo.mimeType || "image/jpeg",
       "Cache-Control": "private, max-age=3600",
     });
 
     const reader = stream.getReader();
-    const pump = async (): Promise<void> => {
-      const { done, value } = await reader.read();
-      if (done) {
-        res.end();
-        return;
+    let done = false;
+    while (!done) {
+      const result = await reader.read();
+      if (result.done) {
+        done = true;
+      } else {
+        res.write(Buffer.from(result.value));
       }
-      res.write(Buffer.from(value));
-      return pump();
-    };
-    await pump();
+    }
+    res.end();
   };
 }

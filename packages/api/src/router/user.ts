@@ -14,20 +14,29 @@ export const userRouter = {
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       // Cast needed: RN FormData typings lack .get(), but server runtime (Bun) has it
-      const formData = input as unknown as { get(key: string): File | null };
+      const formData = input as unknown as {
+        get(key: string): File | string | null;
+      };
       const file = formData.get("photo");
-      if (!file) {
+      if (!file || typeof file === "string") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "MISSING_PHOTO",
         });
       }
 
+      const widthStr = formData.get("width");
+      const heightStr = formData.get("height");
+      const width =
+        typeof widthStr === "string" ? Number(widthStr) : undefined;
+      const height =
+        typeof heightStr === "string" ? Number(heightStr) : undefined;
+
       const validTypes = ["image/jpeg", "image/png"];
       if (!validTypes.includes(file.type)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "IMAGE_TOO_LARGE",
+          message: "INVALID_IMAGE_TYPE",
         });
       }
 
@@ -77,10 +86,18 @@ export const userRouter = {
           filePath,
           mimeType: file.type,
           fileSize: file.size,
+          width: width || undefined,
+          height: height || undefined,
         })
         .returning({ id: bodyPhotos.id });
 
-      return { imageId: newRecord!.id };
+      if (!newRecord) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "RECORD_INSERT_FAILED",
+        });
+      }
+      return { imageId: newRecord.id };
     }),
 
   getBodyPhoto: protectedProcedure.query(async ({ ctx }) => {

@@ -1,6 +1,7 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import * as rq from "@tanstack/react-query";
 
 import ProfileScreen from "./profile";
 
@@ -9,6 +10,10 @@ function render(component: React.ReactElement) {
 }
 
 describe("ProfileScreen", () => {
+  afterEach(() => {
+    // Restore any spies between tests
+  });
+
   test("exports a function component", () => {
     expect(typeof ProfileScreen).toBe("function");
   });
@@ -73,5 +78,23 @@ describe("ProfileScreen", () => {
     const html = render(createElement(ProfileScreen));
     expect(html).toContain('accessibilityRole="button"');
     expect(html).toContain("Navigate to body photo management screen");
+  });
+
+  test("renders Update Body Photo when photo exists", () => {
+    const spy = spyOn(rq, "useQuery").mockReturnValue({
+      data: { imageId: "photo-xyz", imageUrl: "/api/images/photo-xyz" },
+      isLoading: false,
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: () => Promise.resolve({} as never),
+    } as never);
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Update Body Photo");
+    expect(html).toContain("Your body avatar");
+    expect(html).not.toContain("Body photo placeholder");
+
+    spy.mockRestore();
   });
 });

@@ -39,52 +39,61 @@ export function BodyPhotoManager() {
     : null;
 
   async function handleUpload(source: "camera" | "gallery") {
-    let result: ImagePicker.ImagePickerResult;
+    try {
+      let result: ImagePicker.ImagePickerResult;
 
-    if (source === "camera") {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (permission.status !== "granted") {
-        showToast({
-          message: "Camera permission is required to take a photo.",
-          variant: "error",
+      if (source === "camera") {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Camera permission is required to take a photo.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 1,
         });
-        return;
-      }
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 1,
-      });
-    } else {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== "granted") {
-        showToast({
-          message: "Photo library permission is required.",
-          variant: "error",
+      } else {
+        const permission =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Photo library permission is required.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 1,
         });
-        return;
       }
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 1,
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const compressed = await compressImage(asset.uri);
+
+      const formData = new FormData();
+      formData.append("photo", {
+        uri: compressed.uri,
+        type: "image/jpeg",
+        name: "body-avatar.jpg",
+      } as unknown as Blob);
+      formData.append("width", String(compressed.width));
+      formData.append("height", String(compressed.height));
+
+      uploadMutation.mutate(formData);
+    } catch {
+      showToast({
+        message: "Could not process the photo. Please try again.",
+        variant: "error",
       });
     }
-
-    if (result.canceled || !result.assets[0]) return;
-
-    const asset = result.assets[0];
-    const compressed = await compressImage(asset.uri);
-
-    const formData = new FormData();
-    formData.append("photo", {
-      uri: compressed.uri,
-      type: "image/jpeg",
-      name: "body-avatar.jpg",
-    } as unknown as Blob);
-
-    uploadMutation.mutate(formData);
   }
 
   return (

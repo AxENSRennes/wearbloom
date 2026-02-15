@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
@@ -57,6 +57,35 @@ describe("user.getBodyPhoto", () => {
 
     expect(result).toBeNull();
   });
+
+  test("returns imageUrl when user has a body photo", async () => {
+    const { db } = await import("@acme/db/client");
+
+    // Override the chain to return a photo record for this test
+    const photoResult = [{ id: "photo-abc" }];
+    const chain: Record<string, unknown> = {};
+    const methods = ["select", "from", "where", "limit"];
+    for (const method of methods) {
+      chain[method] = mock(() => chain);
+    }
+    chain.then = mock((...args: unknown[]) => {
+      const resolve = args[0] as (val: unknown[]) => void;
+      return resolve(photoResult);
+    });
+    const selectSpy = spyOn(db as never, "select").mockReturnValue(
+      chain as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.user.getBodyPhoto();
+
+    expect(result).toEqual({
+      imageId: "photo-abc",
+      imageUrl: "/api/images/photo-abc",
+    });
+
+    selectSpy.mockRestore();
+  });
 });
 
 describe("user.uploadBodyPhoto", () => {
@@ -75,6 +104,49 @@ describe("user.uploadBodyPhoto", () => {
 
     await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
       /UNAUTHORIZED/,
+    );
+  });
+});
+
+describe("user.uploadBodyPhoto validation", () => {
+  test("rejects file with invalid mime type", async () => {
+    const { caller } = await createAuthenticatedCaller();
+
+    const formData = new FormData();
+    formData.append(
+      "photo",
+      new File(["data"], "photo.gif", { type: "image/gif" }),
+    );
+
+    await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
+      /INVALID_IMAGE_TYPE/,
+    );
+  });
+
+  test("rejects file exceeding 10MB", async () => {
+    const { caller } = await createAuthenticatedCaller();
+
+    // Create a file > 10MB
+    const bigData = new Uint8Array(11 * 1024 * 1024);
+    const formData = new FormData();
+    formData.append(
+      "photo",
+      new File([bigData], "big.jpg", { type: "image/jpeg" }),
+    );
+
+    await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
+      /IMAGE_TOO_LARGE/,
+    );
+  });
+
+  test("rejects missing photo field", async () => {
+    const { caller } = await createAuthenticatedCaller();
+
+    const formData = new FormData();
+    // No photo appended
+
+    await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
+      /MISSING_PHOTO/,
     );
   });
 });
