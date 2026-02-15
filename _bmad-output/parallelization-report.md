@@ -2,7 +2,15 @@
 
 Generated: 2026-02-15
 Project: wearbloom
-Current state: 1-1 done, 1-2 done, everything else backlog
+Current state: 1-1 done, 1-2 done, 1-3 done, 1-4 done
+
+## Execution Threads
+
+```
+Thread A (critique):      1-5 → 1-6 → 2-1 → 2-2 → {2-3, 2-4} → 2-5 → 3-1 → 3-2 → 3-3 → {3-4, 3-5}
+Thread B (monétisation):  {4-1, 4-2} → 4-3 → 4-4
+Thread C (onboarding):    5-1 → 5-2 → 5-3 → [attend A:2-1] → 5-4
+```
 
 ---
 
