@@ -40,15 +40,26 @@ export function initAuth<
       anonymous({
         emailDomainName: "anon.wearbloom.app",
         onLinkAccount: async ({ anonymousUser, newUser }) => {
-          // TODO: Enable when renders table exists (Story 3.2)
-          // await db.update(renders).set({ userId: newUser.user.id }).where(eq(renders.userId, anonymousUser.user.id));
-          options.logger.info(
-            {
-              anonymousUserId: anonymousUser.user.id,
-              newUserId: newUser.user.id,
-            },
-            "Anonymous account linked",
-          );
+          try {
+            // TODO: Enable when renders table exists (Story 3.2)
+            // await db.update(renders).set({ userId: newUser.user.id }).where(eq(renders.userId, anonymousUser.user.id));
+            options.logger.info(
+              {
+                anonymousUserId: anonymousUser.user.id,
+                newUserId: newUser.user.id,
+              },
+              "Anonymous account linked",
+            );
+          } catch (error) {
+            options.logger.error(
+              {
+                error,
+                anonymousUserId: anonymousUser.user.id,
+                newUserId: newUser.user.id,
+              },
+              "Failed to complete onLinkAccount migration",
+            );
+          }
         },
       }),
       ...(options.extraPlugins ?? []),

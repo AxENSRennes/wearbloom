@@ -1,6 +1,6 @@
 # Story 5.1: Ephemeral Token & Pre-Account Authorization
 
-Status: review
+Status: done
 
 ## Story
 
@@ -377,6 +377,25 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-15: Story 5.1 implementation complete — ephemeral token system via better-auth anonymous plugin, tRPC middleware, cleanup service, env configuration
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Axel on 2026-02-15
+**Outcome:** Approved with fixes applied
+
+**Issues Found:** 2 High, 3 Medium, 3 Low
+**Issues Fixed:** 5 (all HIGH + MEDIUM)
+
+| # | Severity | Description | File(s) | Status |
+|---|----------|-------------|---------|--------|
+| H1 | HIGH | Cleanup tests didn't verify WHERE clause — DELETE safety concern | `anonymousCleanup.test.ts` | **Fixed** — rewrote with 7 tests verifying table target, filter args, cutoff calculation |
+| H2 | HIGH | Missing `"test": "bun test"` script in `@acme/db` — `turbo test` skipped DB tests | `packages/db/package.json` | **Fixed** — added test script |
+| M1 | MEDIUM | Health check cleanup runs on every call without throttle | `apps/server/src/index.ts` | **Fixed** — added 5-minute throttle via `lastCleanupTime` |
+| M2 | MEDIUM | No try/catch in `onLinkAccount` — future DB errors could break account linking | `packages/auth/src/index.ts` | **Fixed** — wrapped in try/catch with error logging |
+| M3 | MEDIUM | Startup logs use string interpolation instead of structured pino logging | `apps/server/src/index.ts` | **Fixed** — switched to structured `{ port, path }` objects |
+| L1 | LOW | `protectedProcedure` doesn't narrow `isAnonymous` type for downstream | `trpc.ts` | Not fixed (type-level only) |
+| L2 | LOW | Cleanup uses `users.createdAt` instead of session expiry + buffer | `anonymousCleanup.ts` | Not fixed (functionally correct) |
+| L3 | LOW | `getEphemeralStatus` hardcodes `hasUsedFreeRender: false` | `auth.ts` | Not fixed (documented deferred) |
 
 ### File List
 

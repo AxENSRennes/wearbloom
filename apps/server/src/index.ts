@@ -58,14 +58,24 @@ const trpcHandler = createHTTPHandler({
 
 const cleanupService = createAnonymousCleanupService({ db, logger });
 
+let lastCleanupTime = 0;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
-    // Fire-and-forget cleanup on health check
-    cleanupService
-      .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
-      .catch((err: unknown) => {
-        logger.error({ err }, "Anonymous cleanup failed during health check");
-      });
+    // Throttled fire-and-forget cleanup on health check
+    const now = Date.now();
+    if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+      lastCleanupTime = now;
+      cleanupService
+        .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
+        .catch((err: unknown) => {
+          logger.error(
+            { err },
+            "Anonymous cleanup failed during health check",
+          );
+        });
+    }
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", timestamp: new Date() }));
@@ -81,6 +91,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(env.PORT);
-logger.info(`Server listening on http://localhost:${env.PORT}`);
-logger.info(`Health check: http://localhost:${env.PORT}/health`);
-logger.info(`Auth routes: http://localhost:${env.PORT}/api/auth/*`);
+logger.info({ port: env.PORT }, "Server listening");
+logger.info({ port: env.PORT, path: "/health" }, "Health check available");
+logger.info({ port: env.PORT, path: "/api/auth/*" }, "Auth routes available");
