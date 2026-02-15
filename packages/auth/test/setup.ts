@@ -31,6 +31,7 @@ mock.module("better-auth/adapters/drizzle", () => ({
 
 mock.module("better-auth/plugins", () => ({
   oAuthProxy: mock((_opts: unknown) => ({ id: "oAuthProxy" })),
+  anonymous: mock((_opts?: unknown) => ({ id: "anonymous", _opts })),
 }));
 
 mock.module("@better-auth/expo", () => ({

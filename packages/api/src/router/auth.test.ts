@@ -9,11 +9,30 @@ const mockSession = {
     id: "sess-456",
     token: "tok-xyz",
     expiresAt: new Date("2030-01-01"),
+    createdAt: new Date(),
     userId: "user-456",
   },
 };
 
-function createMockAuth(session: typeof mockSession | null): AuthInstance {
+const mockAnonymousSession = {
+  user: {
+    id: "anon-789",
+    name: null,
+    email: "temp-abc@anon.wearbloom.app",
+    isAnonymous: true,
+  },
+  session: {
+    id: "sess-anon",
+    token: "tok-anon",
+    expiresAt: new Date("2030-01-01"),
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    userId: "anon-789",
+  },
+};
+
+function createMockAuth(
+  session: typeof mockSession | typeof mockAnonymousSession | null,
+): AuthInstance {
   return {
     api: {
       getSession: mock(() => Promise.resolve(session)),
@@ -66,5 +85,56 @@ describe("auth.signOut", () => {
 
     expect(result).toEqual({ success: true });
     expect(auth.api.signOut).toHaveBeenCalledWith({ headers });
+  });
+});
+
+describe("auth.getEphemeralStatus", () => {
+  test("returns anonymous status for anonymous user", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(mockAnonymousSession);
+    const ctx = await createTRPCContext({
+      headers: new Headers({ cookie: "session=anon" }),
+      auth,
+    });
+
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.auth.getEphemeralStatus();
+
+    expect(result.isAnonymous).toBe(true);
+    expect(result.hasUsedFreeRender).toBe(false);
+    expect(typeof result.sessionAgeMs).toBe("number");
+    expect(result.sessionAgeMs).toBeGreaterThan(0);
+  });
+
+  test("returns non-anonymous status for regular user", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(mockSession);
+    const ctx = await createTRPCContext({
+      headers: new Headers({ cookie: "session=xyz" }),
+      auth,
+    });
+
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.auth.getEphemeralStatus();
+
+    expect(result.isAnonymous).toBe(false);
+    expect(result.hasUsedFreeRender).toBe(false);
+    expect(typeof result.sessionAgeMs).toBe("number");
+  });
+
+  test("returns null-like status when unauthenticated", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(null);
+    const ctx = await createTRPCContext({
+      headers: new Headers(),
+      auth,
+    });
+
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.auth.getEphemeralStatus();
+
+    expect(result.isAnonymous).toBe(false);
+    expect(result.hasUsedFreeRender).toBe(false);
+    expect(result.sessionAgeMs).toBe(0);
   });
 });

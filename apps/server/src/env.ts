@@ -6,6 +6,8 @@ const serverSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
+  ANONYMOUS_SESSION_TTL_HOURS: z.coerce.number().default(24),
+  ANONYMOUS_MAX_RENDERS: z.coerce.number().default(1),
 });
 
 const authEnvVars = authEnv();

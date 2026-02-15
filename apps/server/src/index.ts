@@ -3,7 +3,12 @@ import { createHTTPHandler } from "@trpc/server/adapters/standalone";
 import { toNodeHandler } from "better-auth/node";
 import pino from "pino";
 
-import { appRouter, createTRPCContext } from "@acme/api";
+import {
+  appRouter,
+  createAnonymousCleanupService,
+  createTRPCContext,
+} from "@acme/api";
+import { db } from "@acme/db/client";
 import { initAuth } from "@acme/auth";
 
 import { env } from "./env";
@@ -44,11 +49,24 @@ const trpcHandler = createHTTPHandler({
     createTRPCContext({
       headers: nodeHeadersToHeaders(req.headers),
       auth,
+      anonymousConfig: {
+        sessionTtlHours: env.ANONYMOUS_SESSION_TTL_HOURS,
+        maxRenders: env.ANONYMOUS_MAX_RENDERS,
+      },
     }),
 });
 
+const cleanupService = createAnonymousCleanupService({ db, logger });
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
+    // Fire-and-forget cleanup on health check
+    cleanupService
+      .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
+      .catch((err: unknown) => {
+        logger.error({ err }, "Anonymous cleanup failed during health check");
+      });
+
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", timestamp: new Date() }));
     return;
