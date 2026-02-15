@@ -117,7 +117,13 @@ export const subscriptionRouter = {
 
       // Validate appAccountToken matches authenticated user
       const appAccountToken = decoded.appAccountToken as string | undefined;
-      if (appAccountToken && appAccountToken !== ctx.session.user.id) {
+      if (!appAccountToken) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "MISSING_APP_ACCOUNT_TOKEN",
+        });
+      }
+      if (appAccountToken !== ctx.session.user.id) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "TRANSACTION_USER_MISMATCH",
@@ -134,12 +140,8 @@ export const subscriptionRouter = {
       // Determine if this is an initial buy with trial
       const existingSub = await subManager.getSubscription(ctx.session.user.id);
       const isInitialBuy = !existingSub;
-      // StoreKit 2: if expiresDate > purchaseDate + 1 day, likely has trial
-      const hasTrial =
-        isInitialBuy &&
-        !!expiresDate &&
-        !!purchaseDate &&
-        expiresDate - purchaseDate > 2 * 86400000;
+      // StoreKit 2: offerType 1 = introductory offer (free trial)
+      const hasTrial = isInitialBuy && decoded.offerType === 1;
 
       const status = subManager.determineSubscriptionStatus({
         isInitialBuy,
@@ -187,11 +189,15 @@ export const subscriptionRouter = {
 
       const subManager = createSubscriptionManager({ db: ctx.db });
       let restored = 0;
+      let failed = 0;
 
       for (const signedTransaction of input.signedTransactions) {
         const decoded = await ctx.appleIap.verifier
           .verifyAndDecodeTransaction(signedTransaction)
-          .catch(() => null);
+          .catch(() => {
+            failed++;
+            return null;
+          });
 
         if (!decoded) continue;
 
@@ -212,6 +218,6 @@ export const subscriptionRouter = {
         restored++;
       }
 
-      return { restored };
+      return { restored, failed };
     }),
 } satisfies TRPCRouterRecord;

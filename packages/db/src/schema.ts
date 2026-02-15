@@ -79,8 +79,9 @@ export const subscriptions = pgTable("subscriptions", (t) => ({
   createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
   updatedAt: t
     .timestamp({ withTimezone: true })
-    .$onUpdateFn(() => new Date())
-    .notNull(),
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 }));
 
 export const credits = pgTable("credits", (t) => ({

@@ -28,7 +28,10 @@ function createMockAuth(
 }
 
 function createMockAppleIap(
-  overrides?: Partial<AppleIapDeps>,
+  overrides?: {
+    verifier?: Partial<AppleIapDeps["verifier"]>;
+    client?: Partial<AppleIapDeps["client"]>;
+  },
 ): AppleIapDeps {
   return {
     verifier: {
@@ -285,6 +288,52 @@ describe("subscription.verifyPurchase", () => {
     ).rejects.toThrow("APPLE_IAP_NOT_CONFIGURED");
   });
 
+  test("throws TRANSACTION_USER_MISMATCH when appAccountToken differs", async () => {
+    const appleIap = createMockAppleIap({
+      verifier: {
+        verifyAndDecodeTransaction: mock(() =>
+          Promise.resolve({
+            originalTransactionId: "orig-txn-mismatch",
+            transactionId: "txn-mismatch",
+            productId: "com.wearbloom.weekly",
+            expiresDate: Date.now() + 7 * 86400000,
+            appAccountToken: "different-user-id",
+            purchaseDate: Date.now(),
+          }) as Promise<Record<string, unknown>>,
+        ),
+      },
+    });
+    const caller = await createAuthenticatedCaller(appleIap);
+    await expect(
+      caller.subscription.verifyPurchase({
+        signedTransactionInfo: "valid-jws-wrong-user",
+      }),
+    ).rejects.toThrow("TRANSACTION_USER_MISMATCH");
+  });
+
+  test("throws MISSING_APP_ACCOUNT_TOKEN when appAccountToken is absent", async () => {
+    const appleIap = createMockAppleIap({
+      verifier: {
+        verifyAndDecodeTransaction: mock(() =>
+          Promise.resolve({
+            originalTransactionId: "orig-txn-no-token",
+            transactionId: "txn-no-token",
+            productId: "com.wearbloom.weekly",
+            expiresDate: Date.now() + 7 * 86400000,
+            purchaseDate: Date.now(),
+            // no appAccountToken
+          }) as Promise<Record<string, unknown>>,
+        ),
+      },
+    });
+    const caller = await createAuthenticatedCaller(appleIap);
+    await expect(
+      caller.subscription.verifyPurchase({
+        signedTransactionInfo: "valid-jws-no-token",
+      }),
+    ).rejects.toThrow("MISSING_APP_ACCOUNT_TOKEN");
+  });
+
   test("creates subscription record on valid purchase", async () => {
     const appleIap = createMockAppleIap();
     const caller = await createAuthenticatedCaller(appleIap);
@@ -304,6 +353,17 @@ describe("subscription.restorePurchases", () => {
     await expect(
       caller.subscription.restorePurchases({ signedTransactions: [] }),
     ).rejects.toThrow(TRPCError);
+  });
+
+  test("restores valid non-expired purchase", async () => {
+    const appleIap = createMockAppleIap();
+    const caller = await createAuthenticatedCaller(appleIap);
+
+    const result = await caller.subscription.restorePurchases({
+      signedTransactions: ["valid-signed-txn"],
+    });
+
+    expect(result.restored).toBe(1);
   });
 
   test("returns empty result when no transactions provided", async () => {

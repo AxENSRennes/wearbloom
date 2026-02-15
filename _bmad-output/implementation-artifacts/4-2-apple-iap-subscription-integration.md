@@ -1,6 +1,6 @@
 # Story 4.2: Apple IAP Subscription Integration
 
-Status: review
+Status: done
 
 ## Story
 
@@ -441,10 +441,75 @@ Recent commits show implementation through Story 1.4 with code review fixes. Key
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Fixed missing UNIQUE constraint on `subscriptions.userId` — required for `onConflictDoUpdate` in upsertSubscription
+- Fixed deep import paths `@acme/api/src/services/*` → `@acme/api/services/*` via sub-path exports in package.json
+- Fixed `SignedDataVerifier` type incompatibility with DI interfaces — used `as unknown as` type assertions at integration boundary in server index.ts
+- Fixed `expo-iap` API mismatches — original code used deprecated/nonexistent APIs (`ProductPurchase`, `currentPurchase`, `getSubscriptions`, `autoFinishTransactions`); rewrote to use actual v3.4.9 API (`Purchase`, `onPurchaseSuccess`/`onPurchaseError` callbacks, `fetchProducts`, `ExpoPurchaseError`)
+- Story 4.1 was implemented in parallel — extended its subscription.ts router and test file rather than creating new ones; adapted to existing credits table and test setup
+
 ### Completion Notes List
 
+- All 8 tasks completed successfully
+- 62 tests passing across API (51) and Server (11) packages
+- Full typecheck green (13/13 packages)
+- Lint has pre-existing environment issue (Node.js version for `unstable_native_nodejs_ts_config` flag) — not related to this story
+- Apple Root CA certificates need to be manually downloaded before production deployment
+- App Store Connect product configuration (com.wearbloom.weekly) needed before sandbox testing
+- The `useSubscriptionStatus` hook was created by Story 4.1 — `useSubscription` (this story) provides richer subscription data including expiresAt, productId, isUnlimited
+
+### Change Log
+
+| File | Action | Description |
+|------|--------|-------------|
+| `packages/db/src/schema.ts` | MODIFIED | Added `subscriptionStatus` pgEnum + `subscriptions` table with `.unique()` on userId |
+| `packages/api/package.json` | MODIFIED | Added sub-path exports for `./services/appleIap` and `./services/subscriptionManager` |
+| `packages/api/src/index.ts` | MODIFIED | Added `AppleIapDeps` type export |
+| `packages/api/src/trpc.ts` | MODIFIED | Added `AppleIapDeps` interface + optional `appleIap` to context |
+| `packages/api/src/services/appleIap.ts` | CREATED | Factory functions for Apple IAP client + verifier |
+| `packages/api/src/services/appleIap.test.ts` | CREATED | 4 tests for Apple IAP service |
+| `packages/api/src/services/subscriptionManager.ts` | CREATED | Subscription state machine + DB operations |
+| `packages/api/src/services/subscriptionManager.test.ts` | CREATED | 10 tests for subscription manager |
+| `packages/api/src/router/subscription.ts` | MODIFIED | Extended with getStatus, verifyPurchase, restorePurchases procedures |
+| `packages/api/src/router/subscription.test.ts` | MODIFIED | Extended to 18 tests (7 new for IAP procedures) |
+| `packages/api/test/setup.ts` | MODIFIED | Added subscriptions table cleanup |
+| `apps/server/src/env.ts` | MODIFIED | Added optional Apple IAP env vars |
+| `apps/server/src/index.ts` | MODIFIED | Added Apple IAP init + webhook route + tRPC context integration |
+| `apps/server/src/webhooks/apple.ts` | CREATED | Apple App Store Server Notifications V2 webhook handler |
+| `apps/server/src/webhooks/apple.test.ts` | CREATED | 7 tests for webhook handler |
+| `apps/server/certs/.gitkeep` | CREATED | Placeholder with Apple Root CA cert instructions |
+| `apps/expo/app.config.ts` | MODIFIED | Added `"expo-iap"` to plugins |
+| `apps/expo/package.json` | MODIFIED | Added `expo-iap` dependency |
+| `apps/expo/src/hooks/useStoreKit.ts` | CREATED | expo-iap wrapper hook with server validation flow |
+| `apps/expo/src/hooks/useSubscription.ts` | CREATED | Subscription status query hook via tRPC |
+| `.env.example` | MODIFIED | Added Apple IAP env var section |
+
 ### File List
+
+**New files:**
+- `packages/api/src/services/appleIap.ts`
+- `packages/api/src/services/appleIap.test.ts`
+- `packages/api/src/services/subscriptionManager.ts`
+- `packages/api/src/services/subscriptionManager.test.ts`
+- `apps/server/src/webhooks/apple.ts`
+- `apps/server/src/webhooks/apple.test.ts`
+- `apps/server/certs/.gitkeep`
+- `apps/expo/src/hooks/useStoreKit.ts`
+- `apps/expo/src/hooks/useSubscription.ts`
+
+**Modified files:**
+- `packages/db/src/schema.ts`
+- `packages/api/package.json`
+- `packages/api/src/index.ts`
+- `packages/api/src/trpc.ts`
+- `packages/api/src/router/subscription.ts`
+- `packages/api/src/router/subscription.test.ts`
+- `packages/api/test/setup.ts`
+- `apps/server/src/env.ts`
+- `apps/server/src/index.ts`
+- `apps/expo/app.config.ts`
+- `apps/expo/package.json`
+- `.env.example`

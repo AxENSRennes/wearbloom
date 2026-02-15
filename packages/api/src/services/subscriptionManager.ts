@@ -1,7 +1,8 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
-import type { subscriptions } from "@acme/db/schema";
+import { subscriptions } from "@acme/db/schema";
 
 import type { db as dbType } from "@acme/db/client";
 
@@ -72,7 +73,6 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
     },
 
     async getSubscription(userId: string): Promise<Subscription | undefined> {
-      const { subscriptions } = await import("@acme/db/schema");
       const rows = await db
         .select()
         .from(subscriptions)
@@ -91,7 +91,6 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
         expiresAt: Date;
       },
     ): Promise<Subscription> {
-      const { subscriptions } = await import("@acme/db/schema");
       const rows = await db
         .insert(subscriptions)
         .values({
@@ -113,7 +112,11 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
           },
         })
         .returning();
-      return rows[0] as Subscription;
+      const row = rows[0];
+      if (!row) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "UPSERT_FAILED" });
+      }
+      return row;
     },
 
     async updateStatus(
@@ -121,7 +124,6 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
       status: SubscriptionStatusValue,
       expiresAt?: Date,
     ): Promise<void> {
-      const { subscriptions } = await import("@acme/db/schema");
       await db
         .update(subscriptions)
         .set({

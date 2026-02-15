@@ -104,11 +104,8 @@ export function createAppleWebhookHandler({
       switch (notificationType) {
         case "SUBSCRIBED": {
           const isInitialBuy = subtype === "INITIAL_BUY";
-          const hasTrial =
-            isInitialBuy &&
-            !!expiresDate &&
-            !!purchaseDate &&
-            expiresDate - purchaseDate > 2 * 86400000;
+          // StoreKit 2: offerType 1 = introductory offer (free trial)
+          const hasTrial = isInitialBuy && transaction.offerType === 1;
 
           const status = subscriptionManager.determineSubscriptionStatus({
             isInitialBuy,
