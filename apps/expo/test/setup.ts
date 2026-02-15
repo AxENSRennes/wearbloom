@@ -187,6 +187,7 @@ const routerMock = {
 
 mock.module("expo-router", () => ({
   useRouter: () => routerMock,
+  router: routerMock,
   usePathname: () => "/",
   Redirect: mockComponent("Redirect"),
   Slot: mockComponent("Slot"),
@@ -220,6 +221,7 @@ const mockAuthClient = {
     email: mock(() => Promise.resolve({ data: null, error: null })),
   },
   signOut: mock(() => Promise.resolve()),
+  updateUser: mock(() => Promise.resolve({ data: null, error: null })),
   getCookie: () => null,
 };
 
@@ -309,7 +311,11 @@ mock.module("@acme/ui", () => ({
     React.createElement(React.Fragment, null, children),
   showToast: mock(() => {}),
   wearbloomTheme: {
-    colors: { primary: "#4c6ef5", neutral: "#868e96" },
+    colors: {
+      primary: "#4c6ef5",
+      neutral: "#868e96",
+      "text-tertiary": "#A3A3A3",
+    },
   },
 }));
 

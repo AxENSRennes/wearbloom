@@ -3,7 +3,7 @@ import { pgTable } from "drizzle-orm/pg-core";
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
   name: t.text(),
-  email: t.text().unique(),
+  email: t.text().notNull().unique(),
   emailVerified: t.boolean().default(false),
   image: t.text(),
   createdAt: t.timestamp().defaultNow().notNull(),

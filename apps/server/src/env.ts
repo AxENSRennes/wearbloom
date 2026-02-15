@@ -1,8 +1,16 @@
 import { z } from "zod/v4";
 
-const envSchema = z.object({
+import { authEnv } from "@acme/auth/env";
+
+const serverSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3000),
+  NODE_ENV: z.enum(["development", "production"]).default("development"),
 });
 
-export const env = envSchema.parse(process.env);
+const authEnvVars = authEnv();
+
+export const env = {
+  ...serverSchema.parse(process.env),
+  ...authEnvVars,
+};

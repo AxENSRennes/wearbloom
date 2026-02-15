@@ -4,10 +4,28 @@ import { ZodError } from "zod/v4";
 
 import { db } from "@acme/db/client";
 
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+export interface AuthInstance {
+  api: {
+    getSession: (opts: {
+      headers: Headers;
+    }) => Promise<{
+      user: { id: string; name: string | null; email: string };
+      session: { id: string; token: string; expiresAt: Date; userId: string };
+    } | null>;
+    signOut: (opts: { headers: Headers }) => Promise<unknown>;
+  };
+}
+
+export const createTRPCContext = async (opts: {
+  headers: Headers;
+  auth: AuthInstance;
+}) => {
+  const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
     db,
-    session: null as null | { user: { id: string; name: string } },
+    session,
+    auth: opts.auth,
+    headers: opts.headers,
   };
 };
 

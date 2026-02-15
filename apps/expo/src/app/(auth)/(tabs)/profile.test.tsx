@@ -13,7 +13,23 @@ describe("ProfileScreen", () => {
     expect(typeof ProfileScreen).toBe("function");
   });
 
-  test("renders Privacy Policy link text", () => {
+  test("renders Profile heading", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Profile");
+  });
+
+  test("renders account subtitle", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Account settings");
+  });
+
+  test("renders Sign Out button with secondary variant", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Sign Out");
+    expect(html).toContain("secondary");
+  });
+
+  test("renders Privacy Policy link", () => {
     const html = render(createElement(ProfileScreen));
     expect(html).toContain("Privacy Policy");
   });
@@ -23,13 +39,22 @@ describe("ProfileScreen", () => {
     expect(html).toContain("Legal");
   });
 
-  test("renders Sign Out button", () => {
+  test("Privacy Policy has accessibility attributes", () => {
     const html = render(createElement(ProfileScreen));
-    expect(html).toContain("Sign Out");
+    expect(html).toContain('accessibilityRole="link"');
+    expect(html).toContain('accessibilityLabel="Privacy Policy"');
   });
 
-  test("renders Profile heading", () => {
+  test("does not render user info when session is null", () => {
+    // Default mock: useSession returns { data: null }
     const html = render(createElement(ProfileScreen));
-    expect(html).toContain("Profile");
+    // The user info card only renders when session?.user exists
+    // With null session, no name/email should appear
+    expect(html).not.toContain("auth@example.com");
+  });
+
+  test("uses SafeAreaView as root container", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toMatch(/^<mock-SafeAreaView/);
   });
 });

@@ -6,23 +6,31 @@ import { oAuthProxy } from "better-auth/plugins";
 
 import { db } from "@acme/db/client";
 
+interface AuthLogger {
+  error: (obj: unknown, msg: string) => void;
+}
+
 export function initAuth<
   TExtraPlugins extends BetterAuthPlugin[] = [],
 >(options: {
   baseUrl: string;
   productionUrl: string;
   secret: string | undefined;
-
-  discordClientId: string;
-  discordClientSecret: string;
+  appleBundleId: string;
+  isDev: boolean;
+  logger: AuthLogger;
   extraPlugins?: TExtraPlugins;
 }) {
   const config = {
     database: drizzleAdapter(db, {
       provider: "pg",
+      usePlural: true,
     }),
     baseURL: options.baseUrl,
     secret: options.secret,
+    emailAndPassword: {
+      enabled: true,
+    },
     plugins: [
       oAuthProxy({
         productionURL: options.productionUrl,
@@ -31,16 +39,20 @@ export function initAuth<
       ...(options.extraPlugins ?? []),
     ],
     socialProviders: {
-      discord: {
-        clientId: options.discordClientId,
-        clientSecret: options.discordClientSecret,
-        redirectURI: `${options.productionUrl}/api/auth/callback/discord`,
+      apple: {
+        clientId: options.appleBundleId,
+        clientSecret: "",
+        appBundleIdentifier: options.appleBundleId,
       },
     },
-    trustedOrigins: ["expo://"],
+    trustedOrigins: [
+      "expo://",
+      "https://appleid.apple.com",
+      ...(options.isDev ? ["exp://"] : []),
+    ],
     onAPIError: {
       onError(error, ctx) {
-        console.error("BETTER AUTH API ERROR", error, ctx);
+        options.logger.error({ error, ctx }, "BETTER AUTH API ERROR");
       },
     },
   } satisfies BetterAuthOptions;
