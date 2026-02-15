@@ -1,6 +1,6 @@
 # Story 4.1: Credit System & Free Trial Renders
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -451,7 +451,6 @@ Claude Opus 4.6
 - packages/api/src/services/creditService.test.ts
 - packages/api/src/router/subscription.ts
 - packages/api/src/router/subscription.test.ts
-- packages/validators/src/subscription.ts
 - apps/expo/src/components/subscription/CreditCounter.tsx
 - apps/expo/src/components/subscription/CreditCounter.test.tsx
 - apps/expo/src/hooks/useSubscriptionStatus.ts
@@ -462,7 +461,8 @@ Claude Opus 4.6
 - packages/api/src/root.ts (registered subscriptionRouter)
 - packages/api/src/trpc.ts (added freeCreditsCount to context)
 - packages/api/test/setup.ts (real DB connection for integration tests)
-- packages/validators/src/index.ts (export subscription schemas)
+- packages/validators/src/index.ts (cleared dead subscription schema exports)
+- packages/validators/src/subscription.ts (removed — dead code, schemas never used)
 - apps/server/src/env.ts (added FREE_CREDITS_COUNT)
 - apps/server/src/index.ts (pass freeCreditsCount to tRPC context)
 - apps/expo/src/app/(public)/sign-up.tsx (credit grant after sign-up)
@@ -473,6 +473,31 @@ Claude Opus 4.6
 - .env.example (added FREE_CREDITS_COUNT=3)
 - .env (created for local dev)
 
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] CreditCounter.test.tsx and useSubscriptionStatus.test.ts re-mock `@tanstack/react-query` per test via irreversible `mock.module()`. Works via ESM live binding update but fragile — consider extracting mock setup into shared helpers or using a different test approach for hook testing.
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6
+**Date:** 2026-02-16
+**Outcome:** Approved with fixes applied
+
+**Issues Found:** 1 High, 3 Medium, 3 Low
+**Issues Fixed:** 1H + 2M + 1L = 4 fixed automatically
+**Action Items:** 1M remaining (test infrastructure)
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|-----------|
+| H1 | HIGH | Task 6.4 [x] but credit grant behavioral tests missing | Fixed — added 4 tests to sign-up.test.tsx + sign-in.test.tsx |
+| M1 | MEDIUM | CreditCounter className uses template string instead of cn() | Fixed — uses cn() from @acme/ui |
+| M2 | MEDIUM | Validator schemas (creditBalanceSchema, consumeCreditResultSchema) never used | Fixed — removed dead code |
+| M3 | MEDIUM | Tests re-mock @tanstack/react-query per test (irreversible mock.module) | Action item — test infrastructure concern |
+| L1 | LOW | refundCredit calls .returning() but discards result | Fixed — removed unnecessary DB overhead |
+| L2 | LOW | CreditCounter test uses renderToString (react-dom/server) | Accepted — consistent with project test pattern |
+| L3 | LOW | useSubscriptionStatus test calls hook as plain function | Accepted — works with mocked useQuery |
+
 ## Change Log
 
+- 2026-02-16: Code review — fixed 4 issues (H1: added credit grant behavioral tests, M1: CreditCounter cn() fix, M2: removed dead validator schemas, L1: removed unnecessary .returning()). 1 action item remaining (M3: test mock pattern).
 - 2026-02-15: Implemented Story 4.1 — Credit System & Free Trial Renders. Added credits table, credit service with DI, subscription tRPC router, CreditCounter component, useSubscriptionStatus hook, and wired credit grants to auth flows. 116 tests passing, 0 regressions.

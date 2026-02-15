@@ -45,11 +45,7 @@ export function createCreditService({ db }: { db: typeof DbInstance }) {
       await db
         .update(credits)
         .set({ totalConsumed: sql`GREATEST(${credits.totalConsumed} - 1, 0)` })
-        .where(eq(credits.userId, userId))
-        .returning({
-          totalConsumed: credits.totalConsumed,
-          totalGranted: credits.totalGranted,
-        });
+        .where(eq(credits.userId, userId));
     },
 
     async getCreditBalance(

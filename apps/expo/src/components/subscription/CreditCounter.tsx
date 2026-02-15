@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ThemedText } from "@acme/ui";
+import { ThemedText, cn } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
 
@@ -34,7 +34,7 @@ export function CreditCounter({ className }: CreditCounterProps) {
   return (
     <ThemedText
       variant="caption"
-      className={`text-text-secondary ${className ?? ""}`}
+      className={cn("text-text-secondary", className)}
       accessible
       accessibilityLabel={a11yLabel}
     >
