@@ -54,6 +54,9 @@ dist/
 # tanstack
 .tanstack
 
+# Local image storage
+data/
+
 # BMAD / AI tools
 .claude/
 .codex/

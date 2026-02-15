@@ -6,6 +6,7 @@ const serverSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
+  IMAGES_DIR: z.string().default("/data/images"),
 });
 
 const authEnvVars = authEnv();

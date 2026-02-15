@@ -1,16 +1,32 @@
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { ChevronRight, User } from "lucide-react-native";
 
-import { Button, ThemedPressable, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
+import {
+  Button,
+  ThemedPressable,
+  ThemedText,
+  showToast,
+  wearbloomTheme,
+} from "@acme/ui";
 
+import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
+import { getBaseUrl } from "~/utils/base-url";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const bodyPhotoQuery = useQuery(trpc.user.getBodyPhoto.queryOptions());
+
+  const cookies = authClient.getCookie();
+  const hasBodyPhoto = bodyPhotoQuery.data != null;
+  const bodyPhotoUrl = bodyPhotoQuery.data
+    ? `${getBaseUrl()}${bodyPhotoQuery.data.imageUrl}`
+    : null;
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
@@ -37,10 +53,65 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
 
+        {/* Body Avatar Section */}
+        <View className="mb-4 items-center">
+          {hasBodyPhoto && bodyPhotoUrl ? (
+            <View
+              className="h-[120px] w-[120px] overflow-hidden rounded-full border-2 border-border"
+              accessibilityRole="image"
+              accessibilityLabel="Your body avatar"
+            >
+              <Image
+                source={{
+                  uri: bodyPhotoUrl,
+                  headers: cookies ? { Cookie: cookies } : undefined,
+                }}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="cover"
+              />
+            </View>
+          ) : (
+            <View
+              className="h-[120px] w-[120px] items-center justify-center rounded-full bg-surface"
+              accessibilityRole="image"
+              accessibilityLabel="Body photo placeholder"
+            >
+              <User
+                size={48}
+                color={wearbloomTheme.colors["text-tertiary"]}
+              />
+            </View>
+          )}
+        </View>
+
+        <ThemedPressable
+          className="mb-4 flex-row items-center justify-between rounded-xl bg-surface px-4 py-3"
+          onPress={() => router.push("/(auth)/body-photo")}
+          accessibilityRole="button"
+          accessibilityLabel={
+            hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"
+          }
+          accessibilityHint="Navigate to body photo management screen"
+        >
+          <ThemedText
+            variant="body"
+            className={hasBodyPhoto ? "text-text-secondary" : "text-accent"}
+          >
+            {hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"}
+          </ThemedText>
+          <ChevronRight
+            size={20}
+            color={wearbloomTheme.colors["text-tertiary"]}
+          />
+        </ThemedPressable>
+
         {session?.user && (
           <View className="rounded-xl bg-surface p-4">
             <ThemedText variant="title">{session.user.name}</ThemedText>
-            <ThemedText variant="caption" className="mt-1 text-text-secondary">
+            <ThemedText
+              variant="caption"
+              className="mt-1 text-text-secondary"
+            >
               {session.user.email}
             </ThemedText>
           </View>
@@ -59,7 +130,10 @@ export default function ProfileScreen() {
             <ThemedText variant="body" className="text-text-secondary">
               Privacy Policy
             </ThemedText>
-            <ChevronRight size={20} color={wearbloomTheme.colors["text-tertiary"]} />
+            <ChevronRight
+              size={20}
+              color={wearbloomTheme.colors["text-tertiary"]}
+            />
           </ThemedPressable>
 
           <View className="mt-4">

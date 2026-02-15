@@ -57,4 +57,21 @@ describe("ProfileScreen", () => {
     const html = render(createElement(ProfileScreen));
     expect(html).toMatch(/^<mock-SafeAreaView/);
   });
+
+  // Body Avatar Section tests (Story 1.5)
+  test("renders body photo placeholder when no photo exists", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Body photo placeholder");
+  });
+
+  test("renders Add Body Photo button when no photo", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Add Body Photo");
+  });
+
+  test("body photo row has accessibility attributes", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain('accessibilityRole="button"');
+    expect(html).toContain("Navigate to body photo management screen");
+  });
 });

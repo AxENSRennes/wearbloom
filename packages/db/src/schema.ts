@@ -1,4 +1,5 @@
-import { pgTable } from "drizzle-orm/pg-core";
+import { createId } from "@paralleldrive/cuid2";
+import { pgTable, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -42,6 +43,28 @@ export const accounts = pgTable("accounts", (t) => ({
   createdAt: t.timestamp().defaultNow().notNull(),
   updatedAt: t.timestamp().defaultNow().notNull(),
 }));
+
+export const bodyPhotos = pgTable(
+  "body_photos",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    filePath: t.text().notNull(),
+    mimeType: t.text().notNull(),
+    width: t.integer(),
+    height: t.integer(),
+    fileSize: t.integer(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t.timestamp().defaultNow().notNull(),
+  }),
+  (table) => [unique().on(table.userId)],
+);
 
 export const verifications = pgTable("verifications", (t) => ({
   id: t.text().primaryKey(),

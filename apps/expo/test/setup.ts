@@ -176,6 +176,58 @@ mock.module("expo-constants", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-image-picker — mock camera and gallery pickers
+// ---------------------------------------------------------------------------
+mock.module("expo-image-picker", () => ({
+  launchCameraAsync: mock(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///mock/photo.jpg",
+          width: 3000,
+          height: 4000,
+          type: "image",
+        },
+      ],
+    }),
+  ),
+  launchImageLibraryAsync: mock(() =>
+    Promise.resolve({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///mock/gallery.jpg",
+          width: 2000,
+          height: 3000,
+          type: "image",
+        },
+      ],
+    }),
+  ),
+  requestCameraPermissionsAsync: mock(() =>
+    Promise.resolve({ status: "granted" }),
+  ),
+  requestMediaLibraryPermissionsAsync: mock(() =>
+    Promise.resolve({ status: "granted" }),
+  ),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-image-manipulator — mock image manipulation
+// ---------------------------------------------------------------------------
+mock.module("expo-image-manipulator", () => ({
+  manipulateAsync: mock(() =>
+    Promise.resolve({
+      uri: "file:///mock/compressed.jpg",
+      width: 1200,
+      height: 1600,
+    }),
+  ),
+  SaveFormat: { JPEG: "jpeg", PNG: "png" },
+}));
+
+// ---------------------------------------------------------------------------
 // Expo Router — mock navigation primitives
 // ---------------------------------------------------------------------------
 const routerMock = {
@@ -199,10 +251,19 @@ mock.module("expo-router", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-image — mock Image component for auth-gated image loading
+// ---------------------------------------------------------------------------
+mock.module("expo-image", () => ({
+  Image: mockComponent("ExpoImage"),
+}));
+
+// ---------------------------------------------------------------------------
 // lucide-react-native — mock icons as simple components
 // ---------------------------------------------------------------------------
 mock.module("lucide-react-native", () => ({
+  Camera: mockComponent("Icon-Camera"),
   Home: mockComponent("Icon-Home"),
+  ImageIcon: mockComponent("Icon-ImageIcon"),
   Plus: mockComponent("Icon-Plus"),
   User: mockComponent("Icon-User"),
   ChevronRight: mockComponent("Icon-ChevronRight"),
@@ -260,6 +321,14 @@ mock.module("@tanstack/react-query", () => ({
   },
   QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
+  useQuery: (opts: Record<string, unknown>) => ({
+    data: (opts as { initialData?: unknown }).initialData ?? null,
+    isLoading: false,
+    isPending: false,
+    isError: false,
+    error: null,
+    refetch: mock(() => Promise.resolve()),
+  }),
   useMutation: () => ({
     mutate: mock(() => {}),
     mutateAsync: mock(() => Promise.resolve()),
@@ -267,6 +336,9 @@ mock.module("@tanstack/react-query", () => ({
     isError: false,
     error: null,
     data: null,
+  }),
+  useQueryClient: () => ({
+    invalidateQueries: mock(() => Promise.resolve()),
   }),
 }));
 
@@ -328,8 +400,22 @@ mock.module("@trpc/client", () => ({
   loggerLink: () => ({}),
 }));
 
+// Create a deep proxy that returns mock query/mutation options for any path
+function createMockTRPCProxy(): unknown {
+  const handler: ProxyHandler<Record<string, unknown>> = {
+    get(_target, prop) {
+      if (prop === "queryOptions") return () => ({ queryKey: ["mock"] });
+      if (prop === "mutationOptions") return (opts?: Record<string, unknown>) => ({ ...opts });
+      if (prop === "queryKey") return () => ["mock"];
+      if (typeof prop === "string") return new Proxy({}, handler);
+      return undefined;
+    },
+  };
+  return new Proxy({}, handler);
+}
+
 mock.module("@trpc/tanstack-react-query", () => ({
-  createTRPCOptionsProxy: () => ({}),
+  createTRPCOptionsProxy: () => createMockTRPCProxy(),
 }));
 
 mock.module("superjson", () => ({

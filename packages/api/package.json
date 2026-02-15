@@ -6,6 +6,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./services/imageStorage": {
+      "types": "./dist/services/imageStorage.d.ts",
+      "default": "./src/services/imageStorage.ts"
     }
   },
   "license": "MIT",
@@ -22,6 +26,7 @@
     "@acme/db": "workspace:*",
     "@acme/validators": "workspace:*",
     "@trpc/server": "catalog:",
+    "pino": "^9.6.0",
     "superjson": "2.2.3",
     "zod": "catalog:"
   },

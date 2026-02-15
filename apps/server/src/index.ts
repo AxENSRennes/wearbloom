@@ -4,9 +4,12 @@ import { toNodeHandler } from "better-auth/node";
 import pino from "pino";
 
 import { appRouter, createTRPCContext } from "@acme/api";
+import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
+import { db } from "@acme/db/client";
 
 import { env } from "./env";
+import { createImageHandler } from "./routes/images";
 
 const logger = pino({ name: "wearbloom-server" });
 
@@ -20,6 +23,13 @@ const auth = initAuth({
 });
 
 const authHandler = toNodeHandler(auth);
+
+const imageStorage = createImageStorage({
+  basePath: env.IMAGES_DIR,
+  logger,
+});
+
+const imageHandler = createImageHandler({ db, auth, imageStorage });
 
 function nodeHeadersToHeaders(
   nodeHeaders: http.IncomingHttpHeaders,
@@ -44,6 +54,7 @@ const trpcHandler = createHTTPHandler({
     createTRPCContext({
       headers: nodeHeadersToHeaders(req.headers),
       auth,
+      imageStorage,
     }),
 });
 
@@ -59,6 +70,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.url?.startsWith("/api/images/")) {
+    imageHandler(req, res);
+    return;
+  }
+
   trpcHandler(req, res);
 });
 
@@ -66,3 +82,4 @@ server.listen(env.PORT);
 logger.info(`Server listening on http://localhost:${env.PORT}`);
 logger.info(`Health check: http://localhost:${env.PORT}/health`);
 logger.info(`Auth routes: http://localhost:${env.PORT}/api/auth/*`);
+logger.info(`Image routes: http://localhost:${env.PORT}/api/images/*`);

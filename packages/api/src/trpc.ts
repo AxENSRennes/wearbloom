@@ -16,9 +16,21 @@ export interface AuthInstance {
   };
 }
 
+export interface ImageStorage {
+  saveBodyPhoto(
+    userId: string,
+    fileData: Buffer,
+    mimeType: string,
+  ): Promise<string>;
+  deleteBodyPhoto(userId: string, filePath: string): Promise<void>;
+  getAbsolutePath(filePath: string): string;
+  streamFile(filePath: string): ReadableStream;
+}
+
 export const createTRPCContext = async (opts: {
   headers: Headers;
   auth: AuthInstance;
+  imageStorage?: ImageStorage;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -26,6 +38,7 @@ export const createTRPCContext = async (opts: {
     session,
     auth: opts.auth,
     headers: opts.headers,
+    imageStorage: opts.imageStorage,
   };
 };
 
