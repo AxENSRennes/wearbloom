@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wearbloom — Design Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --white: #FFFFFF;
+  --off-white: #F7F7F7;
+  --black: #1A1A1A;
+  --gray-dark: #6B6B6B;
+  --gray-mid: #A3A3A3;
+  --gray-light: #EBEBEB;
+  --blush: #E8C4B8;
+  --blush-light: #F5EBE7;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --phone-w: 260px;
+  --phone-h: 540px;
+  --phone-radius: 32px;
+  --screen-radius: 26px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--off-white);
+  color: var(--black);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page Header ── */
+.page-header {
+  text-align: center;
+  padding: 64px 24px 48px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-light);
+}
+.page-header .logo {
+  font-family: var(--serif);
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: lowercase;
+  color: var(--gray-dark);
+  margin-bottom: 24px;
+}
+.page-header h1 {
+  font-family: var(--serif);
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 400;
+  margin-bottom: 16px;
+  color: var(--black);
+}
+.page-header .subtitle {
+  font-size: 16px;
+  color: var(--gray-dark);
+  max-width: 640px;
+  margin: 0 auto 32px;
+  line-height: 1.7;
+}
+.page-header .legend {
+  display: inline-flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--gray-mid);
+}
+.page-header .legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-header .legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── Nav ── */
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gray-light);
+  padding: 0 24px;
+}
+.sticky-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sticky-nav a {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-dark);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.sticky-nav a:hover, .sticky-nav a.active {
+  color: var(--black);
+  border-bottom-color: var(--black);
+}
+
+/* ── Direction Sections ── */
+.direction-section {
+  padding: 64px 24px 80px;
+  border-bottom: 1px solid var(--gray-light);
+}
+.direction-section:nth-child(even) {
+  background: var(--white);
+}
+.direction-section:nth-child(odd) {
+  background: var(--off-white);
+}
+.direction-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.direction-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.direction-number {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--blush);
+  margin-bottom: 8px;
+}
+.direction-title {
+  font-family: var(--serif);
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+.direction-tagline {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--gray-mid);
+  margin-bottom: 16px;
+}
+.direction-desc {
+  font-size: 15px;
+  color: var(--gray-dark);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── Phone Row ── */
+.phone-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.phone-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.phone-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+}
+
+/* ── Phone Frame ── */
+.phone-frame {
+  width: var(--phone-w);
+  height: var(--phone-h);
+  background: var(--black);
+  border-radius: var(--phone-radius);
+  padding: 8px;
+  position: relative;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.08),
+    0 12px 40px rgba(0,0,0,0.12),
+    inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 22px;
+  background: var(--black);
+  border-radius: 0 0 14px 14px;
+  z-index: 10;
+}
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  border-radius: var(--screen-radius);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Shared Screen Elements ── */
+.status-bar {
+  height: 36px;
+  padding: 8px 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--black);
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+}
+.status-bar .time { font-size: 11px; }
+.status-bar .icons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.status-bar .icons .bar {
+  width: 3px;
+  border-radius: 1px;
+  background: var(--black);
+}
+
+.tab-bar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid var(--gray-light);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.tab-bar .tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  color: var(--gray-mid);
+}
+.tab-bar .tab.active { color: var(--black); }
+.tab-bar .tab .tab-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-bar .tab .tab-icon svg { width: 16px; height: 16px; }
+
+.category-pills {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.pill {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid var(--gray-light);
+  color: var(--gray-dark);
+  background: var(--white);
+}
+.pill.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.garment-placeholder {
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.garment-placeholder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+}
+
+.btn-tryon {
+  background: var(--black);
+  color: var(--white);
+  border: none;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-arrow {
+  font-size: 16px;
+  color: var(--black);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* ── Garment Colors ── */
+.gc-rose { background: #D4A0A0; }
+.gc-navy { background: #2C3E6B; }
+.gc-olive { background: #7A8B6F; }
+.gc-cream { background: #E8DCC8; }
+.gc-charcoal { background: #4A4A4A; }
+.gc-burgundy { background: #6B2D3E; }
+.gc-blush { background: var(--blush); }
+.gc-sage { background: #A8B8A0; }
+.gc-camel { background: #C4A77D; }
+.gc-slate { background: #708090; }
+.gc-mauve { background: #B08CA1; }
+.gc-terracotta { background: #C47A5A; }
+
+/* ── Silhouette for render ── */
+.render-silhouette {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.render-silhouette .bg-gradient {
+  position: absolute;
+  inset: 0;
+}
+.render-silhouette .figure {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.render-silhouette .figure .head {
+  width: 32px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(180,150,140,0.5);
+  flex-shrink: 0;
+}
+.render-silhouette .figure .body {
+  flex: 1;
+  width: 100%;
+  border-radius: 20px 20px 0 0;
+  margin-top: -4px;
+}
+
+
+/* ═══════════════════════════════════════════
+   DIRECTION 1: EDITORIAL CLEAN
+   ═══════════════════════════════════════════ */
+
+/* Screen 1 - Wardrobe Grid */
+.d1-wardrobe .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.d1-wardrobe .screen-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  padding: 8px 20px 10px;
+}
+.d1-wardrobe .pills-area {
+  padding: 6px 0 12px;
+}
+.d1-wardrobe .grid-area {
+  flex: 1;
+  padding: 0 16px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  overflow: hidden;
+  align-content: start;
+}
+.d1-wardrobe .grid-item {
+  border-radius: 8px;
+  aspect-ratio: 3/4;
+}
+.d1-wardrobe .grid-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+  border-radius: 8px;
+}
+
+/* Screen 2 - Garment Detail */
+.d1-detail .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.d1-detail .detail-nav {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.d1-detail .detail-photo {
+  margin: 12px auto;
+  width: 65%;
+  aspect-ratio: 3/4;
+  border-radius: 8px;
+}
+.d1-detail .detail-info {
+  text-align: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.d1-detail .detail-category {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+  margin-bottom: 4px;
+}
+.d1-detail .detail-name {
+  font-family: var(--serif);
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.d1-detail .detail-desc {
+  font-size: 9px;
+  color: var(--gray-dark);
+  line-height: 1.4;
+}
+.d1-detail .detail-bottom {
+  margin-top: auto;
+  padding: 16px;
+  flex-shrink: 0;
+}
+.d1-detail .btn-tryon {
+  width: 100%;
+  height: 44px;
+  border-radius: 6px;
+}
+
+/* Screen 3 - Render Result */
+.d1-render .screen-content {
+  position: relative;
+  height: 100%;
+}
+.d1-render .render-area {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--screen-radius);
+  overflow: hidden;
+}
+.d1-render .render-back {
+  position: absolute;
+  top: 40px;
+  left: 16px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--black);
+  backdrop-filter: blur(8px);
+}
+
+
+/* ═══════════════════════════════════════════
+   DIRECTION 2: COMPACT BROWSE
+   ═══════════════════════════════════════════ */
+
+.d2-wardrobe .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.d2-wardrobe .screen-title {
+  font-family: var(--serif);
+  font-size: 18px;
+  padding: 4px 14px 6px;
+}
+.d2-wardrobe .pills-area {
+  padding: 4px 0 8px;
+}
+.d2-wardrobe .pills-area .category-pills {
+  gap: 5px;
+  padding: 0 10px;
+}
+.d2-wardrobe .pills-area .pill {
+  padding: 4px 10px;
+  font-size: 9px;
+}
+.d2-wardrobe .grid-area {
+  flex: 1;
+  padding: 0 8px 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  overflow: hidden;
+  align-content: start;
+}
+.d2-wardrobe .grid-item {
+  border-radius: 6px;
+  aspect-ratio: 3/4;
+}
+
+/* Screen 2 - Bottom Sheet */
+.d2-detail .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+.d2-detail .bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1;
+}
+.d2-detail .bg-grid {
+  position: absolute;
+  inset: 0;
+  padding: 36px 8px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  align-content: start;
+  opacity: 0.4;
+}
+.d2-detail .bg-grid-item {
+  border-radius: 6px;
+  aspect-ratio: 3/4;
+}
+.d2-detail .bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: var(--white);
+  border-radius: 16px 16px 0 0;
+  padding: 12px 16px 16px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+}
+.d2-detail .sheet-handle {
+  width: 32px;
+  height: 3px;
+  background: var(--gray-light);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+.d2-detail .sheet-content {
+  display: flex;
+  gap: 12px;
+}
+.d2-detail .sheet-photo {
+  width: 90px;
+  height: 120px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.d2-detail .sheet-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.d2-detail .sheet-category {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+  margin-bottom: 2px;
+}
+.d2-detail .sheet-name {
+  font-family: var(--serif);
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.d2-detail .sheet-desc {
+  font-size: 9px;
+  color: var(--gray-dark);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+.d2-detail .btn-tryon {
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+/* Screen 3 - Render */
+.d2-render .screen-content {
+  position: relative;
+  height: 100%;
+}
+.d2-render .render-area {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--screen-radius);
+  overflow: hidden;
+}
+.d2-render .floating-actions {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+}
+.d2-render .fab {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.d2-render .fab-primary {
+  background: var(--black);
+  color: var(--white);
+}
+.d2-render .fab-secondary {
+  background: rgba(255,255,255,0.85);
+  color: var(--black);
+}
+
+
+/* ═══════════════════════════════════════════
+   DIRECTION 3: IMMERSIVE VISUAL
+   ═══════════════════════════════════════════ */
+
+.d3-wardrobe .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--white);
+}
+.d3-wardrobe .screen-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  padding: 4px 14px 8px;
+}
+.d3-wardrobe .grid-area {
+  flex: 1;
+  padding: 0 4px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  overflow: hidden;
+  align-content: start;
+}
+.d3-wardrobe .grid-item {
+  aspect-ratio: 3/4;
+  border-radius: 0;
+}
+.d3-wardrobe .tab-bar {
+  border-top: none;
+  background: transparent;
+}
+
+/* Screen 2 - Immersive Detail */
+.d3-detail .screen-content {
+  position: relative;
+  height: 100%;
+}
+.d3-detail .detail-photo {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--screen-radius);
+  overflow: hidden;
+}
+.d3-detail .detail-photo .garment-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.d3-detail .detail-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 40px 20px 24px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.5));
+}
+.d3-detail .overlay-category {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 2px;
+}
+.d3-detail .overlay-name {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+.d3-detail .btn-tryon {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.95);
+  color: var(--black);
+}
+.d3-detail .back-float {
+  position: absolute;
+  top: 40px;
+  left: 16px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--black);
+  backdrop-filter: blur(8px);
+}
+
+/* Screen 3 - Render */
+.d3-render .screen-content {
+  position: relative;
+  height: 100%;
+}
+.d3-render .render-area {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--screen-radius);
+  overflow: hidden;
+}
+.d3-render .swipe-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-size: 9px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.d3-render .swipe-hint .chevron {
+  width: 16px;
+  height: 3px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+}
+
+
+/* ═══════════════════════════════════════════
+   DIRECTION 4: CARD-BASED REFINED
+   ═══════════════════════════════════════════ */
+
+.d4-wardrobe .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--off-white);
+}
+.d4-wardrobe .screen-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  padding: 6px 16px 8px;
+}
+.d4-wardrobe .pills-area {
+  padding: 4px 0 10px;
+}
+.d4-wardrobe .grid-area {
+  flex: 1;
+  padding: 0 12px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  overflow: hidden;
+  align-content: start;
+}
+.d4-wardrobe .grid-card {
+  background: var(--white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+}
+.d4-wardrobe .grid-card .card-img {
+  aspect-ratio: 3/4;
+  position: relative;
+}
+.d4-wardrobe .grid-card .card-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(255,255,255,0.9);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 7px;
+  font-weight: 600;
+  color: var(--gray-dark);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+.d4-wardrobe .grid-card .card-label {
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Screen 2 - Card Modal */
+.d4-detail .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  position: relative;
+}
+.d4-detail .modal-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  background: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  z-index: 5;
+}
+.d4-detail .modal-photo {
+  width: 100%;
+  aspect-ratio: 4/3;
+}
+.d4-detail .modal-body {
+  padding: 14px 16px 16px;
+}
+.d4-detail .modal-category {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gray-mid);
+  margin-bottom: 2px;
+}
+.d4-detail .modal-name {
+  font-family: var(--serif);
+  font-size: 17px;
+  margin-bottom: 2px;
+}
+.d4-detail .modal-desc {
+  font-size: 9px;
+  color: var(--gray-dark);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.d4-detail .btn-tryon {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.d4-detail .modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--black);
+  z-index: 6;
+  backdrop-filter: blur(8px);
+}
+
+/* Screen 3 - Card Render */
+.d4-render .screen-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--off-white);
+}
+.d4-render .render-nav {
+  display: flex;
+  align-items: center;
+  padding: 4px 14px 8px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.d4-render .render-nav-title {
+  font-family: var(--serif);
+  font-size: 16px;
+}
+.d4-render .render-card {
+  margin: 0 14px;
+  background: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+  flex: 1;
+  min-height: 0;
+}
+.d4-render .render-card .render-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+}
+.d4-render .action-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 14px;
+  flex-shrink: 0;
+}
+.d4-render .action-btn {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.d4-render .action-btn-primary {
+  background: var(--black);
+  color: var(--white);
+}
+.d4-render .action-btn-secondary {
+  background: var(--gray-light);
+  color: var(--black);
+}
+
+
+/* ── Comparison Table ── */
+.comparison-section {
+  padding: 64px 24px 80px;
+  background: var(--white);
+}
+.comparison-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.comparison-title {
+  font-family: var(--serif);
+  font-size: clamp(24px, 4vw, 36px);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.comparison-subtitle {
+  font-size: 14px;
+  color: var(--gray-dark);
+  text-align: center;
+  margin-bottom: 40px;
+}
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.comparison-table thead th {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 15px;
+  padding: 14px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--black);
+  white-space: nowrap;
+}
+.comparison-table thead th:first-child {
+  color: var(--gray-dark);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.comparison-table tbody td {
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--gray-light);
+  vertical-align: top;
+  line-height: 1.5;
+  color: var(--gray-dark);
+}
+.comparison-table tbody td:first-child {
+  font-weight: 600;
+  color: var(--black);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Responsive Table ── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+
+/* ── Footer ── */
+.page-footer {
+  text-align: center;
+  padding: 40px 24px;
+  background: var(--off-white);
+  border-top: 1px solid var(--gray-light);
+  font-size: 12px;
+  color: var(--gray-mid);
+}
+
+/* ── Responsive ── */
+@media (max-width: 920px) {
+  .phone-row { gap: 28px; }
+  :root { --phone-w: 230px; --phone-h: 480px; }
+}
+@media (max-width: 780px) {
+  .phone-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+  :root { --phone-w: 260px; --phone-h: 540px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════ PAGE HEADER ═══════════ -->
+<header class="page-header">
+  <div class="logo">Wearbloom</div>
+  <h1>Design Directions</h1>
+  <p class="subtitle">
+    Four visual explorations for the Wearbloom mobile experience. Each direction shares the same premium foundation
+    &mdash; white backgrounds, near-black type, nude-blush accents &mdash; but takes a distinct approach to layout,
+    density, and interaction style. Each direction shows three core screens: Wardrobe Grid, Garment Detail, and Try-On Render Result.
+  </p>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--black)"></span> Primary / CTA</span>
+    <span><span class="dot" style="background:var(--blush)"></span> Accent / Blush</span>
+    <span><span class="dot" style="background:var(--gray-light)"></span> Neutral / Border</span>
+  </div>
+</header>
+
+<!-- ═══════════ STICKY NAV ═══════════ -->
+<nav class="sticky-nav">
+  <div class="sticky-nav-inner">
+    <a href="#dir1">1 &middot; Editorial Clean</a>
+    <a href="#dir2">2 &middot; Compact Browse</a>
+    <a href="#dir3">3 &middot; Immersive Visual</a>
+    <a href="#dir4">4 &middot; Card-Based Refined</a>
+    <a href="#comparison">Comparison</a>
+  </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DIRECTION 1: EDITORIAL CLEAN
+     ═══════════════════════════════════════════════════ -->
+<section class="direction-section" id="dir1">
+  <div class="direction-inner">
+    <div class="direction-header">
+      <div class="direction-number">Direction 01</div>
+      <h2 class="direction-title">Editorial Clean</h2>
+      <div class="direction-tagline">Glossier meets Vogue</div>
+      <p class="direction-desc">
+        Maximum whitespace with a magazine-editorial sensibility. Large serif headlines, generous spacing,
+        and a two-column grid with breathing room let each garment feel considered. The detail view centers
+        the garment with a full-width CTA, while the render result goes full-bleed with minimal chrome.
+      </p>
+    </div>
+
+    <div class="phone-row">
+
+      <!-- D1 Screen 1: Wardrobe Grid -->
+      <div class="phone-col">
+        <div class="phone-label">Wardrobe Grid</div>
+        <div class="phone-frame">
+          <div class="phone-screen d1-wardrobe">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="screen-title">My Wardrobe</div>
+              <div class="pills-area">
+                <div class="category-pills">
+                  <span class="pill active">All</span>
+                  <span class="pill">Tops</span>
+                  <span class="pill">Bottoms</span>
+                  <span class="pill">Dresses</span>
+                  <span class="pill">Shoes</span>
+                </div>
+              </div>
+              <div class="grid-area">
+                <div class="grid-item garment-placeholder gc-rose"></div>
+                <div class="grid-item garment-placeholder gc-navy"></div>
+                <div class="grid-item garment-placeholder gc-cream"></div>
+                <div class="grid-item garment-placeholder gc-olive"></div>
+                <div class="grid-item garment-placeholder gc-charcoal"></div>
+                <div class="grid-item garment-placeholder gc-blush"></div>
+              </div>
+              <div class="tab-bar">
+                <div class="tab active">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <span>Wardrobe</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                  <span>Add</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+                  <span>Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D1 Screen 2: Garment Detail -->
+      <div class="phone-col">
+        <div class="phone-label">Garment Detail</div>
+        <div class="phone-frame">
+          <div class="phone-screen d1-detail">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="detail-nav">
+                <span class="back-arrow">&larr;</span>
+              </div>
+              <div class="detail-photo garment-placeholder gc-burgundy" style="border-radius:8px;"></div>
+              <div class="detail-info">
+                <div class="detail-category">Dresses</div>
+                <div class="detail-name">Burgundy Midi Dress</div>
+                <div class="detail-desc">Elegant midi length with a flattering silhouette</div>
+              </div>
+              <div class="detail-bottom">
+                <div class="btn-tryon">Try On</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D1 Screen 3: Render Result -->
+      <div class="phone-col">
+        <div class="phone-label">Render Result</div>
+        <div class="phone-frame">
+          <div class="phone-screen d1-render">
+            <div class="screen-content">
+              <div class="render-area">
+                <div class="render-silhouette">
+                  <div class="bg-gradient" style="background: linear-gradient(180deg, #F5EBE7 0%, #E8C4B8 40%, #6B2D3E 60%, #4A2030 100%);"></div>
+                  <div class="figure">
+                    <div class="head"></div>
+                    <div class="body" style="background: linear-gradient(180deg, #6B2D3E 0%, #5A2435 100%);"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="render-back">&larr;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DIRECTION 2: COMPACT BROWSE
+     ═══════════════════════════════════════════════════ -->
+<section class="direction-section" id="dir2">
+  <div class="direction-inner">
+    <div class="direction-header">
+      <div class="direction-number">Direction 02</div>
+      <h2 class="direction-title">Compact Browse</h2>
+      <div class="direction-tagline">Pinterest density meets luxury fashion</div>
+      <p class="direction-desc">
+        A denser three-column grid puts more garments on screen at once, perfect for larger wardrobes.
+        Category pills are prominent and sticky. The garment detail uses a bottom-sheet pattern,
+        keeping context visible behind. The render result is full-screen with floating action buttons.
+      </p>
+    </div>
+
+    <div class="phone-row">
+
+      <!-- D2 Screen 1: Wardrobe Grid -->
+      <div class="phone-col">
+        <div class="phone-label">Wardrobe Grid</div>
+        <div class="phone-frame">
+          <div class="phone-screen d2-wardrobe">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="screen-title">My Wardrobe</div>
+              <div class="pills-area">
+                <div class="category-pills">
+                  <span class="pill active">All</span>
+                  <span class="pill">Tops</span>
+                  <span class="pill">Bottoms</span>
+                  <span class="pill">Dresses</span>
+                  <span class="pill">Shoes</span>
+                </div>
+              </div>
+              <div class="grid-area">
+                <div class="grid-item garment-placeholder gc-rose"></div>
+                <div class="grid-item garment-placeholder gc-navy"></div>
+                <div class="grid-item garment-placeholder gc-olive"></div>
+                <div class="grid-item garment-placeholder gc-cream"></div>
+                <div class="grid-item garment-placeholder gc-charcoal"></div>
+                <div class="grid-item garment-placeholder gc-burgundy"></div>
+                <div class="grid-item garment-placeholder gc-blush"></div>
+                <div class="grid-item garment-placeholder gc-sage"></div>
+                <div class="grid-item garment-placeholder gc-camel"></div>
+                <div class="grid-item garment-placeholder gc-slate"></div>
+                <div class="grid-item garment-placeholder gc-mauve"></div>
+                <div class="grid-item garment-placeholder gc-terracotta"></div>
+              </div>
+              <div class="tab-bar">
+                <div class="tab active">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <span>Wardrobe</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                  <span>Add</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+                  <span>Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D2 Screen 2: Bottom Sheet Detail -->
+      <div class="phone-col">
+        <div class="phone-label">Garment Detail</div>
+        <div class="phone-frame">
+          <div class="phone-screen d2-detail">
+            <div class="screen-content">
+              <div class="bg-grid">
+                <div class="bg-grid-item garment-placeholder gc-rose"></div>
+                <div class="bg-grid-item garment-placeholder gc-navy"></div>
+                <div class="bg-grid-item garment-placeholder gc-olive"></div>
+                <div class="bg-grid-item garment-placeholder gc-cream"></div>
+                <div class="bg-grid-item garment-placeholder gc-charcoal"></div>
+                <div class="bg-grid-item garment-placeholder gc-burgundy"></div>
+              </div>
+              <div class="bg-overlay"></div>
+              <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="sheet-content">
+                  <div class="sheet-photo garment-placeholder gc-burgundy" style="border-radius:8px;"></div>
+                  <div class="sheet-info">
+                    <div class="sheet-category">Dresses</div>
+                    <div class="sheet-name">Burgundy Midi</div>
+                    <div class="sheet-desc">Elegant midi with a flattering cut</div>
+                    <div class="btn-tryon">Try On</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D2 Screen 3: Render Result -->
+      <div class="phone-col">
+        <div class="phone-label">Render Result</div>
+        <div class="phone-frame">
+          <div class="phone-screen d2-render">
+            <div class="screen-content">
+              <div class="render-area">
+                <div class="render-silhouette">
+                  <div class="bg-gradient" style="background: linear-gradient(180deg, #F5EBE7 0%, #E8C4B8 35%, #6B2D3E 55%, #4A2030 100%);"></div>
+                  <div class="figure">
+                    <div class="head"></div>
+                    <div class="body" style="background: linear-gradient(180deg, #6B2D3E 0%, #5A2435 100%);"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="floating-actions">
+                <div class="fab fab-secondary">Try Another</div>
+                <div class="fab fab-primary">Save</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DIRECTION 3: IMMERSIVE VISUAL
+     ═══════════════════════════════════════════════════ -->
+<section class="direction-section" id="dir3">
+  <div class="direction-inner">
+    <div class="direction-header">
+      <div class="direction-number">Direction 03</div>
+      <h2 class="direction-title">Immersive Visual</h2>
+      <div class="direction-tagline">Instagram Stories meets fashion catalog</div>
+      <p class="direction-desc">
+        Edge-to-edge imagery with minimal chrome. The two-column grid drops visible borders entirely
+        &mdash; garment photos float without card containers. The detail view expands imagery to fill the screen
+        with an overlaid CTA. The render result is completely full-screen, dismissed with a swipe.
+      </p>
+    </div>
+
+    <div class="phone-row">
+
+      <!-- D3 Screen 1: Wardrobe Grid -->
+      <div class="phone-col">
+        <div class="phone-label">Wardrobe Grid</div>
+        <div class="phone-frame">
+          <div class="phone-screen d3-wardrobe">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="screen-title">My Wardrobe</div>
+              <div class="grid-area">
+                <div class="grid-item garment-placeholder gc-rose"></div>
+                <div class="grid-item garment-placeholder gc-navy"></div>
+                <div class="grid-item garment-placeholder gc-cream"></div>
+                <div class="grid-item garment-placeholder gc-olive"></div>
+                <div class="grid-item garment-placeholder gc-charcoal"></div>
+                <div class="grid-item garment-placeholder gc-burgundy"></div>
+                <div class="grid-item garment-placeholder gc-blush"></div>
+                <div class="grid-item garment-placeholder gc-sage"></div>
+              </div>
+              <div class="tab-bar">
+                <div class="tab active">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <span>Wardrobe</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                  <span>Add</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+                  <span>Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D3 Screen 2: Immersive Detail -->
+      <div class="phone-col">
+        <div class="phone-label">Garment Detail</div>
+        <div class="phone-frame">
+          <div class="phone-screen d3-detail">
+            <div class="screen-content">
+              <div class="detail-photo">
+                <div class="garment-placeholder gc-burgundy" style="width:100%;height:100%;"></div>
+              </div>
+              <div class="back-float">&larr;</div>
+              <div class="detail-overlay">
+                <div class="overlay-category">Dresses</div>
+                <div class="overlay-name">Burgundy Midi Dress</div>
+                <div class="btn-tryon">Try On</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D3 Screen 3: Render Result -->
+      <div class="phone-col">
+        <div class="phone-label">Render Result</div>
+        <div class="phone-frame">
+          <div class="phone-screen d3-render">
+            <div class="screen-content">
+              <div class="render-area">
+                <div class="render-silhouette">
+                  <div class="bg-gradient" style="background: linear-gradient(180deg, #F5EBE7 0%, #E8C4B8 35%, #6B2D3E 55%, #4A2030 100%);"></div>
+                  <div class="figure">
+                    <div class="head"></div>
+                    <div class="body" style="background: linear-gradient(180deg, #6B2D3E 0%, #5A2435 100%);"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="swipe-hint">
+                <span class="chevron"></span>
+                Swipe down to dismiss
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DIRECTION 4: CARD-BASED REFINED
+     ═══════════════════════════════════════════════════ -->
+<section class="direction-section" id="dir4">
+  <div class="direction-inner">
+    <div class="direction-header">
+      <div class="direction-number">Direction 04</div>
+      <h2 class="direction-title">Card-Based Refined</h2>
+      <div class="direction-tagline">Apple design language meets fashion</div>
+      <p class="direction-desc">
+        Elevated card design with subtle shadows and rounded corners create a structured, organized feel
+        with clear visual hierarchy. Each garment card carries a small category badge. The detail view
+        uses a card-style modal, and the render result stays within a card with action buttons below.
+      </p>
+    </div>
+
+    <div class="phone-row">
+
+      <!-- D4 Screen 1: Wardrobe Grid -->
+      <div class="phone-col">
+        <div class="phone-label">Wardrobe Grid</div>
+        <div class="phone-frame">
+          <div class="phone-screen d4-wardrobe">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="screen-title">My Wardrobe</div>
+              <div class="pills-area">
+                <div class="category-pills">
+                  <span class="pill active">All</span>
+                  <span class="pill">Tops</span>
+                  <span class="pill">Bottoms</span>
+                  <span class="pill">Dresses</span>
+                  <span class="pill">Shoes</span>
+                </div>
+              </div>
+              <div class="grid-area">
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-rose">
+                    <span class="card-badge">Tops</span>
+                  </div>
+                  <div class="card-label">Rose Silk Blouse</div>
+                </div>
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-navy">
+                    <span class="card-badge">Bottoms</span>
+                  </div>
+                  <div class="card-label">Navy Trousers</div>
+                </div>
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-cream">
+                    <span class="card-badge">Tops</span>
+                  </div>
+                  <div class="card-label">Cream Knit</div>
+                </div>
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-olive">
+                    <span class="card-badge">Dresses</span>
+                  </div>
+                  <div class="card-label">Olive Wrap Dress</div>
+                </div>
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-charcoal">
+                    <span class="card-badge">Bottoms</span>
+                  </div>
+                  <div class="card-label">Charcoal Skirt</div>
+                </div>
+                <div class="grid-card">
+                  <div class="card-img garment-placeholder gc-burgundy">
+                    <span class="card-badge">Dresses</span>
+                  </div>
+                  <div class="card-label">Burgundy Midi</div>
+                </div>
+              </div>
+              <div class="tab-bar" style="background: var(--off-white);">
+                <div class="tab active">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <span>Wardrobe</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                  <span>Add</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+                  <span>Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D4 Screen 2: Card Modal Detail -->
+      <div class="phone-col">
+        <div class="phone-label">Garment Detail</div>
+        <div class="phone-frame">
+          <div class="phone-screen d4-detail">
+            <div class="screen-content">
+              <div class="modal-card">
+                <div class="modal-close">&times;</div>
+                <div class="modal-photo garment-placeholder gc-burgundy"></div>
+                <div class="modal-body">
+                  <div class="modal-category">Dresses</div>
+                  <div class="modal-name">Burgundy Midi Dress</div>
+                  <div class="modal-desc">Elegant midi length with a flattering silhouette for every occasion</div>
+                  <div class="btn-tryon">Try On</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D4 Screen 3: Card Render Result -->
+      <div class="phone-col">
+        <div class="phone-label">Render Result</div>
+        <div class="phone-frame">
+          <div class="phone-screen d4-render">
+            <div class="screen-content">
+              <div class="status-bar">
+                <span class="time">9:41</span>
+                <span class="icons">
+                  <span class="bar" style="height:4px"></span>
+                  <span class="bar" style="height:6px"></span>
+                  <span class="bar" style="height:8px"></span>
+                  <span class="bar" style="height:10px"></span>
+                </span>
+              </div>
+              <div class="render-nav">
+                <span class="back-arrow">&larr;</span>
+                <span class="render-nav-title">Try-On Result</span>
+              </div>
+              <div class="render-card">
+                <div class="render-inner">
+                  <div class="render-silhouette">
+                    <div class="bg-gradient" style="background: linear-gradient(180deg, #F5EBE7 0%, #E8C4B8 35%, #6B2D3E 55%, #4A2030 100%);"></div>
+                    <div class="figure">
+                      <div class="head"></div>
+                      <div class="body" style="background: linear-gradient(180deg, #6B2D3E 0%, #5A2435 100%);"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="action-row">
+                <div class="action-btn action-btn-secondary">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  Share
+                </div>
+                <div class="action-btn action-btn-primary">Try Another</div>
+                <div class="action-btn action-btn-secondary">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                  Save
+                </div>
+              </div>
+              <div class="tab-bar" style="background: var(--off-white);">
+                <div class="tab active">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+                  <span>Wardrobe</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                  <span>Add</span>
+                </div>
+                <div class="tab">
+                  <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+                  <span>Profile</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     COMPARISON TABLE
+     ═══════════════════════════════════════════════════ -->
+<section class="comparison-section" id="comparison">
+  <div class="comparison-inner">
+    <h2 class="comparison-title">Comparison</h2>
+    <p class="comparison-subtitle">Key differences across the four directions at a glance</p>
+
+    <div class="table-scroll">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Editorial Clean</th>
+            <th>Compact Browse</th>
+            <th>Immersive Visual</th>
+            <th>Card-Based Refined</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Grid Layout</td>
+            <td>2-column, large cards, generous spacing</td>
+            <td>3-column, tight spacing, high density</td>
+            <td>2-column, edge-to-edge, no gaps</td>
+            <td>2-column, elevated cards with shadows</td>
+          </tr>
+          <tr>
+            <td>Density</td>
+            <td>Low &mdash; 4-6 items visible</td>
+            <td>High &mdash; 9-12 items visible</td>
+            <td>Medium &mdash; 6-8 items visible</td>
+            <td>Medium &mdash; 4-6 items visible</td>
+          </tr>
+          <tr>
+            <td>Detail Pattern</td>
+            <td>Full-page centered layout</td>
+            <td>Bottom sheet overlay</td>
+            <td>Full-bleed expanded image</td>
+            <td>Card modal centered on screen</td>
+          </tr>
+          <tr>
+            <td>Render Presentation</td>
+            <td>Full-bleed, minimal back arrow</td>
+            <td>Full-screen with floating action pills</td>
+            <td>Completely full-screen, swipe to dismiss</td>
+            <td>Rounded card within screen, action bar below</td>
+          </tr>
+          <tr>
+            <td>Chrome Level</td>
+            <td>Light &mdash; visible but restrained</td>
+            <td>Moderate &mdash; functional chrome</td>
+            <td>Minimal &mdash; imagery dominates</td>
+            <td>Structured &mdash; clear visual containers</td>
+          </tr>
+          <tr>
+            <td>Category Filters</td>
+            <td>Horizontal pill row, standard</td>
+            <td>Prominent sticky pills</td>
+            <td>Hidden, appear on interaction</td>
+            <td>Pill row + badge on each card</td>
+          </tr>
+          <tr>
+            <td>Best For</td>
+            <td>Smaller curated wardrobes, editorial vibe</td>
+            <td>Large wardrobes, efficient browsing</td>
+            <td>Visual-first users, photography focus</td>
+            <td>Users who value organization and clarity</td>
+          </tr>
+          <tr>
+            <td>Feels Like</td>
+            <td>Glossier meets Vogue</td>
+            <td>Pinterest meets luxury fashion</td>
+            <td>Instagram Stories meets fashion catalog</td>
+            <td>Apple design language meets fashion</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="page-footer">
+  Wearbloom &mdash; Design Directions &middot; All four directions share the same premium palette and typography foundation
+</footer>
+
+<!-- ═══════════ SCROLL SPY JS ═══════════ -->
+<script>
+(function() {
+  var navLinks = document.querySelectorAll('.sticky-nav a');
+  var sections = [];
+  navLinks.forEach(function(link) {
+    var id = link.getAttribute('href').replace('#', '');
+    var el = document.getElementById(id);
+    if (el) sections.push({ id: id, el: el, link: link });
+  });
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var current = '';
+    sections.forEach(function(s) {
+      if (s.el.offsetTop - 120 <= scrollY) {
+        current = s.id;
+      }
+    });
+    navLinks.forEach(function(l) { l.classList.remove('active'); });
+    sections.forEach(function(s) {
+      if (s.id === current) s.link.classList.add('active');
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
