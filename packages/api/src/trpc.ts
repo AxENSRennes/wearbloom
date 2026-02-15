@@ -23,6 +23,7 @@ export interface ImageStorage {
     mimeType: string,
   ): Promise<string>;
   deleteBodyPhoto(userId: string, filePath: string): Promise<void>;
+  deleteUserDirectory(userId: string): Promise<void>;
   getAbsolutePath(filePath: string): string;
   streamFile(filePath: string): ReadableStream;
 }

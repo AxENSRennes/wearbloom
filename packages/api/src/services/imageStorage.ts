@@ -58,6 +58,12 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       }
     },
 
+    async deleteUserDirectory(userId: string): Promise<void> {
+      const userDir = join(basePath, userId);
+      await rm(userDir, { recursive: true, force: true });
+      logger?.info({ userId }, "User directory deleted from disk");
+    },
+
     getAbsolutePath(filePath: string): string {
       return join(basePath, filePath);
     },

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -6,6 +7,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { ChevronRight, User } from "lucide-react-native";
 
 import {
+  AlertDialog,
   Button,
   ThemedPressable,
   ThemedText,
@@ -27,6 +29,23 @@ export default function ProfileScreen() {
   const bodyPhotoUrl = bodyPhotoQuery.data
     ? `${getBaseUrl()}${bodyPhotoQuery.data.imageUrl}`
     : null;
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const deleteAccountMutation = useMutation({
+    ...trpc.user.deleteAccount.mutationOptions(),
+    onSuccess: async () => {
+      await authClient.signOut();
+      router.replace("/(public)/sign-in");
+    },
+    onError: () => {
+      showToast({
+        message: "Account deletion failed. Please try again.",
+        variant: "error",
+      });
+      setShowDeleteDialog(false);
+    },
+  });
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
@@ -136,6 +155,23 @@ export default function ProfileScreen() {
             />
           </ThemedPressable>
 
+          {/* Danger Zone */}
+          <View className="mt-4 gap-2">
+            <ThemedText variant="caption" className="px-1 text-error">
+              Danger Zone
+            </ThemedText>
+            <ThemedPressable
+              className="h-[44px] w-full items-center justify-center rounded-xl bg-transparent"
+              onPress={() => setShowDeleteDialog(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Delete Account"
+            >
+              <ThemedText variant="body" className="font-semibold text-error">
+                Delete Account
+              </ThemedText>
+            </ThemedPressable>
+          </View>
+
           <View className="mt-4">
             <Button
               label="Sign Out"
@@ -146,6 +182,17 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
+
+        <AlertDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={() => deleteAccountMutation.mutate()}
+          title="Delete Account?"
+          message="This will permanently delete your account and all associated data. This action cannot be undone."
+          confirmLabel="Delete Account"
+          variant="destructive"
+          isLoading={deleteAccountMutation.isPending}
+        />
       </View>
     </SafeAreaView>
   );

@@ -80,6 +80,37 @@ describe("ProfileScreen", () => {
     expect(html).toContain("Navigate to body photo management screen");
   });
 
+  // Delete Account Section tests (Story 1.6)
+  test("renders Danger Zone section", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Danger Zone");
+  });
+
+  test("renders Delete Account button", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Delete Account");
+  });
+
+  test("renders AlertDialog component", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Delete Account?");
+  });
+
+  test("renders deletion warning message in AlertDialog", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("permanently delete your account");
+  });
+
+  test("AlertDialog confirm button has correct label", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain('confirmLabel="Delete Account"');
+  });
+
+  test("AlertDialog has destructive variant", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain('variant="destructive"');
+  });
+
   test("renders Update Body Photo when photo exists", () => {
     const spy = spyOn(rq, "useQuery").mockReturnValue({
       data: { imageId: "photo-xyz", imageUrl: "/api/images/photo-xyz" },

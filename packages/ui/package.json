@@ -9,6 +9,7 @@
     "./spinner": "./src/spinner.tsx",
     "./toast": "./src/toast.tsx",
     "./pressable": "./src/pressable.tsx",
+    "./alert-dialog": "./src/alert-dialog.tsx",
     "./gluestack-config": "./src/gluestack-config.ts"
   },
   "license": "MIT",
@@ -33,6 +34,7 @@
     "nativewind": "~4.1.23",
     "prettier": "catalog:",
     "react": "catalog:react19",
+    "react-dom": "catalog:react19",
     "react-native": "*",
     "typescript": "catalog:"
   },

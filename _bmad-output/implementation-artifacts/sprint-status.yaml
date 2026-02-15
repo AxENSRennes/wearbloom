@@ -47,7 +47,7 @@ development_status:
   1-3-user-registration-and-authentication: done
   1-4-privacy-consent-and-policy-screen: done
   1-5-body-avatar-photo-management: done
-  1-6-account-deletion: backlog
+  1-6-account-deletion: done
   epic-1-retrospective: optional
 
   # Epic 2: Wardrobe Management

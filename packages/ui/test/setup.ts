@@ -44,6 +44,7 @@ mock.module("react-native", () => ({
   View: mockComponent("View"),
   Text: mockComponent("Text"),
   Pressable: mockComponent("Pressable"),
+  Modal: mockComponent("Modal"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Animated: {
     Value: class AnimatedValue {

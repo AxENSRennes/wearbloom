@@ -438,6 +438,9 @@ importers:
       react:
         specifier: catalog:react19
         version: 19.1.4
+      react-dom:
+        specifier: catalog:react19
+        version: 19.1.4(react@19.1.4)
       react-native:
         specifier: '*'
         version: 0.81.5(@babel/core@7.28.5)(@types/react@19.1.12)(bufferutil@4.0.8)(react@19.1.4)

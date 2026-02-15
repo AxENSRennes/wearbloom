@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
@@ -28,6 +28,7 @@ function createMockImageStorage() {
   return {
     saveBodyPhoto: mock(() => Promise.resolve("user-123/body/avatar_123.jpg")),
     deleteBodyPhoto: mock(() => Promise.resolve()),
+    deleteUserDirectory: mock(() => Promise.resolve()),
     getAbsolutePath: mock(
       (p: string) => `/data/images/${p}`,
     ),
@@ -103,6 +104,91 @@ describe("user.uploadBodyPhoto", () => {
     formData.append("photo", new File(["data"], "photo.jpg", { type: "image/jpeg" }));
 
     await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
+      /UNAUTHORIZED/,
+    );
+  });
+});
+
+describe("user.deleteAccount", () => {
+  let deleteSpy: ReturnType<typeof spyOn>;
+
+  function mockDbDelete() {
+    const chain: Record<string, unknown> = {};
+    chain.where = mock(() => chain);
+    chain.then = mock((...args: unknown[]) => {
+      const resolve = args[0] as (val: unknown) => void;
+      return resolve(undefined);
+    });
+    return chain;
+  }
+
+  afterEach(() => {
+    deleteSpy?.mockRestore();
+  });
+
+  test("calls imageStorage.deleteUserDirectory with correct userId", async () => {
+    const { db } = await import("@acme/db/client");
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const imageStorage = createMockImageStorage();
+    const { caller } = await createAuthenticatedCaller(imageStorage);
+
+    await caller.user.deleteAccount();
+
+    expect(imageStorage.deleteUserDirectory).toHaveBeenCalledWith("user-123");
+  });
+
+  test("deletes user from database", async () => {
+    const { db } = await import("@acme/db/client");
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    await caller.user.deleteAccount();
+
+    expect(deleteSpy).toHaveBeenCalled();
+  });
+
+  test("returns success on successful deletion", async () => {
+    const { db } = await import("@acme/db/client");
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    const result = await caller.user.deleteAccount();
+
+    expect(result).toEqual({ success: true });
+  });
+
+  test("throws ACCOUNT_DELETION_FAILED on error", async () => {
+    const imageStorage = createMockImageStorage();
+    imageStorage.deleteUserDirectory = mock(() =>
+      Promise.reject(new Error("disk error")),
+    );
+
+    const { caller } = await createAuthenticatedCaller(imageStorage);
+
+    await expect(caller.user.deleteAccount()).rejects.toThrow(
+      /ACCOUNT_DELETION_FAILED/,
+    );
+  });
+
+  test("rejects unauthenticated requests", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(null);
+    const ctx = await createTRPCContext({
+      headers: new Headers(),
+      auth,
+      imageStorage: createMockImageStorage(),
+    });
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.user.deleteAccount()).rejects.toThrow(
       /UNAUTHORIZED/,
     );
   });

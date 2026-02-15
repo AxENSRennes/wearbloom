@@ -64,6 +64,7 @@ mock.module("react-native", () => ({
   TouchableOpacity: mockComponent("TouchableOpacity"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Image: mockComponent("Image"),
+  Modal: mockComponent("Modal"),
   FlatList: mockComponent("FlatList"),
   Animated: {
     Value: class AnimatedValue {
@@ -379,6 +380,9 @@ mock.module("@acme/ui", () => ({
   themedTextStyle: () => "",
   Spinner: mockComponent("Spinner"),
   ThemedPressable: mockComponent("ThemedPressable"),
+  AlertDialog: mockComponent("AlertDialog"),
+  alertDialogButtonStyle: () => "",
+  alertDialogButtonTextStyle: () => "",
   ToastProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
   showToast: mock(() => {}),

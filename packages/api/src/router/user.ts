@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
 import { eq } from "@acme/db";
-import { bodyPhotos } from "@acme/db/schema";
+import { bodyPhotos, users } from "@acme/db/schema";
 
 import { protectedProcedure } from "../trpc";
 
@@ -116,5 +116,31 @@ export const userRouter = {
       imageId: photo.id,
       imageUrl: `/api/images/${photo.id}`,
     };
+  }),
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    if (!ctx.imageStorage) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "IMAGE_STORAGE_NOT_CONFIGURED",
+      });
+    }
+
+    try {
+      // Filesystem first — remove entire user directory
+      await ctx.imageStorage.deleteUserDirectory(userId);
+
+      // DB second — cascade handles sessions, accounts, bodyPhotos
+      await ctx.db.delete(users).where(eq(users.id, userId));
+
+      return { success: true };
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "ACCOUNT_DELETION_FAILED",
+        cause: error,
+      });
+    }
   }),
 } satisfies TRPCRouterRecord;

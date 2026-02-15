@@ -66,6 +66,25 @@ describe("createImageStorage", () => {
     });
   });
 
+  describe("deleteUserDirectory", () => {
+    test("removes user directory and all contents", async () => {
+      // Create some files for the user
+      await storage.saveBodyPhoto("user-rm", Buffer.from("img1"), "image/jpeg");
+      await storage.saveBodyPhoto("user-rm", Buffer.from("img2"), "image/png");
+
+      const userDir = join(basePath, "user-rm");
+      expect(existsSync(userDir)).toBe(true);
+
+      await storage.deleteUserDirectory("user-rm");
+      expect(existsSync(userDir)).toBe(false);
+    });
+
+    test("does not throw when directory does not exist", async () => {
+      // Should complete without error for a non-existent user
+      await storage.deleteUserDirectory("non-existent-user");
+    });
+  });
+
   describe("getAbsolutePath", () => {
     test("resolves relative path to absolute", () => {
       const absolute = storage.getAbsolutePath("user-1/body/avatar_123.jpg");
