@@ -139,8 +139,10 @@ npx create-turbo@latest -e https://github.com/t3-oss/create-t3-turbo
 
 - TypeScript strict mode across all packages
 - React 19, React Native 0.81
-- Node.js for server runtime
-- pnpm as package manager (required)
+- Bun for server runtime (`apps/server/`) — native TypeScript execution, no build step in dev, near-instant startup
+- Node.js API compatibility maintained (Bun implements Node.js APIs)
+- pnpm as package manager (required by create-t3-turbo monorepo — Bun PM migration [blocked by known Bun bug](https://github.com/t3-oss/create-t3-turbo/pull/1457))
+- `bun test` as test runner across all packages
 
 **Current Versions (verified Feb 2026):**
 
@@ -152,6 +154,7 @@ npx create-turbo@latest -e https://github.com/t3-oss/create-t3-turbo
 | NativeWind | v4 (Tailwind CSS v3) | Stable |
 | Turborepo | 2.8.3 | Stable |
 | better-auth | 1.4.x | Stable |
+| Bun | 1.x (latest stable) | Stable — server runtime + test runner |
 
 **Styling Solution:**
 
@@ -163,7 +166,8 @@ npx create-turbo@latest -e https://github.com/t3-oss/create-t3-turbo
 
 - Turborepo for task orchestration and caching
 - EAS Build for iOS builds (no Mac required)
-- Docker for server deployment to Dokploy
+- Docker for server deployment to Dokploy (base image: `oven/bun:1-alpine`)
+- `bun test` as test runner across all packages (co-located tests, built-in coverage)
 
 **Code Organization:**
 
@@ -192,12 +196,12 @@ wearbloom/
 **Required Modifications from Base Starter:**
 
 1. Remove `apps/nextjs/` and `apps/tanstack-start/` (not needed)
-2. Add `apps/server/` — standalone tRPC Node.js server for Dokploy deployment
+2. Add `apps/server/` — standalone tRPC server running on Bun runtime for Dokploy deployment
 3. Replace Supabase connection with self-hosted PostgreSQL in `packages/db/`
 4. Replace shadcn-ui with Gluestack UI v3 in `packages/ui/`
 5. Downgrade NativeWind v5 → v4 and Tailwind CSS v4 → v3 (Gluestack v3 incompatible with v5)
 6. Add `docker-compose.yml` for local dev (PostgreSQL container)
-7. Add `Dockerfile` for production server deployment
+7. Add `Dockerfile` for production server deployment (base image: `oven/bun:1-alpine`)
 
 **Note:** Project initialization using this starter should be the first implementation story.
 
@@ -250,7 +254,7 @@ State management, routing structure, CI/CD pipeline, monitoring approach, offlin
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| API framework | tRPC v11 standalone | End-to-end type safety. Standalone Node.js adapter for Docker/Dokploy deployment |
+| API framework | tRPC v11 standalone | End-to-end type safety. Standalone adapter running on Bun runtime for Docker/Dokploy deployment |
 | Router organization | Domain-based routers | Separate routers: auth, garment, tryon, subscription, user. Each isolated and testable |
 | AI inference platform | fal.ai (primary) + Google Vertex AI (secondary) | Both providers implemented from day one via `TryOnProvider` abstraction interface |
 | AI models available | FASHN (fal.ai), Nano Banana Pro (fal.ai), virtual-try-on-001 (Google) | Switchable per config. A/B testable. Same abstraction layer |
@@ -322,7 +326,7 @@ apps/expo/app/
 | Container orchestration | Docker Compose | Node.js server + PostgreSQL + persistent image volume. Simple, reliable for single-server |
 | CI/CD (server) | GitHub Actions → Docker build → push to registry → Dokploy pull & deploy | Free tier sufficient for solo dev |
 | CI/CD (mobile) | GitHub Actions → EAS Build → TestFlight | Automated iOS builds without Mac |
-| Logging | pino (structured JSON) | Lightweight, fast, consultable via Dokploy logs interface |
+| Logging | pino (structured JSON) | Lightweight, fast, consultable via Dokploy logs interface. Compatible with Bun runtime |
 | Monitoring (MVP) | Health check endpoint + Dokploy alerts + Dokploy API | `/health` endpoint. Dokploy alerts on container crash. Logs accessible via API/MCP (no UI needed). Metrics via SQL queries (renders/day, conversions) |
 | Secrets management | Dokploy secrets (server) + EAS secrets (mobile) | Environment-specific, encrypted at rest |
 | Infrastructure management | Dokploy REST API + MCP server | Programmatic deployment, env var updates, log access, container management — no manual UI interaction needed. MCP server enables AI agent-driven infrastructure operations |
@@ -332,7 +336,7 @@ apps/expo/app/
 ```
 VPS (Dokploy)
   ├── traefik              # Reverse proxy + HTTPS auto (managed by Dokploy)
-  ├── wearbloom-server      # Node.js tRPC server (Docker container)
+  ├── wearbloom-server      # Bun tRPC server (Docker container, oven/bun:1-alpine)
   ├── postgres             # PostgreSQL (Docker container)
   └── /data/images/        # Persistent volume for user images
 ```
@@ -468,7 +472,7 @@ apps/expo/src/
   constants/                 # App constants
 ```
 
-**Test Location: Co-located with source files.**
+**Test Location & Runner: Co-located tests with `bun test`.**
 
 ```
 services/
@@ -481,6 +485,91 @@ components/
 ```
 
 No separate `__tests__/` directory. Tests live with the code they test.
+
+**Test Runner: `bun test`**
+
+Bun's built-in test runner is used across all packages. Jest-compatible API with key differences for mocking:
+
+```typescript
+import { describe, test, expect, mock, spyOn, beforeEach } from "bun:test";
+
+// mock.module() works BEFORE or AFTER import thanks to ESM live bindings.
+// However, for modules with side effects (DB connections, SDK init),
+// mock BEFORE import or use --preload to prevent side effects from firing.
+mock.module("@acme/db", () => ({
+  db: { query: mock(() => Promise.resolve([])) },
+}));
+
+// Both patterns work:
+// 1. Static import (already imported — live bindings updated by mock.module)
+import { garmentRouter } from "../router/garment";
+// 2. Dynamic import (lazy — mock guaranteed in place)
+const { garmentRouter } = await import("../router/garment");
+
+describe("garmentRouter", () => {
+  test("returns empty list", async () => {
+    const result = await garmentRouter.list();
+    expect(result).toEqual([]);
+  });
+});
+```
+
+**Mocking patterns for `bun test`:**
+
+| Pattern | Syntax | Notes |
+|---------|--------|-------|
+| Mock module | `mock.module("path", () => ({ ... }))` | Works before OR after import (ESM live bindings). Use `--preload` for modules with side effects |
+| Mock function | `mock(() => value)` | Equivalent to `jest.fn()`. Also available as `jest.fn()` or `vi.fn()` from `bun:test` |
+| Spy on method | `spyOn(object, "method")` | Equivalent to `jest.spyOn()`. Clean restore via `mockRestore()` |
+| Fake timers | `mock.setSystemTime(new Date(...))` | Replaces `jest.useFakeTimers()` |
+| Reset spies | `spy.mockRestore()` in `afterEach` | Spies restore cleanly — use for object/class methods |
+| Reset all spies | `mock.restore()` in `afterEach` | Restores all spies at once. Does **NOT** undo `mock.module()` |
+| Preload mocks | `--preload ./test/setup.ts` | For third-party modules with side effects — ensures mocks load before any module evaluation |
+
+**Critical `bun test` behaviors:**
+
+1. **`mock.module()` is irreversible** — `mock.restore()` does NOT undo module mocks (confirmed by Bun docs: *"Doing so does not reset the value of modules overridden with `mock.module()`"*). Use dependency injection for first-party modules when you need per-test isolation.
+2. **`mock.module()` updates live bindings** — unlike Jest, you can call `mock.module()` even after a static `import` and the binding is updated. But side effects from the original module will have already fired. Use `--preload` for modules with side effects.
+3. **`spyOn` + `mockRestore()` in `afterEach`** for object/class methods — spies restore cleanly, unlike module mocks. Prefer spies over module mocks when possible.
+4. **Never mutate shared state between test files** — `mock.module()` being irreversible means module mocks leak across files. Exported objects and singletons should not be mutated directly.
+5. **`--preload` for third-party mocks** — use a preload file to mock external packages before any test file evaluates them (prevents side effects):
+
+```bash
+# bunfig.toml (applies to all test runs)
+[test]
+preload = ["./test/setup.ts"]
+```
+
+```typescript
+// test/setup.ts — loaded before any test file
+import { mock } from "bun:test";
+
+mock.module("resend", () => ({
+  Resend: mock(() => ({
+    emails: { send: mock(() => Promise.resolve({ id: "mock-id" })) },
+  })),
+}));
+```
+
+**Running tests:**
+
+```bash
+# Run all tests in a package
+bun test
+
+# Run specific test file
+bun test src/services/imageProcessor.test.ts
+
+# With coverage
+bun test --coverage
+
+# Watch mode
+bun test --watch
+```
+
+**Turborepo integration:**
+
+Each package's `package.json` defines: `"test": "bun test"`. Turborepo orchestrates via `turbo test`.
 
 ### Format Patterns
 
@@ -571,6 +660,11 @@ Never use `useState(false)` for loading management — TanStack Query handles th
 6. Use string IDs (cuid2) — never auto-increment integers
 7. Place new components in the correct domain folder — never at the root of `components/`
 8. Use the `TryOnProvider` interface for AI inference calls — never call fal.ai or Google directly from routes
+9. Use `bun:test` imports for all test utilities — never import from the `vitest` or `@jest/globals` packages. Note: `jest.fn()`, `vi.fn()` are available from `bun:test` as compatibility aliases
+10. Use `--preload` for mocking third-party modules with side effects — prevents original module evaluation before mock is in place
+11. Use dependency injection for first-party modules — `mock.module()` is irreversible (`mock.restore()` does not undo it), so prefer DI for testable service design
+12. Never mutate shared state between test files — `mock.module()` is irreversible and leaks across files. Use `spyOn` for reversible overrides
+13. Use `spyOn` + `mockRestore()` in `afterEach` for object/class methods — spies restore cleanly, unlike module mocks
 
 **Anti-Patterns (NEVER do this):**
 
@@ -599,6 +693,42 @@ const result = await fal.subscribe("fal-ai/fashn/tryon/v1.6", { ... });
 // ✅ CORRECT: through abstraction
 const provider = getTryOnProvider(config.activeProvider);
 const result = await provider.submitRender(personImage, garmentImage);
+
+// ❌ WRONG: importing from vitest/jest packages
+import { jest } from '@jest/globals';
+import { vi } from 'vitest';
+
+// ✅ CORRECT: bun:test imports (jest/vi aliases available for compat)
+import { mock, spyOn, expect } from "bun:test";
+import { vi } from "bun:test"; // also valid — Vitest compat alias
+
+// ❌ WRONG: mock.module for module with side effects, called after import
+import { dbClient } from "../db"; // ← side effect: DB connection opened!
+mock.module("../db", () => ({ ... })); // too late, connection already fired
+
+// ✅ CORRECT: use --preload for modules with side effects
+// In bunfig.toml: [test] preload = ["./test/setup.ts"]
+// In test/setup.ts: mock.module("../db", () => ({ ... }));
+
+// ✅ ALSO CORRECT: mock.module works after import for pure modules (live bindings)
+import { formatPrice } from "../utils/format";
+mock.module("../utils/format", () => ({ formatPrice: () => "$0.00" }));
+// formatPrice is now updated via ESM live bindings
+
+// ❌ WRONG: mock.module for first-party code expecting per-test reset
+mock.module("../services/imageProcessor", () => ({ ... }));
+// mock.restore() will NOT undo this — it's irreversible!
+
+// ✅ CORRECT: dependency injection for first-party modules
+const service = createGarmentService({ imageProcessor: mockProcessor });
+
+// ❌ WRONG: mutate shared state directly
+import { config } from "../constants/config";
+config.maxCredits = 99; // irreversible, leaks across files
+
+// ✅ CORRECT: use spyOn with mockRestore in afterEach
+const spy = spyOn(config, "maxCredits", { get: () => 99 });
+afterEach(() => spy.mockRestore());
 ```
 
 ## Project Structure & Boundaries
@@ -687,7 +817,7 @@ wearbloom/
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── server/                      # 🖥️ Node.js backend
+│   └── server/                      # 🖥️ Bun backend
 │       ├── src/
 │       │   ├── index.ts             # Entry point (standalone tRPC)
 │       │   ├── env.ts               # Zod-validated env vars
@@ -886,6 +1016,10 @@ All architectural decisions have been reviewed for mutual compatibility:
 | TryOnProvider abstraction + fal.ai + Google VTO | ✅ Compatible | Both providers implement same interface, switchable via config |
 | Apple IAP (StoreKit 2) + better-auth | ✅ Compatible | Subscription state synced to user record via server-side validation |
 | MMKV + TanStack Query persist | ✅ Compatible | MMKV is the recommended fast storage adapter for TanStack Query persist |
+| Bun runtime + tRPC v11 standalone | ✅ Compatible | tRPC standalone uses standard HTTP — runs on Bun without modification |
+| Bun runtime + Drizzle ORM | ✅ Compatible | Drizzle supports Bun natively via `bun:sql` or `postgres` driver |
+| Bun test + Turborepo | ✅ Compatible | `"test": "bun test"` in package.json, Turborepo caches test results |
+| pnpm (package manager) + Bun (runtime) | ✅ Compatible | pnpm installs dependencies, Bun executes code — no conflict |
 
 ### Functional Requirements Coverage
 
