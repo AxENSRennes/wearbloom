@@ -528,6 +528,7 @@ mock.module("@gorhom/bottom-sheet", () => {
       React.createElement("mock-BottomSheetScrollView", props, children),
     BottomSheetFooter: ({ children, ...props }: any) =>
       React.createElement("mock-BottomSheetFooter", props, children),
+    useBottomSheetSpringConfigs: (config: Record<string, unknown>) => config,
   };
 });
 

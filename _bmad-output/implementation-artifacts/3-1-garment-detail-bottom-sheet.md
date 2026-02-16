@@ -1,6 +1,6 @@
 # Story 3.1: Garment Detail Bottom Sheet
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -527,6 +527,7 @@ mock.module("@gorhom/bottom-sheet", () => {
 ## Change Log
 
 - 2026-02-16: Implemented Story 3.1 — Garment Detail Bottom Sheet (all 6 tasks, 15 new tests, 200 total)
+- 2026-02-16: Code review — 9 issues resolved (3H/3M/3L): custom spring animation config, try/catch on handleTryOn, safe area insets, theme tokens for badge, memoized imageSource, dead code removed, misleading tests rewritten, duplicate assertOnline tests removed, SSR limitation documented. Status → done
 
 ## Dev Agent Record
 

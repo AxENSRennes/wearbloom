@@ -1,15 +1,17 @@
 import { forwardRef, useCallback, useMemo } from "react";
 import { View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
+  useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 
-import { Button, ThemedText } from "@acme/ui";
+import { Button, ThemedText, showToast } from "@acme/ui";
 
 import type { WardrobeItem } from "~/types/wardrobe";
 import { isStockGarment } from "~/types/wardrobe";
@@ -26,7 +28,13 @@ interface GarmentDetailSheetProps {
 export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProps>(
   function GarmentDetailSheet({ garment, onDismiss, onTryOn }, ref) {
     const reducedMotion = useReducedMotion();
+    const insets = useSafeAreaInsets();
     const snapPoints = useMemo(() => ["60%", "90%"], []);
+
+    const animationConfigs = useBottomSheetSpringConfigs({
+      damping: 50,
+      stiffness: 300,
+    });
 
     const handleSheetChange = useCallback(
       (index: number) => {
@@ -74,23 +82,31 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
 
     const handleTryOn = useCallback(async () => {
       if (!garment) return;
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const online = await assertOnline();
-      if (!online) return;
-      onTryOn(garment.id);
+      try {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const online = await assertOnline();
+        if (!online) return;
+        onTryOn(garment.id);
+      } catch (_error) {
+        showToast({ message: "Something went wrong", variant: "error" });
+      }
     }, [garment, onTryOn]);
 
-    const imageSource = garment
-      ? isStockGarment(garment)
-        ? garment.imageSource
-        : {
-            uri: `${getBaseUrl()}/api/images/${garment.id}`,
-            headers: (() => {
-              const cookies = authClient.getCookie();
-              return cookies ? { Cookie: cookies } : undefined;
-            })(),
-          }
-      : undefined;
+    const imageSource = useMemo(
+      () =>
+        garment
+          ? isStockGarment(garment)
+            ? garment.imageSource
+            : {
+                uri: `${getBaseUrl()}/api/images/${garment.id}`,
+                headers: (() => {
+                  const cookies = authClient.getCookie();
+                  return cookies ? { Cookie: cookies } : undefined;
+                })(),
+              }
+          : undefined,
+      [garment],
+    );
 
     const categoryLabel = garment
       ? garment.category.charAt(0).toUpperCase() + garment.category.slice(1)
@@ -106,6 +122,7 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
         handleComponent={renderHandle}
         onChange={handleSheetChange}
         animateOnMount={!reducedMotion}
+        animationConfigs={reducedMotion ? undefined : animationConfigs}
         backgroundStyle={{
           backgroundColor: "#FFFFFF",
           borderTopLeftRadius: 12,
@@ -129,10 +146,10 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
 
               {/* Category badge pill */}
               <View className="mt-3 flex-row">
-                <View className="rounded-full bg-[#F7F7F7] px-3 py-1">
+                <View className="rounded-full bg-surface px-3 py-1">
                   <ThemedText
                     variant="caption"
-                    className="text-[13px] font-medium text-[#6B6B6B]"
+                    className="text-[13px] font-medium text-text-secondary"
                   >
                     {categoryLabel}
                   </ThemedText>
@@ -140,7 +157,7 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
               </View>
 
               {/* "Try On" button */}
-              <View className="mt-4" style={{ marginBottom: 16, height: 52 }}>
+              <View className="mt-4" style={{ marginBottom: Math.max(16, insets.bottom), height: 52 }}>
                 <Button
                   label="Try On"
                   variant="primary"

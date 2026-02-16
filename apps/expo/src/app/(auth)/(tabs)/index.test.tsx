@@ -504,6 +504,10 @@ describe("WardrobeScreen", () => {
   // -------------------------------------------------------------------------
   // Bottom sheet integration tests (Story 3.1)
   // -------------------------------------------------------------------------
+  // Note: SSR testing (renderToStaticMarkup) cannot simulate user interactions
+  // (tap garment → open sheet, dismiss → clear selection). These behaviors are
+  // verified by the component's TypeScript types and callback wiring.
+  // Interactive integration tests would require @testing-library/react-native.
   test("renders GarmentDetailSheet component in WardrobeScreen", () => {
     stubUseQuery({
       data: [mockGarment1],

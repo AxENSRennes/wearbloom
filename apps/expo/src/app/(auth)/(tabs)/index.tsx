@@ -94,15 +94,6 @@ export default function WardrobeScreen() {
     setSelectedGarment(null);
   }, []);
 
-  const handleSheetChange = useCallback(
-    (index: number) => {
-      if (index === -1) {
-        setSelectedGarment(null);
-      }
-    },
-    [],
-  );
-
   const handleTryOn = useCallback(
     (_garmentId: string) => {
       showToast({ message: "Try-on coming in Story 3.2", variant: "info" });
