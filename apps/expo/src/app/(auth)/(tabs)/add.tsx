@@ -1,6 +1,7 @@
 import { useCallback, useReducer, useState } from "react";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,11 @@ import { CategoryPills } from "~/components/garment/CategoryPills";
 import { trpc } from "~/utils/api";
 import { compressImage } from "~/utils/image-compressor";
 
-const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"];
+/**
+ * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
+ * packages/db/src/schema.ts and VALID_CATEGORIES in packages/api/src/router/garment.ts
+ */
+const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"] as const;
 
 // ---------------------------------------------------------------------------
 // State machine
@@ -35,6 +40,8 @@ type AddState =
   | {
       step: "uploading";
       imageUri: string;
+      width: number;
+      height: number;
       category: string;
     }
   | { step: "success"; garmentId: string };
@@ -61,6 +68,8 @@ function reducer(_state: AddState, action: AddAction): AddState {
         step: "uploading",
         imageUri:
           _state.step === "previewing" ? _state.imageUri : "",
+        width: _state.step === "previewing" ? _state.width : 0,
+        height: _state.step === "previewing" ? _state.height : 0,
         category: action.category,
       };
     case "UPLOAD_SUCCESS":
@@ -70,8 +79,8 @@ function reducer(_state: AddState, action: AddAction): AddState {
         ? {
             step: "previewing",
             imageUri: _state.imageUri,
-            width: 0,
-            height: 0,
+            width: _state.width,
+            height: _state.height,
           }
         : _state;
     case "RETAKE":
@@ -85,10 +94,10 @@ function reducer(_state: AddState, action: AddAction): AddState {
 // ---------------------------------------------------------------------------
 
 export default function AddGarmentScreen() {
-  const [state, dispatch] = useReducer(reducer, { step: "idle" });
+  const [state, dispatch] = useReducer(reducer, { step: "idle" } as AddState);
   const [selectedCategory, setSelectedCategory] = useState("tops");
   const [showActionSheet, setShowActionSheet] = useState(false);
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const uploadMutation = useMutation(
@@ -150,7 +159,6 @@ export default function AddGarmentScreen() {
         const asset = result.assets[0];
         const compressed = await compressImage(asset.uri);
 
-        setImageSize({ width: compressed.width, height: compressed.height });
         dispatch({
           type: "PHOTO_SELECTED",
           uri: compressed.uri,
@@ -179,11 +187,11 @@ export default function AddGarmentScreen() {
       name: "garment.jpg",
     } as unknown as Blob);
     formData.append("category", selectedCategory);
-    formData.append("width", String(imageSize.width));
-    formData.append("height", String(imageSize.height));
+    formData.append("width", String(state.width));
+    formData.append("height", String(state.height));
 
     uploadMutation.mutate(formData);
-  }, [state, selectedCategory, imageSize, uploadMutation]);
+  }, [state, selectedCategory, uploadMutation]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -213,6 +221,7 @@ export default function AddGarmentScreen() {
               className="items-center justify-center py-3"
               accessibilityRole="button"
               accessibilityLabel="Browse wardrobe"
+              onPress={() => router.push("/(auth)/(tabs)/home")}
             >
               <ThemedText variant="body" className="text-text-secondary">
                 Browse Wardrobe
@@ -298,7 +307,7 @@ export default function AddGarmentScreen() {
 
         <View className="w-full gap-3">
           <Button
-            label="Take Photo"
+            label="Add Garment"
             variant="primary"
             onPress={() => setShowActionSheet(true)}
           />

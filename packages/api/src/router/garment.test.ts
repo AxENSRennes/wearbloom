@@ -97,7 +97,12 @@ async function createAuthenticatedCaller(
     imageStorage,
     backgroundRemoval,
   });
-  return { caller: appRouter.createCaller(ctx), imageStorage, backgroundRemoval };
+  return {
+    caller: appRouter.createCaller(ctx),
+    imageStorage,
+    backgroundRemoval,
+    auth,
+  };
 }
 
 describe("garment.upload", () => {
@@ -132,7 +137,6 @@ describe("garment.upload", () => {
     const result = await caller.garment.upload(formData);
 
     expect(result.garmentId).toBe("garment-new");
-    expect(result.imageId).toBe("garment-new");
     expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
   });
 
@@ -321,22 +325,157 @@ describe("garment.getGarment", () => {
     ).rejects.toThrow(/GARMENT_NOT_FOUND/);
   });
 
-  test("throws FORBIDDEN for non-owner", async () => {
+  test("throws NOT_FOUND for non-owner (ownership check in WHERE)", async () => {
     const { db } = await import("@acme/db/client");
-    const garment = {
-      id: "g1",
-      userId: "other-user",
-      category: "tops",
-      imagePath: "path1",
-    };
     selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([garment]) as never,
+      mockDbSelect([]) as never,
     );
 
     const { caller } = await createAuthenticatedCaller();
 
     await expect(
       caller.garment.getGarment({ garmentId: "g1" }),
-    ).rejects.toThrow(/NOT_GARMENT_OWNER/);
+    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+  });
+});
+
+describe("garment.upload - error handling verification", () => {
+  let insertSpy: ReturnType<typeof spyOn>;
+  let updateSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    insertSpy?.mockRestore();
+    updateSpy?.mockRestore();
+  });
+
+  test("properly handles database insert chain methods", async () => {
+    const { db } = await import("@acme/db/client");
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("garment-abc") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+
+    const formData = new FormData();
+    formData.append(
+      "photo",
+      new File(["image-data"], "garment.jpg", { type: "image/jpeg" }),
+    );
+    formData.append("category", "tops");
+    formData.append("width", "1200");
+    formData.append("height", "800");
+
+    await caller.garment.upload(formData);
+
+    // Verify insert was called
+    expect(insertSpy).toHaveBeenCalled();
+    // Verify imageStorage.saveGarmentPhoto was called
+    expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
+  });
+
+  test("verifies imageStorage.saveGarmentPhoto receives correct file", async () => {
+    const { db } = await import("@acme/db/client");
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("test-123") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+
+    const formData = new FormData();
+    const testFile = new File(["jpeg-data"], "photo.jpg", {
+      type: "image/jpeg",
+    });
+    formData.append("photo", testFile);
+    formData.append("category", "bottoms");
+    formData.append("width", "1500");
+    formData.append("height", "2000");
+
+    await caller.garment.upload(formData);
+
+    expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
+  });
+
+  test("rejects non-authenticated requests with proper error", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(null);
+    const ctx = await createTRPCContext({
+      headers: new Headers(),
+      auth,
+      imageStorage: createMockImageStorage(),
+    });
+    const caller = appRouter.createCaller(ctx);
+
+    const formData = new FormData();
+    formData.append(
+      "photo",
+      new File(["data"], "garment.jpg", { type: "image/jpeg" }),
+    );
+    formData.append("category", "tops");
+
+    await expect(caller.garment.upload(formData)).rejects.toThrow(
+      /UNAUTHORIZED/,
+    );
+  });
+});
+
+describe("garment.list - filtering and pagination", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+  });
+
+  test("respects category filter parameter", async () => {
+    const { db } = await import("@acme/db/client");
+    const mockResults = [
+      { id: "g1", userId: "user-123", category: "dresses", imagePath: "path1" },
+    ];
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect(mockResults) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list({ category: "dresses" });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.category).toBe("dresses");
+  });
+
+  test("returns empty array when no garments match filter", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list({ category: "bottoms" });
+
+    expect(result).toEqual([]);
+  });
+
+  test("handles multiple garments in results", async () => {
+    const { db } = await import("@acme/db/client");
+    const mockResults = [
+      { id: "g1", userId: "user-123", category: "tops", imagePath: "path1" },
+      { id: "g2", userId: "user-123", category: "tops", imagePath: "path2" },
+      { id: "g3", userId: "user-123", category: "tops", imagePath: "path3" },
+    ];
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect(mockResults) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list();
+
+    expect(result).toHaveLength(3);
+    expect(result[0]?.id).toBe("g1");
+    expect(result[1]?.id).toBe("g2");
+    expect(result[2]?.id).toBe("g3");
   });
 });

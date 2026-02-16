@@ -19,6 +19,22 @@ export function createBackgroundRemoval({
   const replicate = new Replicate({ auth: replicateApiToken });
 
   return {
+    /**
+     * Fire-and-forget background removal async task.
+     *
+     * This function sends the image to Replicate for background removal processing.
+     * It runs with a timeout to prevent hanging requests. The removal happens
+     * asynchronously in the background without blocking the response.
+     *
+     * Note: In the garment.ts router, this is called via fire-and-forget IIFE:
+     *   void (async () => { const cutout = await bgRemoval.removeBackground(...); })()
+     *
+     * The client polls garment.getGarment to check bgRemovalStatus and retrieve
+     * the cutout path when ready. Status values: "pending", "completed", "failed", "skipped".
+     *
+     * Limitation: If the server crashes during removal, the cutout will be lost
+     * (acceptable for MVP). In production, consider a persistent job queue.
+     */
     async removeBackground(imageBuffer: Buffer): Promise<Buffer | null> {
       const controller = new AbortController();
       const timeout = setTimeout(
@@ -44,18 +60,29 @@ export function createBackgroundRemoval({
           return null;
         }
 
-        const response = await fetch(output);
-        if (!response.ok) {
-          logger?.error(
-            { status: response.status },
-            "Failed to download background removal result",
-          );
-          return null;
-        }
+        const fetchController = new AbortController();
+        const fetchTimeout = setTimeout(
+          () => fetchController.abort(),
+          BG_REMOVAL_TIMEOUT_MS,
+        );
+        try {
+          const response = await fetch(output, {
+            signal: fetchController.signal,
+          });
+          if (!response.ok) {
+            logger?.error(
+              { status: response.status },
+              "Failed to download background removal result",
+            );
+            return null;
+          }
 
-        const arrayBuffer = await response.arrayBuffer();
-        logger?.info("Background removal completed successfully");
-        return Buffer.from(arrayBuffer);
+          const arrayBuffer = await response.arrayBuffer();
+          logger?.info("Background removal completed successfully");
+          return Buffer.from(arrayBuffer);
+        } finally {
+          clearTimeout(fetchTimeout);
+        }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           logger?.error("Background removal timed out");

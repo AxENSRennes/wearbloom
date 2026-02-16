@@ -52,7 +52,6 @@ function ActionSheet({ isOpen, onClose, items }: ActionSheetProps) {
           {items.map((item) => (
             <Pressable
               key={item.label}
-              className={actionSheetItemStyle({})}
               style={{ height: 52 }}
               onPress={() => {
                 item.onPress();
@@ -61,12 +60,16 @@ function ActionSheet({ isOpen, onClose, items }: ActionSheetProps) {
               accessibilityRole="button"
               accessibilityLabel={item.label}
             >
-              {item.icon ? (
-                <View className="mr-3">{item.icon}</View>
-              ) : null}
-              <Text className="text-base font-medium text-text-primary">
-                {item.label}
-              </Text>
+              {({ pressed }) => (
+                <View className={actionSheetItemStyle({ isPressed: pressed })}>
+                  {item.icon ? (
+                    <View className="mr-3">{item.icon}</View>
+                  ) : null}
+                  <Text className="text-base font-medium text-text-primary">
+                    {item.label}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           ))}
 

@@ -66,13 +66,15 @@ export const bodyPhotos = pgTable(
   (table) => [unique().on(table.userId)],
 );
 
-export const garmentCategory = pgEnum("garment_category", [
+export const GARMENT_CATEGORIES = [
   "tops",
   "bottoms",
   "dresses",
   "shoes",
   "outerwear",
-]);
+] as const;
+
+export const garmentCategory = pgEnum("garment_category", GARMENT_CATEGORIES);
 
 export const garments = pgTable("garments", (t) => ({
   id: t

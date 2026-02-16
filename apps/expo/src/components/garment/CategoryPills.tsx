@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { cn } from "@acme/ui";
 
 interface CategoryPillsProps {
-  categories: string[];
+  categories: readonly string[];
   selected: string;
   onSelect: (category: string) => void;
 }

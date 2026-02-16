@@ -2,20 +2,18 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
-import { and, eq } from "@acme/db";
-import { garments } from "@acme/db/schema";
+import { and, desc, eq } from "@acme/db";
+import { GARMENT_CATEGORIES, garments } from "@acme/db/schema";
 
 import { protectedProcedure } from "../trpc";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
-const VALID_CATEGORIES = [
-  "tops",
-  "bottoms",
-  "dresses",
-  "shoes",
-  "outerwear",
-] as const;
+/**
+ * Valid garment categories. Derived from GARMENT_CATEGORIES in schema.ts
+ * to keep them in sync when the enum changes.
+ */
+const VALID_CATEGORIES = GARMENT_CATEGORIES;
 
 export const garmentRouter = {
   upload: protectedProcedure
@@ -156,7 +154,7 @@ export const garmentRouter = {
           .where(eq(garments.id, garmentId));
       }
 
-      return { garmentId, imageId: garmentId };
+      return { garmentId };
     }),
 
   list: protectedProcedure
@@ -179,7 +177,7 @@ export const garmentRouter = {
         .select()
         .from(garments)
         .where(whereClause)
-        .orderBy(garments.createdAt);
+        .orderBy(desc(garments.createdAt));
 
       return results;
     }),
@@ -192,7 +190,7 @@ export const garmentRouter = {
       const results = await ctx.db
         .select()
         .from(garments)
-        .where(eq(garments.id, input.garmentId))
+        .where(and(eq(garments.id, input.garmentId), eq(garments.userId, userId)))
         .limit(1);
 
       const garment = results[0];
@@ -200,13 +198,6 @@ export const garmentRouter = {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "GARMENT_NOT_FOUND",
-        });
-      }
-
-      if (garment.userId !== userId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "NOT_GARMENT_OWNER",
         });
       }
 
