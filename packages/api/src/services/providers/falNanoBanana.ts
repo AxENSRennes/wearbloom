@@ -16,7 +16,9 @@ export class FalNanoBananaProvider implements TryOnProvider {
     "dresses",
   ];
 
-  private readonly falClient: FalClient;
+  private falClientInstance: FalClient | null;
+  private falClientPromise: Promise<FalClient> | null = null;
+  private readonly falKey: string;
   private readonly webhookUrl: string;
   private readonly modelId: string;
 
@@ -26,16 +28,27 @@ export class FalNanoBananaProvider implements TryOnProvider {
   ) {
     this.webhookUrl = config.webhookUrl;
     this.modelId = config.nanoBananaModelId;
+    this.falKey = config.falKey;
 
     if (falClient) {
-      this.falClient = falClient;
+      falClient.config({ credentials: config.falKey });
+      this.falClientInstance = falClient;
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { fal } = require("@fal-ai/client") as { fal: FalClient };
-      this.falClient = fal;
+      this.falClientInstance = null;
     }
+  }
 
-    this.falClient.config({ credentials: config.falKey });
+  private getFalClient(): Promise<FalClient> {
+    if (this.falClientInstance) {
+      return Promise.resolve(this.falClientInstance);
+    }
+    this.falClientPromise ??= import("@fal-ai/client").then((mod) => {
+      const client = mod.fal as unknown as FalClient;
+      client.config({ credentials: this.falKey });
+      this.falClientInstance = client;
+      return client;
+    });
+    return this.falClientPromise;
   }
 
   async submitRender(
@@ -49,10 +62,11 @@ export class FalNanoBananaProvider implements TryOnProvider {
       );
     }
 
+    const client = await this.getFalClient();
     const personImageUrl = await this.uploadImage(personImage);
     const garmentImageUrl = await this.uploadImage(garmentImage);
 
-    const result = await this.falClient.queue.submit(this.modelId, {
+    const result = await client.queue.submit(this.modelId, {
       input: {
         model_image: personImageUrl,
         garment_image: garmentImageUrl,
@@ -67,8 +81,9 @@ export class FalNanoBananaProvider implements TryOnProvider {
 
   async getResult(jobId: string): Promise<TryOnResult | null> {
     if (!this.modelId) return null;
+    const client = await this.getFalClient();
     try {
-      const result = await this.falClient.queue.result(this.modelId, {
+      const result = await client.queue.result(this.modelId, {
         requestId: jobId,
       });
       const image = result.images[0];
@@ -85,13 +100,14 @@ export class FalNanoBananaProvider implements TryOnProvider {
   }
 
   private async uploadImage(image: string | Buffer): Promise<string> {
+    const client = await this.getFalClient();
     if (typeof image === "string") {
       const { readFile } = await import("node:fs/promises");
       const buffer = await readFile(image);
       const blob = new Blob([buffer], { type: "image/jpeg" });
-      return this.falClient.storage.upload(blob);
+      return client.storage.upload(blob);
     }
     const blob = new Blob([image], { type: "image/jpeg" });
-    return this.falClient.storage.upload(blob);
+    return client.storage.upload(blob);
   }
 }

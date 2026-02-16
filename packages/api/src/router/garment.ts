@@ -1,5 +1,6 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
+import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod/v4";
 
 import { and, desc, eq } from "@acme/db";
@@ -80,31 +81,8 @@ export const garmentRouter = {
       const height =
         typeof heightStr === "string" ? Number(heightStr) : undefined;
 
-      // Create garment record first to get the ID
-      const [record] = await ctx.db
-        .insert(garments)
-        .values({
-          userId,
-          category,
-          imagePath: "", // Will be updated after save
-          mimeType: file.type,
-          width: width ?? null,
-          height: height ?? null,
-          fileSize: file.size,
-          bgRemovalStatus: "pending",
-        })
-        .returning({ id: garments.id });
-
-      if (!record) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "RECORD_INSERT_FAILED",
-        });
-      }
-
-      const garmentId = record.id;
-
-      // Save original photo and update record — clean up orphan on failure
+      // Generate ID upfront and save file to FS first
+      const garmentId = createId();
       let imagePath: string;
       try {
         imagePath = await ctx.imageStorage.saveGarmentPhoto(
@@ -113,13 +91,33 @@ export const garmentRouter = {
           file.type,
           garmentId,
         );
-        await ctx.db
-          .update(garments)
-          .set({ imagePath })
-          .where(eq(garments.id, garmentId));
       } catch {
-        // Clean up orphaned record
-        await ctx.db.delete(garments).where(eq(garments.id, garmentId));
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "GARMENT_SAVE_FAILED",
+        });
+      }
+
+      // Single insert with real imagePath — no empty-string state
+      try {
+        await ctx.db.insert(garments).values({
+          id: garmentId,
+          userId,
+          category,
+          imagePath,
+          mimeType: file.type,
+          width: width ?? null,
+          height: height ?? null,
+          fileSize: file.size,
+          bgRemovalStatus: "pending",
+        });
+      } catch {
+        // Clean up FS file on insert failure
+        try {
+          await ctx.imageStorage.deleteGarmentFiles(userId, garmentId);
+        } catch {
+          // Swallow cleanup error
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "GARMENT_SAVE_FAILED",

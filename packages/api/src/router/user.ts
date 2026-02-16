@@ -59,47 +59,79 @@ export const userRouter = {
       const buffer = Buffer.from(await file.arrayBuffer());
       validateImageBytes(buffer, file.type);
 
-      // Delete existing body photo if any (upsert pattern)
-      const existing = await ctx.db
-        .select()
-        .from(bodyPhotos)
-        .where(eq(bodyPhotos.userId, userId))
-        .limit(1);
-
-      const existingPhoto = existing[0];
-      if (existingPhoto) {
-        await ctx.imageStorage.deleteBodyPhoto(userId, existingPhoto.filePath);
-        await ctx.db
-          .delete(bodyPhotos)
-          .where(eq(bodyPhotos.id, existingPhoto.id));
-      }
-
-      // Save new photo
-      const filePath = await ctx.imageStorage.saveBodyPhoto(
+      // Save new photo to FS first (before any DB work)
+      const imageStorage = ctx.imageStorage;
+      const filePath = await imageStorage.saveBodyPhoto(
         userId,
         buffer,
         file.type,
       );
 
-      const [newRecord] = await ctx.db
-        .insert(bodyPhotos)
-        .values({
-          userId,
-          filePath,
-          mimeType: file.type,
-          fileSize: file.size,
-          width: width ?? undefined,
-          height: height ?? undefined,
-        })
-        .returning({ id: bodyPhotos.id });
+      try {
+        // Wrap DB operations in a transaction for atomicity
+        const [newRecord] = await ctx.db.transaction(async (tx) => {
+          // Delete existing body photo record if any
+          const existing = await tx
+            .select({ id: bodyPhotos.id, filePath: bodyPhotos.filePath })
+            .from(bodyPhotos)
+            .where(eq(bodyPhotos.userId, userId))
+            .limit(1);
 
-      if (!newRecord) {
+          const existingPhoto = existing[0];
+          if (existingPhoto) {
+            await tx
+              .delete(bodyPhotos)
+              .where(eq(bodyPhotos.id, existingPhoto.id));
+          }
+
+          // Insert new record
+          const result = await tx
+            .insert(bodyPhotos)
+            .values({
+              userId,
+              filePath,
+              mimeType: file.type,
+              fileSize: file.size,
+              width: width ?? undefined,
+              height: height ?? undefined,
+            })
+            .returning({ id: bodyPhotos.id });
+
+          // Clean up old FS file after successful DB ops
+          if (existingPhoto) {
+            try {
+              await imageStorage.deleteBodyPhoto(
+                userId,
+                existingPhoto.filePath,
+              );
+            } catch {
+              // Swallow — orphaned old file is acceptable
+            }
+          }
+
+          return result;
+        });
+
+        if (!newRecord) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "RECORD_INSERT_FAILED",
+          });
+        }
+        return { imageId: newRecord.id };
+      } catch (error) {
+        // Transaction failed — clean up the new FS file
+        if (error instanceof TRPCError) throw error;
+        try {
+          await imageStorage.deleteBodyPhoto(userId, filePath);
+        } catch {
+          // Swallow cleanup error
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "RECORD_INSERT_FAILED",
         });
       }
-      return { imageId: newRecord.id };
     }),
 
   getBodyPhoto: protectedProcedure.query(async ({ ctx }) => {
@@ -129,19 +161,16 @@ export const userRouter = {
       });
     }
 
+    // DB first — cascade handles sessions, accounts, bodyPhotos, garments, renders
+    await ctx.db.delete(users).where(eq(users.id, userId));
+
+    // FS cleanup second — orphaned files are acceptable
     try {
-      // Filesystem first — remove entire user directory
       await ctx.imageStorage.deleteUserDirectory(userId);
-
-      // DB second — cascade handles sessions, accounts, bodyPhotos
-      await ctx.db.delete(users).where(eq(users.id, userId));
-
-      return { success: true };
     } catch {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "ACCOUNT_DELETION_FAILED",
-      });
+      // Swallow — orphaned files will be cleaned up eventually
     }
+
+    return { success: true };
   }),
 } satisfies TRPCRouterRecord;

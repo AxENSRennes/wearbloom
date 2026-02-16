@@ -2,7 +2,7 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
-import { and, eq } from "@acme/db";
+import { and, count, eq, gt } from "@acme/db";
 import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
 
 import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
@@ -17,6 +17,8 @@ function is5xxError(error: unknown): boolean {
     /Service Unavailable/i.test(msg)
   );
 }
+
+const MAX_REFUNDS_PER_MONTH = 3;
 
 export const tryonRouter = {
   getSupportedCategories: publicProcedure.query(({ ctx }) => {
@@ -297,17 +299,33 @@ export const tryonRouter = {
         });
       }
 
-      // If thumbs_down, refund credit
+      // If thumbs_down, refund credit (capped at MAX_REFUNDS_PER_MONTH per 30-day window)
+      let shouldRefund = false;
       if (input.rating === "thumbs_down") {
-        await ctx.db
-          .update(tryOnRenders)
-          .set({ creditConsumed: false })
-          .where(eq(tryOnRenders.id, input.renderId));
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const [refundCount] = await ctx.db
+          .select({ count: count() })
+          .from(renderFeedback)
+          .where(
+            and(
+              eq(renderFeedback.userId, userId),
+              eq(renderFeedback.rating, "thumbs_down"),
+              gt(renderFeedback.createdAt, thirtyDaysAgo),
+            ),
+          );
+        shouldRefund = (refundCount?.count ?? 0) <= MAX_REFUNDS_PER_MONTH;
+
+        if (shouldRefund) {
+          await ctx.db
+            .update(tryOnRenders)
+            .set({ creditConsumed: false })
+            .where(eq(tryOnRenders.id, input.renderId));
+        }
       }
 
       return {
         success: true,
-        creditRefunded: input.rating === "thumbs_down",
+        creditRefunded: input.rating === "thumbs_down" && shouldRefund,
       };
     }),
 } satisfies TRPCRouterRecord;

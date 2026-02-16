@@ -148,7 +148,12 @@ describe("user.deleteAccount", () => {
     expect(result).toEqual({ success: true });
   });
 
-  test("throws ACCOUNT_DELETION_FAILED on error", async () => {
+  test("succeeds even when FS cleanup fails (DB first, FS errors swallowed)", async () => {
+    const { db } = await import("@acme/db/client");
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
     const imageStorage = createMockImageStorage();
     imageStorage.deleteUserDirectory = mock(() =>
       Promise.reject(new Error("disk error")),
@@ -156,9 +161,10 @@ describe("user.deleteAccount", () => {
 
     const { caller } = await createAuthenticatedCaller(imageStorage);
 
-    await expect(caller.user.deleteAccount()).rejects.toThrow(
-      /ACCOUNT_DELETION_FAILED/,
-    );
+    const result = await caller.user.deleteAccount();
+
+    expect(result).toEqual({ success: true });
+    expect(imageStorage.deleteUserDirectory).toHaveBeenCalledWith("user-123");
   });
 
   test("rejects unauthenticated requests", async () => {

@@ -95,7 +95,8 @@ describe("garment.upload", () => {
 
     const result = await caller.garment.upload(formData);
 
-    expect(result.garmentId).toBe("garment-new");
+    expect(typeof result.garmentId).toBe("string");
+    expect(result.garmentId.length).toBeGreaterThan(0);
     expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
   });
 

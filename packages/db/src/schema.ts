@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
-import { pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, index, pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -175,6 +176,75 @@ export const renderFeedback = pgTable("render_feedback", (t) => ({
   category: t.text(),
   createdAt: t.timestamp().defaultNow().notNull(),
 }));
+
+export const subscriptionStatus = pgEnum("subscription_status", [
+  "trial",
+  "subscribed",
+  "expired",
+  "cancelled",
+  "grace_period",
+]);
+
+export const subscriptions = pgTable(
+  "subscriptions",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    appleTransactionId: t.text(),
+    appleOriginalTransactionId: t.text(),
+    productId: t.text(),
+    status: subscriptionStatus().notNull().default("trial"),
+    startedAt: t.timestamp({ withTimezone: true }),
+    expiresAt: t.timestamp({ withTimezone: true }),
+    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: t
+      .timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  }),
+  (table) => [
+    index("subscriptions_apple_orig_txn_idx").on(
+      table.appleOriginalTransactionId,
+    ),
+  ],
+);
+
+export const credits = pgTable(
+  "credits",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    totalGranted: t.integer().notNull().default(0),
+    totalConsumed: t.integer().notNull().default(0),
+    createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: t
+      .timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  }),
+  (table) => [
+    check(
+      "credits_consumed_check",
+      sql`${table.totalConsumed} >= 0 AND ${table.totalConsumed} <= ${table.totalGranted}`,
+    ),
+  ],
+);
 
 export const verifications = pgTable("verifications", (t) => ({
   id: t.text().primaryKey(),
