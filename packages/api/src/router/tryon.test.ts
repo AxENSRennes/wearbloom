@@ -21,11 +21,12 @@ function mockDbInsertUnique() {
 }
 
 const mockSession = {
-  user: { id: "user-123", name: "Test User", email: "test@example.com" },
+  user: { id: "user-123", name: "Test User", email: "test@example.com", isAnonymous: false },
   session: {
     id: "sess-123",
     token: "tok-abc",
     expiresAt: new Date("2030-01-01"),
+    createdAt: new Date("2024-01-01"),
     userId: "user-123",
   },
 };

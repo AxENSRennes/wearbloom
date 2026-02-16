@@ -77,9 +77,9 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Onboarding & First-Time Experience
-  epic-5: backlog
-  5-1-ephemeral-token-and-pre-account-authorization: backlog
-  5-2-three-step-onboarding-flow: backlog
-  5-3-account-creation-after-first-render: backlog
+  epic-5: in-progress
+  5-1-ephemeral-token-and-pre-account-authorization: done
+  5-2-three-step-onboarding-flow: done
+  5-3-account-creation-after-first-render: done
   5-4-replace-example-photos-post-onboarding: backlog
   epic-5-retrospective: optional

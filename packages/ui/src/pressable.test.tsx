@@ -7,9 +7,9 @@ describe("ThemedPressable", () => {
     // forwardRef returns an object with $$typeof and render function
     expect(ThemedPressable).toBeDefined();
     expect(typeof ThemedPressable).toBe("object");
-    expect(typeof (ThemedPressable as unknown as { render: unknown }).render).toBe(
-      "function",
-    );
+    expect(
+      typeof (ThemedPressable as unknown as { render: unknown }).render,
+    ).toBe("function");
   });
 
   test('displayName is "ThemedPressable"', () => {

@@ -7,15 +7,23 @@ import { mock } from "bun:test";
 const React = await import("react");
 
 function mockComponent(name: string) {
-  const comp = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
-    const { children, ...rest } = props;
-    // Support render-prop children (e.g. Pressable's ({ pressed }) => ...)
-    const resolved =
-      typeof children === "function"
-        ? (children as (state: { pressed: boolean }) => React.ReactNode)({ pressed: false })
-        : children;
-    return React.createElement(`mock-${name}`, { ...rest, ref }, resolved as React.ReactNode);
-  });
+  const comp = React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      const { children, ...rest } = props;
+      // Support render-prop children (e.g. Pressable's ({ pressed }) => ...)
+      const resolved =
+        typeof children === "function"
+          ? (children as (state: { pressed: boolean }) => React.ReactNode)({
+              pressed: false,
+            })
+          : children;
+      return React.createElement(
+        `mock-${name}`,
+        { ...rest, ref },
+        resolved as React.ReactNode,
+      );
+    },
+  );
   comp.displayName = name;
   return comp;
 }
@@ -26,15 +34,27 @@ function mockComponent(name: string) {
 void mock.module("@gluestack-ui/core", () => {
   return {
     createButton: (_styledComponents: Record<string, unknown>) => {
-      const Comp = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
-        const { children, ...rest } = props;
-        return React.createElement("mock-GluestackButton", { ...rest, ref }, children as React.ReactNode);
-      });
+      const Comp = React.forwardRef(
+        (props: Record<string, unknown>, ref: unknown) => {
+          const { children, ...rest } = props;
+          return React.createElement(
+            "mock-GluestackButton",
+            { ...rest, ref },
+            children as React.ReactNode,
+          );
+        },
+      );
       // Attach compound sub-components
-      const Text = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
-        const { children, ...rest } = props;
-        return React.createElement("mock-ButtonText", { ...rest, ref }, children as React.ReactNode);
-      });
+      const Text = React.forwardRef(
+        (props: Record<string, unknown>, ref: unknown) => {
+          const { children, ...rest } = props;
+          return React.createElement(
+            "mock-ButtonText",
+            { ...rest, ref },
+            children as React.ReactNode,
+          );
+        },
+      );
       return Object.assign(Comp, {
         Text,
         Group: mockComponent("ButtonGroup"),
@@ -74,5 +94,8 @@ void mock.module("react-native", () => ({
   StyleSheet: {
     create: <T extends Record<string, unknown>>(styles: T): T => styles,
   },
-  Platform: { OS: "ios", select: (obj: Record<string, unknown>) => obj.ios ?? obj.default },
+  Platform: {
+    OS: "ios",
+    select: (obj: Record<string, unknown>) => obj.ios ?? obj.default,
+  },
 }));

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { Button, SPINNER_COLORS, buttonStyle, buttonTextStyle } from "./button";
+import { Button, buttonStyle, buttonTextStyle, SPINNER_COLORS } from "./button";
 import { wearbloomTheme } from "./gluestack-config";
 
 // ---------------------------------------------------------------------------

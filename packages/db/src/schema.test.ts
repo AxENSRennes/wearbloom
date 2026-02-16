@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { getTableColumns } from "drizzle-orm";
 
 import {
   BG_REMOVAL_STATUSES,
@@ -14,7 +15,20 @@ import {
   renderStatus,
   tryOnProviderEnum,
   tryOnRenders,
+  users,
 } from "./schema";
+
+describe("users schema", () => {
+  test("has isAnonymous column", () => {
+    const columns = getTableColumns(users);
+    expect(columns.isAnonymous).toBeDefined();
+  });
+
+  test("isAnonymous defaults to false", () => {
+    const columns = getTableColumns(users);
+    expect(columns.isAnonymous.hasDefault).toBe(true);
+  });
+});
 
 describe("garments schema", () => {
   test("garments table export exists", () => {

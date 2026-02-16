@@ -4,9 +4,11 @@ import { z } from "zod/v4";
 
 import * as schema from "./schema";
 
-const env = z.object({
-  DATABASE_URL: z.string().min(1),
-}).parse(process.env);
+const env = z
+  .object({
+    DATABASE_URL: z.string().min(1),
+  })
+  .parse(process.env);
 
 const client = postgres(env.DATABASE_URL);
 

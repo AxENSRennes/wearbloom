@@ -1,8 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
 // Access the mock betterAuth from preload
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { mockBetterAuth } = require("../test/setup") as {
+const { mockBetterAuth } = (await import("../test/setup")) as {
   mockBetterAuth: ReturnType<typeof mock>;
 };
 
@@ -15,7 +14,7 @@ describe("initAuth", () => {
       secret: "test-secret-at-least-32-characters-long",
       appleBundleId: "com.test.wearbloom",
       isDev: true,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
     expect(auth).toBeDefined();
@@ -31,7 +30,7 @@ describe("initAuth", () => {
       secret: "test-secret-at-least-32-characters-long",
       appleBundleId: "com.test.wearbloom",
       isDev: false,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
     expect(mockBetterAuth).toHaveBeenCalled();
@@ -50,10 +49,13 @@ describe("initAuth", () => {
       secret: "test-secret-at-least-32-characters-long",
       appleBundleId: "com.test.app",
       isDev: false,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const socialProviders = config.socialProviders as {
       apple: { appBundleIdentifier: string; clientId: string };
     };
@@ -69,10 +71,13 @@ describe("initAuth", () => {
       secret: "test-secret-at-least-32-characters-long",
       appleBundleId: "com.test.app",
       isDev: true,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const origins = config.trustedOrigins as string[];
     expect(origins).toContain("expo://");
     expect(origins).toContain("exp://");
@@ -86,10 +91,13 @@ describe("initAuth", () => {
       secret: "production-secret-at-least-32-characters",
       appleBundleId: "com.test.app",
       isDev: false,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const origins = config.trustedOrigins as string[];
     expect(origins).toContain("expo://");
     expect(origins).not.toContain("exp://");
@@ -105,7 +113,7 @@ describe("initAuth", () => {
       secret: "test-secret-at-least-32-characters-long",
       appleBundleId: "com.test.app",
       isDev: false,
-      logger: { error: mock() },
+      logger: { info: mock(), error: mock() },
     });
 
     expect(drizzleAdapter).toHaveBeenCalledWith(
@@ -118,5 +126,71 @@ describe("initAuth", () => {
     const module = await import("./index");
     expect(module.initAuth).toBeDefined();
     // Auth and Session are type exports — verified by compilation
+  });
+
+  test("includes anonymous plugin with emailDomainName config", async () => {
+    const { initAuth } = await import("./index");
+    initAuth({
+      baseUrl: "http://localhost:3000",
+      productionUrl: "http://localhost:3000",
+      secret: "test-secret-at-least-32-characters-long",
+      appleBundleId: "com.test.wearbloom",
+      isDev: false,
+      logger: { info: mock(), error: mock() },
+    });
+
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
+    const plugins = config.plugins as { id: string; _opts?: unknown }[];
+    const anonPlugin = plugins.find((p) => p.id === "anonymous");
+    expect(anonPlugin).toBeDefined();
+    expect(anonPlugin?._opts).toEqual(
+      expect.objectContaining({ emailDomainName: "anon.wearbloom.app" }),
+    );
+  });
+
+  test("anonymous plugin has onLinkAccount callback", async () => {
+    const { initAuth } = await import("./index");
+    initAuth({
+      baseUrl: "http://localhost:3000",
+      productionUrl: "http://localhost:3000",
+      secret: "test-secret-at-least-32-characters-long",
+      appleBundleId: "com.test.wearbloom",
+      isDev: false,
+      logger: { info: mock(), error: mock() },
+    });
+
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
+    const plugins = config.plugins as { id: string; _opts?: unknown }[];
+    const anonPlugin = plugins.find((p) => p.id === "anonymous");
+    const opts = anonPlugin?._opts as { onLinkAccount?: unknown };
+    expect(typeof opts.onLinkAccount).toBe("function");
+  });
+
+  test("configures rate limiting for anonymous sign-in endpoint", async () => {
+    const { initAuth } = await import("./index");
+    initAuth({
+      baseUrl: "http://localhost:3000",
+      productionUrl: "http://localhost:3000",
+      secret: "test-secret-at-least-32-characters-long",
+      appleBundleId: "com.test.wearbloom",
+      isDev: false,
+      logger: { info: mock(), error: mock() },
+    });
+
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
+    const rateLimit = config.rateLimit as {
+      customRules?: Record<string, { window: number; max: number }>;
+    };
+    expect(rateLimit.customRules?.["/sign-in/anonymous"]).toBeDefined();
+    expect(rateLimit.customRules?.["/sign-in/anonymous"]?.max).toBe(5);
   });
 });

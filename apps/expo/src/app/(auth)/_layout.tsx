@@ -18,7 +18,7 @@ export default function AuthLayout() {
     );
   }
 
-  if (!session) {
+  if (!session || session.user.isAnonymous) {
     return <Redirect href="/(public)/sign-in" />;
   }
 

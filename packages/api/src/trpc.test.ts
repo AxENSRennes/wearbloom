@@ -1,8 +1,8 @@
-import { describe, expect, mock, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
+import { describe, expect, mock, test } from "bun:test";
 
 import type { AuthInstance } from "./trpc";
-import { createTRPCContext } from "./trpc";
+import { createTRPCContext, createTRPCRouter } from "./trpc";
 
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
@@ -10,11 +10,30 @@ const mockSession = {
     id: "sess-123",
     token: "tok-abc",
     expiresAt: new Date("2030-01-01"),
+    createdAt: new Date(),
     userId: "user-123",
   },
 };
 
-function createMockAuth(session: typeof mockSession | null): AuthInstance {
+const mockAnonymousSession = {
+  user: {
+    id: "anon-456",
+    name: null,
+    email: "temp-abc@anon.wearbloom.app",
+    isAnonymous: true,
+  },
+  session: {
+    id: "sess-anon",
+    token: "tok-anon",
+    expiresAt: new Date("2030-01-01"),
+    createdAt: new Date(),
+    userId: "anon-456",
+  },
+};
+
+function createMockAuth(
+  session: typeof mockSession | typeof mockAnonymousSession | null,
+): AuthInstance {
   return {
     api: {
       getSession: mock(() => Promise.resolve(session)),
@@ -22,6 +41,11 @@ function createMockAuth(session: typeof mockSession | null): AuthInstance {
     },
   };
 }
+
+const defaultAnonConfig = {
+  sessionTtlHours: 24,
+  maxRenders: 1,
+};
 
 describe("createTRPCContext", () => {
   test("resolves session from auth.api.getSession", async () => {
@@ -53,11 +77,23 @@ describe("createTRPCContext", () => {
     expect(ctx.auth).toBe(auth);
     expect(ctx.headers).toBe(headers);
   });
+
+  test("includes anonymousConfig in context when provided", async () => {
+    const auth = createMockAuth(null);
+    const headers = new Headers();
+
+    const ctx = await createTRPCContext({
+      headers,
+      auth,
+      anonymousConfig: defaultAnonConfig,
+    });
+
+    expect(ctx.anonymousConfig).toEqual(defaultAnonConfig);
+  });
 });
 
 describe("protectedProcedure", () => {
   test("rejects unauthenticated requests with UNAUTHORIZED", async () => {
-    // Import the router to test the full middleware chain
     const { appRouter } = await import("./root");
     const auth = createMockAuth(null);
     const headers = new Headers();
@@ -84,5 +120,121 @@ describe("protectedProcedure", () => {
     const result = await caller.auth.getSession();
 
     expect(result).toEqual({ user: mockSession.user });
+  });
+
+  test("rejects anonymous users with ACCOUNT_REQUIRED", async () => {
+    const { appRouter } = await import("./root");
+    const auth = createMockAuth(mockAnonymousSession);
+    const headers = new Headers({ cookie: "session=anon" });
+    const ctx = await createTRPCContext({ headers, auth });
+
+    const caller = appRouter.createCaller(ctx);
+
+    try {
+      await caller.auth.signOut();
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TRPCError);
+      expect((error as TRPCError).code).toBe("UNAUTHORIZED");
+      expect((error as TRPCError).message).toBe("ACCOUNT_REQUIRED");
+    }
+  });
+});
+
+describe("ephemeralProcedure", () => {
+  test("allows anonymous user with valid session", async () => {
+    const { ephemeralProcedure } = await import("./trpc");
+    const testRouter = createTRPCRouter({
+      testEphemeral: ephemeralProcedure.query(() => "ok"),
+    });
+
+    const auth = createMockAuth(mockAnonymousSession);
+    const headers = new Headers({ cookie: "session=anon" });
+    const ctx = await createTRPCContext({
+      headers,
+      auth,
+      anonymousConfig: defaultAnonConfig,
+    });
+
+    const caller = testRouter.createCaller(ctx);
+    const result = await caller.testEphemeral();
+    expect(result).toBe("ok");
+  });
+
+  test("allows authenticated (non-anonymous) user through", async () => {
+    const { ephemeralProcedure } = await import("./trpc");
+    const testRouter = createTRPCRouter({
+      testEphemeral: ephemeralProcedure.query(() => "ok"),
+    });
+
+    const auth = createMockAuth(mockSession);
+    const headers = new Headers({ cookie: "session=abc" });
+    const ctx = await createTRPCContext({
+      headers,
+      auth,
+      anonymousConfig: defaultAnonConfig,
+    });
+
+    const caller = testRouter.createCaller(ctx);
+    const result = await caller.testEphemeral();
+    expect(result).toBe("ok");
+  });
+
+  test("rejects anonymous user with expired session (ANONYMOUS_SESSION_EXPIRED)", async () => {
+    const { ephemeralProcedure } = await import("./trpc");
+    const testRouter = createTRPCRouter({
+      testEphemeral: ephemeralProcedure.query(() => "ok"),
+    });
+
+    const expiredSession = {
+      ...mockAnonymousSession,
+      session: {
+        ...mockAnonymousSession.session,
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
+      },
+    };
+    const auth = createMockAuth(expiredSession);
+    const headers = new Headers({ cookie: "session=anon" });
+    const ctx = await createTRPCContext({
+      headers,
+      auth,
+      anonymousConfig: defaultAnonConfig,
+    });
+
+    const caller = testRouter.createCaller(ctx);
+
+    try {
+      await caller.testEphemeral();
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TRPCError);
+      expect((error as TRPCError).code).toBe("FORBIDDEN");
+      expect((error as TRPCError).message).toBe("ANONYMOUS_SESSION_EXPIRED");
+    }
+  });
+
+  test("rejects unauthenticated requests with UNAUTHORIZED", async () => {
+    const { ephemeralProcedure } = await import("./trpc");
+    const testRouter = createTRPCRouter({
+      testEphemeral: ephemeralProcedure.query(() => "ok"),
+    });
+
+    const auth = createMockAuth(null);
+    const headers = new Headers();
+    const ctx = await createTRPCContext({
+      headers,
+      auth,
+      anonymousConfig: defaultAnonConfig,
+    });
+
+    const caller = testRouter.createCaller(ctx);
+
+    try {
+      await caller.testEphemeral();
+      expect.unreachable("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TRPCError);
+      expect((error as TRPCError).code).toBe("UNAUTHORIZED");
+    }
   });
 });

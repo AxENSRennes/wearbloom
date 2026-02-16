@@ -1,16 +1,10 @@
 import { ScrollView, View } from "react-native";
-import { Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
 
 import { ThemedText } from "@acme/ui";
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: string;
-}) {
+function Section({ title, children }: { title: string; children: string }) {
   return (
     <View className="gap-2">
       <ThemedText variant="heading">{title}</ThemedText>

@@ -5,7 +5,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
-import { Button, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
+import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
 import { authClient } from "~/utils/auth";
@@ -81,8 +81,12 @@ export default function SignInScreen() {
         {Platform.OS === "ios" && (
           <>
             <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              buttonType={
+                AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+              }
+              buttonStyle={
+                AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
               cornerRadius={12}
               style={{ height: 52, width: "100%" }}
               onPress={() => appleSignIn.mutate()}
@@ -90,7 +94,10 @@ export default function SignInScreen() {
 
             <View className="my-6 flex-row items-center">
               <View className="flex-1 border-b border-border" />
-              <ThemedText variant="caption" className="mx-4 text-text-secondary">
+              <ThemedText
+                variant="caption"
+                className="mx-4 text-text-secondary"
+              >
                 or continue with email
               </ThemedText>
               <View className="flex-1 border-b border-border" />

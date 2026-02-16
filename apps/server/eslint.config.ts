@@ -1,12 +1,13 @@
 import { defineConfig } from "eslint/config";
 
-import { baseConfig } from "@acme/eslint-config/base";
+import { baseConfig, restrictEnvAccess } from "@acme/eslint-config/base";
 
 export default defineConfig(
   {
     ignores: ["dist/**"],
   },
   baseConfig,
+  restrictEnvAccess,
   {
     files: ["src/routes/images.ts", "src/webhooks/fal.ts"],
     rules: {

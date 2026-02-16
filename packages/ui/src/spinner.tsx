@@ -7,6 +7,10 @@ interface SpinnerProps extends Omit<ActivityIndicatorProps, "color"> {
   color?: string;
 }
 
-export function Spinner({ color = wearbloomTheme.colors.accent, size = "small", ...props }: SpinnerProps) {
+export function Spinner({
+  color = wearbloomTheme.colors.accent,
+  size = "small",
+  ...props
+}: SpinnerProps) {
   return <ActivityIndicator color={color} size={size} {...props} />;
 }

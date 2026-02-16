@@ -1,7 +1,7 @@
+import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 import type { TextProps } from "react-native";
 import { Text } from "react-native";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
-import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 
 const themedTextStyle = tva({
   base: "text-text-primary",
@@ -44,7 +44,10 @@ export function ThemedText({
     <Text
       className={themedTextStyle({ variant, className })}
       maxFontSizeMultiplier={1.5}
-      style={[isSerif ? { fontFamily: DM_SERIF_FONT_FAMILY } : undefined, style]}
+      style={[
+        isSerif ? { fontFamily: DM_SERIF_FONT_FAMILY } : undefined,
+        style,
+      ]}
       {...props}
     />
   );

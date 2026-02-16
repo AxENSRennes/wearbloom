@@ -1,6 +1,6 @@
 import { View } from "react-native";
-import { Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Stack, useRouter } from "expo-router";
 
 import { Button, ThemedPressable, ThemedText } from "@acme/ui";
 
@@ -37,7 +37,10 @@ export default function ConsentScreen() {
             accessibilityRole="link"
             accessibilityLabel="Read our Privacy Policy"
           >
-            <ThemedText variant="body" className="text-text-secondary underline">
+            <ThemedText
+              variant="body"
+              className="text-text-secondary underline"
+            >
               Read our Privacy Policy
             </ThemedText>
           </ThemedPressable>

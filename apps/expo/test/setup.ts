@@ -1,3 +1,4 @@
+import { plugin } from "bun";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { mock } from "bun:test";
 
@@ -9,6 +10,22 @@ GlobalRegistrator.register();
 // @ts-expect-error -- IS_REACT_ACT_ENVIRONMENT is a global checked by React internals
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+// ---------------------------------------------------------------------------
+// Image asset loader — Metro resolves require("*.png") to numeric IDs at build
+// time. Bun doesn't understand binary image files, so intercept and return a
+// mock numeric ID for each image.
+// ---------------------------------------------------------------------------
+let imageIdCounter = 1;
+plugin({
+  name: "image-loader",
+  setup(build) {
+    build.onLoad({ filter: /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/ }, () => ({
+      contents: `export default ${imageIdCounter++};`,
+      loader: "js",
+    }));
+  },
+});
+
 // Define globals normally provided by Metro/React Native bundler
 // @ts-expect-error -- __DEV__ is a global set by Metro bundler
 globalThis.__DEV__ = true;
@@ -16,11 +33,15 @@ globalThis.process.env.EXPO_OS = "ios";
 // @ts-expect-error -- expo global is set by expo-modules-core native runtime
 globalThis.expo = {
   EventEmitter: class MockEventEmitter {
-    addListener() { return { remove: () => {} }; }
+    addListener() {
+      return { remove: () => {} };
+    }
     removeListener() {}
     removeAllListeners() {}
     emit() {}
-    listenerCount() { return 0; }
+    listenerCount() {
+      return 0;
+    }
   },
   modules: {},
   uuidv4: () => "mock-uuid",
@@ -96,7 +117,25 @@ void mock.module("react-native", () => ({
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Image: mockComponent("Image"),
   Modal: mockComponent("Modal"),
-  FlatList: mockComponent("FlatList"),
+  FlatList: React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+    const { data, renderItem, keyExtractor, ...rest } = props as {
+      data?: unknown[];
+      renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
+      keyExtractor?: (item: unknown, index: number) => string;
+      [key: string]: unknown;
+    };
+    const items =
+      Array.isArray(data) && renderItem
+        ? data.map((item, index) =>
+            React.createElement(
+              "mock-FlatListItem",
+              { key: keyExtractor ? keyExtractor(item, index) : index },
+              renderItem({ item, index }),
+            ),
+          )
+        : null;
+    return React.createElement("mock-FlatList", { ...rest, ref }, items);
+  }),
   Animated: {
     Value: class AnimatedValue {
       _value: number;
@@ -135,15 +174,30 @@ void mock.module("react-native", () => ({
   TurboModuleRegistry: { get: () => null, getEnforcing: () => ({}) },
   NativeModules: {},
   NativeEventEmitter: class NativeEventEmitter {
-    addListener() { return { remove: () => {} }; }
+    addListener() {
+      return { remove: () => {} };
+    }
     removeAllListeners() {}
-    listenerCount() { return 0; }
+    listenerCount() {
+      return 0;
+    }
   },
-  AppState: { currentState: "active", addEventListener: () => ({ remove: () => {} }) },
-  Dimensions: { get: () => ({ width: 375, height: 812, scale: 2, fontScale: 1 }) },
+  AppState: {
+    currentState: "active",
+    addEventListener: () => ({ remove: () => {} }),
+  },
+  Dimensions: {
+    get: () => ({ width: 375, height: 812, scale: 2, fontScale: 1 }),
+  },
   PixelRatio: { get: () => 2, getPixelSizeForLayoutSize: (s: number) => s * 2 },
-  Appearance: { getColorScheme: () => "light", addChangeListener: () => ({ remove: () => {} }) },
-  Linking: { openURL: mock(() => Promise.resolve()), canOpenURL: mock(() => Promise.resolve(true)) },
+  Appearance: {
+    getColorScheme: () => "light",
+    addChangeListener: () => ({ remove: () => {} }),
+  },
+  Linking: {
+    openURL: mock(() => Promise.resolve()),
+    canOpenURL: mock(() => Promise.resolve(true)),
+  },
   Alert: { alert: mock(() => {}) },
   I18nManager: { isRTL: false },
   StatusBar: mockComponent("RNStatusBar"),
@@ -184,19 +238,26 @@ void mock.module("@gluestack-ui/core", () => ({
 }));
 
 void mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
-  tva: (config: Record<string, unknown>) => (props: Record<string, unknown>) => {
-    const base = (config.base as string | undefined) ?? "";
-    const variants = config.variants as Record<string, Record<string, string>> | undefined;
-    const defaultVariants = config.defaultVariants as Record<string, string> | undefined;
-    let cls = base;
-    if (variants) {
-      for (const [key, map] of Object.entries(variants)) {
-        const val = (props[key] as string | undefined) ?? defaultVariants?.[key];
-        if (val && map[val]) cls += " " + map[val];
+  tva:
+    (config: Record<string, unknown>) => (props: Record<string, unknown>) => {
+      const base = (config.base as string | undefined) ?? "";
+      const variants = config.variants as
+        | Record<string, Record<string, string>>
+        | undefined;
+      const defaultVariants = config.defaultVariants as
+        | Record<string, string>
+        | undefined;
+      let cls = base;
+      if (variants) {
+        for (const [key, map] of Object.entries(variants)) {
+          const val =
+            (props[key] as string | undefined) ??
+            defaultVariants?.[key];
+          if (val && map[val]) cls += " " + map[val];
+        }
       }
-    }
-    return cls;
-  },
+      return cls;
+    },
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
   withStyleContext: () => (comp: unknown) => comp,
   useStyleContext: () => ({}),
@@ -293,11 +354,13 @@ const routerMock = {
   canGoBack: () => true,
 };
 
+const searchParamsRef: { current: Record<string, string> } = { current: { id: "mock-render-id" } };
+
 void mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
-  useLocalSearchParams: () => ({ id: "mock-render-id" }),
+  useLocalSearchParams: () => searchParamsRef.current,
   Redirect: mockComponent("Redirect"),
   Slot: mockComponent("Slot"),
   Stack: Object.assign(mockComponent("Stack"), {
@@ -305,6 +368,7 @@ void mock.module("expo-router", () => ({
   }),
   Link: mockComponent("Link"),
   __router: routerMock,
+  __searchParams: searchParamsRef,
 }));
 
 // ---------------------------------------------------------------------------
@@ -612,14 +676,26 @@ void mock.module("react-native-reanimated", () => {
     useReducedMotion: () => false,
     runOnJS: (fn: (...args: unknown[]) => unknown) => fn,
     Easing: {
-      linear: 0,
-      ease: 1,
+      bezier: () => (t: number) => t,
+      linear: (t: number) => t,
+      ease: (t: number) => t,
       inOut: () => 0,
     },
     createAnimatedComponent: (comp: unknown) => comp,
     StyleSheet: {
       absoluteFillObject: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
     },
+    FadeIn: { duration: () => ({ delay: () => ({}) }) },
+    FadeOut: { duration: () => ({}) },
+    interpolate: (
+      value: number,
+      inputRange: number[],
+      outputRange: number[],
+    ) => {
+      const i = inputRange.indexOf(value);
+      return i >= 0 ? outputRange[i] : outputRange[0];
+    },
+    Extrapolation: { CLAMP: "clamp" },
   };
 });
 
@@ -701,6 +777,49 @@ void mock.module("@react-native-community/netinfo", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// react-native-reanimated-carousel — carousel component mock
+// ---------------------------------------------------------------------------
+void mock.module("react-native-reanimated-carousel", () => {
+  const CarouselComponent = React.forwardRef(
+    (props: Record<string, unknown>, ref: React.Ref<unknown>) => {
+      const { data, renderItem, ...rest } = props as {
+        data: unknown[];
+        renderItem: (info: { item: unknown; index: number }) => React.ReactNode;
+        [key: string]: unknown;
+      };
+      React.useImperativeHandle(ref, () => ({
+        scrollTo: mock(() => {}),
+        getCurrentIndex: () => 0,
+      }));
+      const items = Array.isArray(data)
+        ? data.map((item, index) =>
+            React.createElement(
+              "mock-CarouselPage",
+              { key: index },
+              renderItem({ item, index }),
+            ),
+          )
+        : null;
+      return React.createElement("mock-Carousel", rest, items);
+    },
+  );
+  (CarouselComponent as { displayName?: string }).displayName = "Carousel";
+
+  const PaginationBasic = (props: Record<string, unknown>) =>
+    React.createElement("mock-PaginationBasic", props);
+
+  return {
+    default: CarouselComponent,
+    Pagination: { Basic: PaginationBasic },
+  };
+});
+
+// ---------------------------------------------------------------------------
+// react-native-worklets — required by carousel
+// ---------------------------------------------------------------------------
+void mock.module("react-native-worklets", () => ({}));
+
+// ---------------------------------------------------------------------------
 // @tanstack/react-query-persist-client — mock PersistQueryClientProvider
 // ---------------------------------------------------------------------------
 void mock.module("@tanstack/react-query-persist-client", () => ({
@@ -721,4 +840,32 @@ void mock.module("@tanstack/query-sync-storage-persister", () => ({
 let cuidCounter = 0;
 void mock.module("@paralleldrive/cuid2", () => ({
   createId: mock(() => `mock-cuid-${++cuidCounter}`),
+}));
+
+// ---------------------------------------------------------------------------
+// @react-native-async-storage/async-storage — in-memory mock
+// ---------------------------------------------------------------------------
+const asyncStore = new Map<string, string>();
+void mock.module("@react-native-async-storage/async-storage", () => ({
+  default: {
+    getItem: mock(async (key: string) => asyncStore.get(key) ?? null),
+    setItem: mock(async (key: string, value: string) => {
+      asyncStore.set(key, value);
+    }),
+    removeItem: mock(async (key: string) => {
+      asyncStore.delete(key);
+    }),
+    clear: mock(async () => {
+      asyncStore.clear();
+    }),
+    getAllKeys: mock(async () => [...asyncStore.keys()]),
+  },
+  __asyncStore: asyncStore,
+}));
+
+// ---------------------------------------------------------------------------
+// better-auth/client/plugins — anonymousClient plugin import
+// ---------------------------------------------------------------------------
+void mock.module("better-auth/client/plugins", () => ({
+  anonymousClient: () => ({ id: "anonymousClient" }),
 }));

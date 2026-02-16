@@ -1,14 +1,9 @@
-import React from "react";
+import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 import type { PressableProps, TextProps, ViewProps } from "react-native";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import React from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { createButton } from "@gluestack-ui/core";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
-import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 
 import { wearbloomTheme } from "./gluestack-config";
 
@@ -127,7 +122,11 @@ export function Button({
 }: ButtonProps) {
   return (
     <GluestackButton
-      className={buttonStyle({ variant, isDisabled: disabled || isLoading, className })}
+      className={buttonStyle({
+        variant,
+        isDisabled: disabled || isLoading,
+        className,
+      })}
       onPress={onPress}
       isDisabled={disabled || isLoading}
       accessible
