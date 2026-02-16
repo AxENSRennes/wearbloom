@@ -7,7 +7,9 @@ import { showToast } from "@acme/ui";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 
-export function useAppleSignIn() {
+export function useAppleSignIn(options?: {
+  onSuccess?: () => void | Promise<void>;
+}) {
   const router = useRouter();
   const grantCredits = useMutation(
     trpc.subscription.grantInitialCredits.mutationOptions(),
@@ -55,7 +57,11 @@ export function useAppleSignIn() {
       } catch {
         // Non-critical — idempotent grant, credits may already exist
       }
-      router.replace("/(auth)/(tabs)");
+      if (options?.onSuccess) {
+        await options.onSuccess();
+      } else {
+        router.replace("/(auth)/(tabs)");
+      }
     },
     onError: (error: Error) => {
       if (

@@ -2,11 +2,12 @@ import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
 import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { oAuthProxy } from "better-auth/plugins";
+import { anonymous, oAuthProxy } from "better-auth/plugins";
 
 import { db } from "@acme/db/client";
 
 interface AuthLogger {
+  info: (obj: unknown, msg: string) => void;
   error: (obj: unknown, msg: string) => void;
 }
 
@@ -36,6 +37,32 @@ export function initAuth<
         productionURL: options.productionUrl,
       }),
       expo(),
+      anonymous({
+        emailDomainName: "anon.wearbloom.app",
+        onLinkAccount: ({ anonymousUser, newUser }) => {
+          try {
+            // TODO(Story-3.2): Enable when renders table exists
+            // await db.update(renders).set({ userId: newUser.user.id }).where(eq(renders.userId, anonymousUser.user.id));
+            // TODO(Story-4.1): Grant free render credits on account creation
+            options.logger.info(
+              {
+                anonymousUserId: anonymousUser.user.id,
+                newUserId: newUser.user.id,
+              },
+              "Anonymous account linked",
+            );
+          } catch (error) {
+            options.logger.error(
+              {
+                error,
+                anonymousUserId: anonymousUser.user.id,
+                newUserId: newUser.user.id,
+              },
+              "Failed to complete onLinkAccount migration",
+            );
+          }
+        },
+      }),
       ...(options.extraPlugins ?? []),
     ],
     socialProviders: {
@@ -50,6 +77,14 @@ export function initAuth<
       "https://appleid.apple.com",
       ...(options.isDev ? ["exp://"] : []),
     ],
+    rateLimit: {
+      customRules: {
+        "/sign-in/anonymous": {
+          window: 60,
+          max: 5,
+        },
+      },
+    },
     onAPIError: {
       onError(error, ctx) {
         options.logger.error({ error, ctx }, "BETTER AUTH API ERROR");

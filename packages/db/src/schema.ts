@@ -8,6 +8,7 @@ export const users = pgTable("users", (t) => ({
   email: t.text().notNull().unique(),
   emailVerified: t.boolean().default(false),
   image: t.text(),
+  isAnonymous: t.boolean().default(false),
   createdAt: t.timestamp().defaultNow().notNull(),
   updatedAt: t.timestamp().defaultNow().notNull(),
 }));

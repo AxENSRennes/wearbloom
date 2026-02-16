@@ -149,10 +149,12 @@ const { useAppleSignIn } = await import("./useAppleSignIn");
 // ---------------------------------------------------------------------------
 // Minimal hook runner
 // ---------------------------------------------------------------------------
-function runHook(): ReturnType<typeof useAppleSignIn> {
+function runHook(
+  options?: Parameters<typeof useAppleSignIn>[0],
+): ReturnType<typeof useAppleSignIn> {
   let result!: ReturnType<typeof useAppleSignIn>;
   function TestComponent() {
-    result = useAppleSignIn();
+    result = useAppleSignIn(options);
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
@@ -295,6 +297,18 @@ describe("useAppleSignIn", () => {
 
     expect(grantCreditsMutateAsync).toHaveBeenCalled();
     expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
+  });
+
+  test("onSuccess calls custom onSuccess callback instead of default navigation", async () => {
+    const customOnSuccess = mock(() => Promise.resolve());
+    runHook({ onSuccess: customOnSuccess });
+    expect(onSuccessCb).toBeDefined();
+
+    await onSuccessCb!();
+
+    expect(grantCreditsMutateAsync).toHaveBeenCalled();
+    expect(customOnSuccess).toHaveBeenCalled();
+    expect(routerMock.replace).not.toHaveBeenCalled();
   });
 
   test("onSuccess navigates even if grantCredits fails", async () => {

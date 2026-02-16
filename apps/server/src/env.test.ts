@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { z } from "zod/v4";
 
 // Replicate the schema from env.ts to test validation logic
@@ -13,7 +13,9 @@ describe("env validation", () => {
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/wearbloom",
       PORT: "4000",
     });
-    expect(result.DATABASE_URL).toBe("postgresql://postgres:postgres@localhost:5432/wearbloom");
+    expect(result.DATABASE_URL).toBe(
+      "postgresql://postgres:postgres@localhost:5432/wearbloom",
+    );
     expect(result.PORT).toBe(4000);
   });
 

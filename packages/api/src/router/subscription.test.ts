@@ -12,6 +12,7 @@ const mockSession = {
     id: "sess-credit",
     token: "tok-credit",
     expiresAt: new Date("2030-01-01"),
+    createdAt: new Date("2024-01-01"),
     userId: TEST_USER_ID,
   },
 };

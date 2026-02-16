@@ -17,6 +17,7 @@ type RouterInputs = inferRouterInputs<AppRouter>;
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export { type AppRouter, appRouter } from "./root";
+export { createAnonymousCleanupService } from "./services/anonymousCleanup";
 export { createTRPCContext } from "./trpc";
 export type { AppleIapDeps } from "./trpc";
 export type { RouterInputs, RouterOutputs };

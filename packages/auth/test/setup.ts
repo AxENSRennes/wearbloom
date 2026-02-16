@@ -1,7 +1,7 @@
 import { mock } from "bun:test";
 
 // Mock @acme/db/client — drizzle client requires DATABASE_URL at import time
-mock.module("@acme/db/client", () => ({
+void mock.module("@acme/db/client", () => ({
   db: {},
 }));
 
@@ -19,21 +19,22 @@ const mockBetterAuth = mock(
     }) as unknown,
 );
 
-mock.module("better-auth", () => ({
+void mock.module("better-auth", () => ({
   betterAuth: mockBetterAuth,
 }));
 
-mock.module("better-auth/adapters/drizzle", () => ({
+void mock.module("better-auth/adapters/drizzle", () => ({
   drizzleAdapter: mock(
     (_db: unknown, _opts: unknown) => (_options: unknown) => ({}),
   ),
 }));
 
-mock.module("better-auth/plugins", () => ({
+void mock.module("better-auth/plugins", () => ({
   oAuthProxy: mock((_opts: unknown) => ({ id: "oAuthProxy" })),
+  anonymous: mock((_opts?: unknown) => ({ id: "anonymous", _opts })),
 }));
 
-mock.module("@better-auth/expo", () => ({
+void mock.module("@better-auth/expo", () => ({
   expo: mock(() => ({ id: "expo" })),
 }));
 
