@@ -5,10 +5,10 @@ import {
   enqueueUpload,
   getQueueLength,
   processQueue,
-} from "./upload-queue";
+} from "./uploadQueue";
 import { mmkvStorage } from "./mmkv";
 
-import type { QueuedUpload } from "./upload-queue";
+import type { QueuedUpload } from "./uploadQueue";
 
 const mockPayload: QueuedUpload = {
   id: "test-upload-1",

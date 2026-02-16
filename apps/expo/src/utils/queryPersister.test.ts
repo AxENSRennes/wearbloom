@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 
 import { mmkvStorage } from "./mmkv";
-import { clientPersister } from "./query-persister";
+import { clientPersister } from "./queryPersister";
 
 describe("query-persister", () => {
   test("clientPersister is exported and defined", () => {

@@ -10,7 +10,7 @@ import { ToastProvider } from "@acme/ui";
 
 import { queryClient } from "~/utils/api";
 import { hasAcceptedConsent } from "~/utils/consent-store";
-import { clientPersister } from "~/utils/query-persister";
+import { clientPersister } from "~/utils/queryPersister";
 
 import "../styles.css";
 

@@ -10,7 +10,7 @@ import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
-import { compressImage } from "~/utils/image-compressor";
+import { compressImage } from "~/utils/imageCompressor";
 
 export function BodyPhotoManager() {
   const queryClient = useQueryClient();

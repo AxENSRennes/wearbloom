@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 
-import { compressImage } from "./image-compressor";
+import { compressImage } from "./imageCompressor";
 
 describe("compressImage", () => {
   test("calls manipulateAsync with correct resize, format and compress params", async () => {

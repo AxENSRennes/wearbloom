@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
-import { processQueue } from "~/utils/upload-queue";
+import { processQueue } from "~/utils/uploadQueue";
 
 import { useNetworkStatus } from "./useNetworkStatus";
 

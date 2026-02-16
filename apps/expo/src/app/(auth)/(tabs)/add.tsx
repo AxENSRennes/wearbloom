@@ -19,8 +19,8 @@ import {
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { trpc } from "~/utils/api";
-import { compressImage } from "~/utils/image-compressor";
-import { enqueueUpload } from "~/utils/upload-queue";
+import { compressImage } from "~/utils/imageCompressor";
+import { enqueueUpload } from "~/utils/uploadQueue";
 
 /**
  * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
