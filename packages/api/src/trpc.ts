@@ -6,19 +6,34 @@ import { db } from "@acme/db/client";
 
 export interface AuthInstance {
   api: {
-    getSession: (opts: {
-      headers: Headers;
-    }) => Promise<{
-      user: { id: string; name: string | null; email: string };
-      session: { id: string; token: string; expiresAt: Date; userId: string };
+    getSession: (opts: { headers: Headers }) => Promise<{
+      user: {
+        id: string;
+        name: string | null;
+        email: string;
+        isAnonymous?: boolean | null;
+      };
+      session: {
+        id: string;
+        token: string;
+        expiresAt: Date;
+        createdAt: Date;
+        userId: string;
+      };
     } | null>;
     signOut: (opts: { headers: Headers }) => Promise<unknown>;
   };
 }
 
+export interface AnonymousConfig {
+  sessionTtlHours: number;
+  maxRenders: number;
+}
+
 export const createTRPCContext = async (opts: {
   headers: Headers;
   auth: AuthInstance;
+  anonymousConfig?: AnonymousConfig;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -26,6 +41,7 @@ export const createTRPCContext = async (opts: {
     session,
     auth: opts.auth,
     headers: opts.headers,
+    anonymousConfig: opts.anonymousConfig,
   };
 };
 
@@ -48,9 +64,49 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+  if (ctx.session.user.isAnonymous) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "ACCOUNT_REQUIRED",
+    });
+  }
   return next({
     ctx: {
       session: { ...ctx.session, user: ctx.session.user },
     },
   });
 });
+
+const enforceEphemeralLimits = t.middleware(({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  if (ctx.session.user.isAnonymous) {
+    const ttlHours = ctx.anonymousConfig?.sessionTtlHours ?? 24;
+    const ttlMs = ttlHours * 60 * 60 * 1000;
+    const sessionAge =
+      Date.now() - new Date(ctx.session.session.createdAt).getTime();
+
+    if (sessionAge > ttlMs) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "ANONYMOUS_SESSION_EXPIRED",
+      });
+    }
+
+    // TODO: Enable when renders table exists (Story 3.2)
+    // Check render usage:
+    // const existingRenders = await ctx.db.select().from(renders).where(eq(renders.userId, ctx.session.user.id));
+    // const maxRenders = ctx.anonymousConfig?.maxRenders ?? 1;
+    // if (existingRenders.length >= maxRenders) {
+    //   throw new TRPCError({ code: "FORBIDDEN", message: "ANONYMOUS_LIMIT_REACHED" });
+    // }
+  }
+
+  return next({
+    ctx: { session: { ...ctx.session, user: ctx.session.user } },
+  });
+});
+
+export const ephemeralProcedure = t.procedure.use(enforceEphemeralLimits);

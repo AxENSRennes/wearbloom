@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { createElement } from "react";
+import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import SignInScreen from "./sign-in";

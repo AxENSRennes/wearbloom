@@ -2,18 +2,22 @@ import { useState } from "react";
 import { Platform, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
-import { Button, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
+import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
 import { authClient } from "~/utils/auth";
+import { markOnboardingComplete } from "~/utils/onboardingState";
 
 const PLACEHOLDER_COLOR = wearbloomTheme.colors["text-tertiary"];
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const isFromOnboarding = from === "onboarding";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,23 +26,61 @@ export default function SignUpScreen() {
   const [passwordError, setPasswordError] = useState("");
 
   const emailSignUp = useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      email: string;
+      password: string;
+    }) => {
       const result = await authClient.signUp.email(data);
       if (result.error) throw new Error(result.error.message);
       return result.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      if (isFromOnboarding) {
+        await markOnboardingComplete();
+        // TODO(Story-1.5): Associate onboarding body photo with user profile after body avatar management is implemented
+        // TODO(Epic-2): Stock garments should appear in wardrobe grid after wardrobe management is implemented
+      }
+      showToast({
+        message: "Welcome! Your wardrobe is ready.",
+        variant: "success",
+      });
       router.replace("/(auth)/(tabs)");
     },
     onError: (error: Error) => {
-      showToast({
-        message: error.message || "Sign up failed",
-        variant: "error",
-      });
+      const msg = error.message;
+      let userMessage = "Sign up failed. Please try again.";
+      if (
+        msg.includes("already") ||
+        msg.includes("exists") ||
+        msg.includes("UNIQUE")
+      ) {
+        userMessage = "An account with this email already exists";
+      } else if (
+        msg.includes("network") ||
+        msg.includes("connection") ||
+        msg.includes("fetch")
+      ) {
+        userMessage = "Connection lost. Try again.";
+      }
+      showToast({ message: userMessage, variant: "error" });
     },
   });
 
-  const appleSignIn = useAppleSignIn();
+  const appleSignIn = useAppleSignIn(
+    isFromOnboarding
+      ? {
+          onSuccess: async () => {
+            await markOnboardingComplete();
+            showToast({
+              message: "Welcome! Your wardrobe is ready.",
+              variant: "success",
+            });
+            router.replace("/(auth)/(tabs)");
+          },
+        }
+      : undefined,
+  );
 
   const isLoading = emailSignUp.isPending || appleSignIn.isPending;
 
@@ -88,15 +130,32 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 justify-center px-6">
-        <ThemedText variant="display" className="mb-8 text-center">
-          Create Account
+        <ThemedText
+          variant="display"
+          className={`text-center ${isFromOnboarding ? "mb-2" : "mb-8"}`}
+        >
+          {isFromOnboarding ? "Create Free Account" : "Create Account"}
         </ThemedText>
+
+        {isFromOnboarding && (
+          <ThemedText
+            variant="body"
+            className="mb-8 text-center text-[15px] text-text-secondary"
+            accessibilityRole="text"
+          >
+            Save your wardrobe and unlock more free try-ons
+          </ThemedText>
+        )}
 
         {Platform.OS === "ios" && (
           <>
             <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              buttonType={
+                AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
+              }
+              buttonStyle={
+                AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
               cornerRadius={12}
               style={{ height: 52, width: "100%" }}
               onPress={() => appleSignIn.mutate()}
@@ -104,7 +163,10 @@ export default function SignUpScreen() {
 
             <View className="my-6 flex-row items-center">
               <View className="flex-1 border-b border-border" />
-              <ThemedText variant="caption" className="mx-4 text-text-secondary">
+              <ThemedText
+                variant="caption"
+                className="mx-4 text-text-secondary"
+              >
                 or sign up with email
               </ThemedText>
               <View className="flex-1 border-b border-border" />
@@ -173,19 +235,28 @@ export default function SignUpScreen() {
         </View>
 
         <Button
-          label="Create Account"
+          label={isFromOnboarding ? "Create Free Account" : "Create Account"}
           onPress={handleSignUp}
           isLoading={emailSignUp.isPending}
           disabled={isLoading}
         />
 
         <View className="mt-6 items-center">
-          <Button
-            label="Already have an account? Sign in"
-            variant="ghost"
-            onPress={() => router.replace("/(public)/sign-in")}
-            disabled={isLoading}
-          />
+          {isFromOnboarding ? (
+            <Button
+              label="Skip for now"
+              variant="ghost"
+              onPress={() => router.back()}
+              disabled={isLoading}
+            />
+          ) : (
+            <Button
+              label="Already have an account? Sign in"
+              variant="ghost"
+              onPress={() => router.replace("/(public)/sign-in")}
+              disabled={isLoading}
+            />
+          )}
         </View>
       </View>
     </SafeAreaView>

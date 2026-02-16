@@ -6,7 +6,9 @@ import { showToast } from "@acme/ui";
 
 import { authClient } from "~/utils/auth";
 
-export function useAppleSignIn() {
+export function useAppleSignIn(options?: {
+  onSuccess?: () => void | Promise<void>;
+}) {
   const router = useRouter();
 
   return useMutation({
@@ -45,8 +47,12 @@ export function useAppleSignIn() {
 
       return result.data;
     },
-    onSuccess: () => {
-      router.replace("/(auth)/(tabs)");
+    onSuccess: async () => {
+      if (options?.onSuccess) {
+        await options.onSuccess();
+      } else {
+        router.replace("/(auth)/(tabs)");
+      }
     },
     onError: (error: Error) => {
       if (

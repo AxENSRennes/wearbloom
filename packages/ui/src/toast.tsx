@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 
 import { wearbloomTheme } from "./gluestack-config";
@@ -15,10 +16,19 @@ interface ToastEntry extends ToastConfig {
   id: number;
 }
 
-export const VARIANT_STYLES: Record<ToastVariant, { borderColor: string; defaultDuration: number }> = {
-  success: { borderColor: wearbloomTheme.colors.success, defaultDuration: 2000 },
+export const VARIANT_STYLES: Record<
+  ToastVariant,
+  { borderColor: string; defaultDuration: number }
+> = {
+  success: {
+    borderColor: wearbloomTheme.colors.success,
+    defaultDuration: 2000,
+  },
   error: { borderColor: wearbloomTheme.colors.error, defaultDuration: 4000 },
-  info: { borderColor: wearbloomTheme.colors["text-tertiary"], defaultDuration: 3000 },
+  info: {
+    borderColor: wearbloomTheme.colors["text-tertiary"],
+    defaultDuration: 3000,
+  },
 };
 
 let globalShow: ((config: ToastConfig) => void) | null = null;
@@ -29,17 +39,17 @@ export function showToast(config: ToastConfig) {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastEntry | null>(null);
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const translateYRef = useRef(new Animated.Value(-100));
   const nextId = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const dismiss = useCallback(() => {
-    Animated.timing(translateY, {
+    Animated.timing(translateYRef.current, {
       toValue: -100,
       duration: 200,
       useNativeDriver: true,
     }).start(() => setToast(null));
-  }, [translateY]);
+  }, []);
 
   const show = useCallback(
     (config: ToastConfig) => {
@@ -50,8 +60,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       const duration = config.duration ?? defaultDuration;
 
       setToast({ ...config, id });
-      translateY.setValue(-100);
-      Animated.spring(translateY, {
+      translateYRef.current.setValue(-100);
+      Animated.spring(translateYRef.current, {
         toValue: 0,
         useNativeDriver: true,
         damping: 15,
@@ -60,7 +70,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       timerRef.current = setTimeout(dismiss, duration);
     },
-    [dismiss, translateY],
+    [dismiss],
   );
 
   useEffect(() => {
@@ -80,7 +90,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             top: 50,
             left: 16,
             right: 16,
-            transform: [{ translateY }],
+            // eslint-disable-next-line react-hooks/refs -- React Native Animated.Value is read natively, not during React render
+            transform: [{ translateY: translateYRef.current }],
             zIndex: 9999,
           }}
         >
@@ -103,7 +114,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               elevation: 4,
             }}
           >
-            <Text style={{ color: wearbloomTheme.colors["text-primary"], fontSize: 15, lineHeight: 22 }}>
+            <Text
+              style={{
+                color: wearbloomTheme.colors["text-primary"],
+                fontSize: 15,
+                lineHeight: 22,
+              }}
+            >
               {toast.message}
             </Text>
           </Pressable>

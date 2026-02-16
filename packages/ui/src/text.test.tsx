@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { themedTextStyle, ThemedText } from "./text";
+import { ThemedText, themedTextStyle } from "./text";
 
 describe("themedTextStyle", () => {
   test("display variant contains text-[28px]", () => {

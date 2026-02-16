@@ -85,4 +85,14 @@ export const baseConfig = defineConfig(
       },
     },
   },
+  // Relax rules for test files not included in package tsconfigs
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/test/setup.ts"],
+    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      "@typescript-eslint/no-empty-function": "off",
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 );

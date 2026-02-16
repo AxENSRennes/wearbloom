@@ -1,7 +1,7 @@
-import { describe, expect, test, beforeEach } from "bun:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import * as SecureStore from "expo-secure-store";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import RootLayout from "./_layout";
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { Spinner } from "./spinner";
 import { wearbloomTheme } from "./gluestack-config";
+import { Spinner } from "./spinner";
 
 describe("Spinner", () => {
   test("is a function", () => {
