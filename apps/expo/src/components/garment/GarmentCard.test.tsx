@@ -1,5 +1,4 @@
 import { describe, expect, mock, test } from "bun:test";
-import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { GarmentCard } from "./GarmentCard";

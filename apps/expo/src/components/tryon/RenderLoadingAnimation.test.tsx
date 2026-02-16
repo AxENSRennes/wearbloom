@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as reanimated from "react-native-reanimated";
 

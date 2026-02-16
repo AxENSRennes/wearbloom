@@ -3,12 +3,12 @@ import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
-import BottomSheet from "@gorhom/bottom-sheet";
+import type BottomSheet from "@gorhom/bottom-sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
-import type { CategoryFilter, GarmentCategory } from "~/constants/categories";
+import type { CategoryFilter } from "~/constants/categories";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
 import { isStockGarment } from "~/types/wardrobe";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
@@ -36,7 +36,7 @@ export default function WardrobeScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isConnected } = useNetworkStatus();
-  const isManualRefresh = useRef(false);
+  const [isManualRefresh, setIsManualRefresh] = useState(false);
 
   const supportedCategoriesQuery = useQuery(
     trpc.tryon.getSupportedCategories.queryOptions(),
@@ -63,9 +63,9 @@ export default function WardrobeScreen() {
     }
   }, [garmentToDelete, deleteMutation]);
 
-  const { data: garments, isLoading, isFetching, isError, error } = useQuery(
+  const { data: garments, isLoading, isFetching, isError, error: _error } = useQuery(
     trpc.garment.list.queryOptions(
-      selectedCategory === "all" ? undefined : { category: selectedCategory as GarmentCategory },
+      selectedCategory === "all" ? undefined : { category: selectedCategory },
     ),
   );
 
@@ -79,14 +79,15 @@ export default function WardrobeScreen() {
       showToast({ message: "No internet connection", variant: "error" });
       return;
     }
-    isManualRefresh.current = true;
+    setIsManualRefresh(true);
     void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
   }, [queryClient, isConnected]);
 
   // Reset manual refresh flag when fetch completes
   useEffect(() => {
     if (!isFetching) {
-      isManualRefresh.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing local flag with query state
+      setIsManualRefresh(false);
     }
   }, [isFetching]);
 
@@ -102,28 +103,31 @@ export default function WardrobeScreen() {
   }, []);
 
   const requestRenderMutation = useMutation(
-    trpc.tryon.requestRender.mutationOptions({
-      onSuccess: (data) => {
-        bottomSheetRef.current?.close();
-        router.push(`/render/${data.renderId}` as never);
-      },
-      onError: (error) => {
-        if (error.message === "INVALID_CATEGORY") {
-          showToast({ message: "Try-on not available for this category.", variant: "error" });
-        } else if (error.message === "RENDER_FAILED") {
-          showToast({ message: "Render failed. Try again.", variant: "error" });
-        } else {
-          showToast({ message: "Something went wrong.", variant: "error" });
-        }
-      },
-    }),
+    trpc.tryon.requestRender.mutationOptions(),
   );
 
   const handleTryOn = useCallback(
     (garmentId: string) => {
-      requestRenderMutation.mutate({ garmentId });
+      requestRenderMutation.mutate(
+        { garmentId },
+        {
+          onSuccess: (data) => {
+            bottomSheetRef.current?.close();
+            router.push(`/render/${data.renderId}` as never);
+          },
+          onError: (err) => {
+            if (err.message === "INVALID_CATEGORY") {
+              showToast({ message: "Try-on not available for this category.", variant: "error" });
+            } else if (err.message === "RENDER_FAILED") {
+              showToast({ message: "Render failed. Try again.", variant: "error" });
+            } else {
+              showToast({ message: "Something went wrong.", variant: "error" });
+            }
+          },
+        },
+      );
     },
-    [requestRenderMutation],
+    [requestRenderMutation, router],
   );
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {
@@ -141,7 +145,7 @@ export default function WardrobeScreen() {
         onPress={() => setSelectedGarment(item)}
         onLongPress={
           !isStockGarment(item)
-            ? () => setGarmentToDelete(item as PersonalGarment)
+            ? () => setGarmentToDelete(item)
             : undefined
         }
         columnWidth={COLUMN_WIDTH}
@@ -210,7 +214,7 @@ export default function WardrobeScreen() {
             numColumns={NUM_COLUMNS}
             estimatedItemSize={ITEM_HEIGHT}
             recycleItems
-            refreshing={isManualRefresh.current && isFetching}
+            refreshing={isManualRefresh && isFetching}
             onRefresh={handleRefresh}
             contentContainerStyle={{ paddingTop: CATEGORY_PILLS_HEIGHT }}
             columnWrapperStyle={{ gap: GUTTER }}

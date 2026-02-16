@@ -61,11 +61,11 @@
   "devDependencies": {
     "@acme/api": "workspace:*",
     "@acme/eslint-config": "workspace:*",
-    "@types/bun": "catalog:",
     "@acme/prettier-config": "workspace:*",
     "@acme/tailwind-config": "workspace:*",
     "@acme/tsconfig": "workspace:*",
     "@happy-dom/global-registrator": "^17.4.4",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:react19",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -10,7 +10,7 @@ const mockRun = mock<(...args: unknown[]) => Promise<unknown>>(() =>
   Promise.resolve("https://replicate-output.png"),
 );
 
-mock.module("replicate", () => ({
+void mock.module("replicate", () => ({
   default: class MockReplicate {
     constructor(_opts?: unknown) {}
     run = mockRun;
@@ -387,7 +387,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
 
     // Verify replicate.run was called with signal in options
     expect(mockRun).toHaveBeenCalledTimes(1);
-    const runArgs = mockRun.mock.calls[0] as unknown[];
+    const runArgs = mockRun.mock.calls[0]!;
     // First arg is the model identifier string
     expect(runArgs[0]).toBe(
       "cjwbw/rembg:fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",

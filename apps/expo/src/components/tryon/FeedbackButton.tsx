@@ -71,6 +71,7 @@ export function FeedbackButton({
       return;
     }
 
+    // eslint-disable-next-line react-hooks/immutability
     fadeOpacity.value = withTiming(0, { duration: FADE_OUT_MS }, (finished) => {
       if (finished) {
         runOnJS(onDismissRef.current)();
@@ -100,6 +101,7 @@ export function FeedbackButton({
     setState("expanded");
 
     if (reducedMotion) {
+      // eslint-disable-next-line react-hooks/immutability
       expandWidth.value = EXPANDED_WIDTH;
     } else {
       expandWidth.value = withSpring(EXPANDED_WIDTH, { damping: 15, stiffness: 300 });
@@ -115,6 +117,7 @@ export function FeedbackButton({
 
     // Collapse back to small size for confirmed state
     if (reducedMotion) {
+      // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
       expandWidth.value = COLLAPSED_WIDTH;
     } else {
       expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });
@@ -134,6 +137,7 @@ export function FeedbackButton({
     setState("category_picker");
 
     if (reducedMotion) {
+      // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
       expandWidth.value = CATEGORY_PICKER_WIDTH;
     } else {
       expandWidth.value = withSpring(CATEGORY_PICKER_WIDTH, { damping: 15, stiffness: 300 });
@@ -147,6 +151,7 @@ export function FeedbackButton({
 
       // Collapse back to small size for confirmed state
       if (reducedMotion) {
+        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
         expandWidth.value = COLLAPSED_WIDTH;
       } else {
         expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });

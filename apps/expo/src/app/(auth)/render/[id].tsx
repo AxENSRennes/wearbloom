@@ -42,7 +42,7 @@ export default function RenderScreen() {
   const uiOpacity = useSharedValue(0);
 
   const { data } = useQuery({
-    ...trpc.tryon.getRenderStatus.queryOptions({ renderId: id ?? "" }),
+    ...trpc.tryon.getRenderStatus.queryOptions({ renderId: id }),
     enabled: !!id,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
@@ -89,7 +89,7 @@ export default function RenderScreen() {
 
   const handleFeedbackSubmit = useCallback(
     (rating: "thumbs_up" | "thumbs_down", category?: string) => {
-      submitFeedbackMutation.mutate({ renderId: id ?? "", rating, category });
+      submitFeedbackMutation.mutate({ renderId: id, rating, category });
     },
     [submitFeedbackMutation, id],
   );

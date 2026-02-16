@@ -28,9 +28,9 @@
   },
   "devDependencies": {
     "@acme/eslint-config": "workspace:*",
-    "@types/bun": "catalog:",
     "@acme/prettier-config": "workspace:*",
     "@acme/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",
     "eslint": "catalog:",
