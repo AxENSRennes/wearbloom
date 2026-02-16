@@ -41,8 +41,9 @@ export function initAuth<
         emailDomainName: "anon.wearbloom.app",
         onLinkAccount: async ({ anonymousUser, newUser }) => {
           try {
-            // TODO: Enable when renders table exists (Story 3.2)
+            // TODO(Story-3.2): Enable when renders table exists
             // await db.update(renders).set({ userId: newUser.user.id }).where(eq(renders.userId, anonymousUser.user.id));
+            // TODO(Story-4.1): Grant free render credits on account creation
             options.logger.info(
               {
                 anonymousUserId: anonymousUser.user.id,

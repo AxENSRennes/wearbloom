@@ -224,10 +224,13 @@ const routerMock = {
   canGoBack: () => true,
 };
 
+const searchParamsRef: { current: Record<string, string> } = { current: {} };
+
 mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
+  useLocalSearchParams: () => searchParamsRef.current,
   Redirect: mockComponent("Redirect"),
   Slot: mockComponent("Slot"),
   Stack: Object.assign(mockComponent("Stack"), {
@@ -235,6 +238,7 @@ mock.module("expo-router", () => ({
   }),
   Link: mockComponent("Link"),
   __router: routerMock,
+  __searchParams: searchParamsRef,
 }));
 
 // ---------------------------------------------------------------------------

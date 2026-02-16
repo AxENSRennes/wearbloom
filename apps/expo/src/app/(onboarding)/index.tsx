@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
 import { OnboardingFlow } from "~/components/onboarding/OnboardingFlow";
-import { markOnboardingComplete } from "~/utils/onboardingState";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -31,9 +30,8 @@ export default function OnboardingScreen() {
     [],
   );
 
-  const handleCreateAccount = useCallback(async () => {
-    await markOnboardingComplete();
-    router.push("/(public)/sign-up");
+  const handleCreateAccount = useCallback(() => {
+    router.push("/(public)/sign-up?from=onboarding");
   }, [router]);
 
   const handleTryAnother = useCallback(() => {
