@@ -473,6 +473,65 @@ mock.module("superjson", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// react-native-gesture-handler — mock GestureHandlerRootView and gestures
+// ---------------------------------------------------------------------------
+mock.module("react-native-gesture-handler", () => ({
+  GestureHandlerRootView: mockComponent("GestureHandlerRootView"),
+  Gesture: {
+    Pan: () => ({ onUpdate: () => ({}), onEnd: () => ({}) }),
+    Tap: () => ({ onEnd: () => ({}) }),
+  },
+  GestureDetector: mockComponent("GestureDetector"),
+  Swipeable: mockComponent("Swipeable"),
+  DrawerLayout: mockComponent("DrawerLayout"),
+  State: {},
+  PanGestureHandler: mockComponent("PanGestureHandler"),
+  TapGestureHandler: mockComponent("TapGestureHandler"),
+  FlingGestureHandler: mockComponent("FlingGestureHandler"),
+  ForceTouchGestureHandler: mockComponent("ForceTouchGestureHandler"),
+  LongPressGestureHandler: mockComponent("LongPressGestureHandler"),
+  ScrollView: mockComponent("GHScrollView"),
+  FlatList: mockComponent("GHFlatList"),
+}));
+
+// ---------------------------------------------------------------------------
+// @gorhom/bottom-sheet — mock BottomSheet component with ref methods
+// ---------------------------------------------------------------------------
+mock.module("@gorhom/bottom-sheet", () => {
+  const BottomSheet = React.forwardRef(
+    ({ children, onChange, backdropComponent, handleComponent, ...props }: any, ref: any) => {
+      React.useImperativeHandle(ref, () => ({
+        snapToIndex: mock((index: number) => onChange?.(index)),
+        close: mock(() => onChange?.(-1)),
+        expand: mock(() => {}),
+        collapse: mock(() => {}),
+      }));
+      const backdrop = backdropComponent
+        ? backdropComponent({ animatedIndex: { value: 0 }, animatedPosition: { value: 0 } })
+        : null;
+      const handle = handleComponent
+        ? handleComponent({})
+        : null;
+      return React.createElement("mock-BottomSheet", props, backdrop, handle, children);
+    },
+  );
+  BottomSheet.displayName = "BottomSheet";
+
+  return {
+    __esModule: true,
+    default: BottomSheet,
+    BottomSheetView: ({ children, ...props }: any) =>
+      React.createElement("mock-BottomSheetView", props, children),
+    BottomSheetBackdrop: (props: any) =>
+      React.createElement("mock-BottomSheetBackdrop", props),
+    BottomSheetScrollView: ({ children, ...props }: any) =>
+      React.createElement("mock-BottomSheetScrollView", props, children),
+    BottomSheetFooter: ({ children, ...props }: any) =>
+      React.createElement("mock-BottomSheetFooter", props, children),
+  };
+});
+
+// ---------------------------------------------------------------------------
 // react-native-reanimated — mock animation hooks for press/skeleton animations
 // ---------------------------------------------------------------------------
 mock.module("react-native-reanimated", () => {

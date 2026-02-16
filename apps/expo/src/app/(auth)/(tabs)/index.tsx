@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegendList } from "@legendapp/list";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
@@ -14,6 +15,7 @@ import { trpc } from "~/utils/api";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
 import { GarmentCard } from "~/components/garment/GarmentCard";
+import { GarmentDetailSheet } from "~/components/garment/GarmentDetailSheet";
 import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
@@ -28,6 +30,8 @@ const CATEGORY_PILLS_HEIGHT = 60;
 export default function WardrobeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
   const [garmentToDelete, setGarmentToDelete] = useState<PersonalGarment | null>(null);
+  const [selectedGarment, setSelectedGarment] = useState<WardrobeItem | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const queryClient = useQueryClient();
   const { isConnected } = useNetworkStatus();
   const isManualRefresh = useRef(false);
@@ -79,6 +83,34 @@ export default function WardrobeScreen() {
     }
   }, [isFetching]);
 
+  // Open bottom sheet when a garment is selected
+  useEffect(() => {
+    if (selectedGarment) {
+      bottomSheetRef.current?.snapToIndex(0);
+    }
+  }, [selectedGarment]);
+
+  const handleSheetDismiss = useCallback(() => {
+    setSelectedGarment(null);
+  }, []);
+
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        setSelectedGarment(null);
+      }
+    },
+    [],
+  );
+
+  const handleTryOn = useCallback(
+    (_garmentId: string) => {
+      showToast({ message: "Try-on coming in Story 3.2", variant: "info" });
+      bottomSheetRef.current?.close();
+    },
+    [],
+  );
+
   const wardrobeItems: WardrobeItem[] = useMemo(() => {
     const personal: WardrobeItem[] = (garments ?? []).map((g) => ({
       ...g,
@@ -91,9 +123,7 @@ export default function WardrobeScreen() {
     ({ item }: { item: WardrobeItem }) => (
       <GarmentCard
         garment={item}
-        onPress={() => {
-          // Story 3.1 will implement garment detail bottom sheet
-        }}
+        onPress={() => setSelectedGarment(item)}
         onLongPress={
           !isStockGarment(item)
             ? () => setGarmentToDelete(item as PersonalGarment)
@@ -182,6 +212,12 @@ export default function WardrobeScreen() {
         confirmLabel="Delete"
         variant="destructive"
         isLoading={deleteMutation.isPending}
+      />
+      <GarmentDetailSheet
+        ref={bottomSheetRef}
+        garment={selectedGarment}
+        onDismiss={handleSheetDismiss}
+        onTryOn={handleTryOn}
       />
     </>
   );

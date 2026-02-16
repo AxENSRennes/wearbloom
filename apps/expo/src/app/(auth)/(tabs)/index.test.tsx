@@ -502,6 +502,38 @@ describe("WardrobeScreen", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Bottom sheet integration tests (Story 3.1)
+  // -------------------------------------------------------------------------
+  test("renders GarmentDetailSheet component in WardrobeScreen", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // GarmentDetailSheet renders a BottomSheet component
+    expect(html).toContain("mock-BottomSheet");
+  });
+
+  test("GarmentDetailSheet is initially closed (index=-1)", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(html).toContain('index="-1"');
+  });
+
+  // -------------------------------------------------------------------------
   // Offline-awareness tests (Story 2.5)
   // -------------------------------------------------------------------------
   test("cached data renders when isFetching=true but data exists (no skeleton)", () => {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts, DMSerifDisplay_400Regular } from "@expo-google-fonts/dm-serif-display";
 import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -41,20 +42,22 @@ export default function RootLayout() {
   }
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister: clientPersister,
-        dehydrateOptions: {
-          shouldDehydrateQuery: (query) => query.state.status === "success",
-        },
-      }}
-    >
-      <ToastProvider>
-        {!consented && <Redirect href="/(public)/consent" />}
-        <Slot />
-      </ToastProvider>
-      <StatusBar style="dark" />
-    </PersistQueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: clientPersister,
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => query.state.status === "success",
+          },
+        }}
+      >
+        <ToastProvider>
+          {!consented && <Redirect href="/(public)/consent" />}
+          <Slot />
+        </ToastProvider>
+        <StatusBar style="dark" />
+      </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

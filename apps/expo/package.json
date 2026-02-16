@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@acme/ui": "workspace:*",
+    "@gorhom/bottom-sheet": "^5.1.9",
     "@better-auth/expo": "catalog:",
     "@expo-google-fonts/dm-serif-display": "^0.4.2",
     "@legendapp/list": "^2.0.14",
