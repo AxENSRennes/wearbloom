@@ -40,11 +40,13 @@ export function GarmentCard({ garment, onPress, onLongPress, columnWidth }: Garm
 
   const handlePressIn = () => {
     if (reducedMotion) return;
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
   };
 
   const handlePressOut = () => {
     if (reducedMotion) return;
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 

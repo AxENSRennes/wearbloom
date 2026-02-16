@@ -42,7 +42,7 @@ function createChainableMock(result: QueryResult = []) {
 
 const mockDb = createChainableMock();
 
-mock.module("@acme/db/client", () => ({
+void mock.module("@acme/db/client", () => ({
   db: mockDb,
   __mockDb: mockDb,
 }));

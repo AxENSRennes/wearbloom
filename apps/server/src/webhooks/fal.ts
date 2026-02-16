@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 
 import type { Logger } from "pino";
 
+import type { db as _dbInstance } from "@acme/db/client";
+
 import { eq } from "@acme/db";
 import { tryOnRenders } from "@acme/db/schema";
 
@@ -10,12 +12,7 @@ const JWKS_URL = "https://rest.alpha.fal.ai/.well-known/jwks.json";
 const TIMESTAMP_TOLERANCE_SECONDS = 300; // 5 minutes
 
 interface FalWebhookDeps {
-  db: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    select: (...args: any[]) => any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    update: (...args: any[]) => any;
-  };
+  db: typeof _dbInstance;
   imageStorage: {
     saveRenderResult(
       userId: string,
@@ -97,12 +94,12 @@ interface FalWebhookPayload {
   request_id: string;
   status: "OK" | "ERROR";
   payload?: {
-    images?: Array<{
+    images?: {
       url: string;
       content_type: string;
       width: number;
       height: number;
-    }>;
+    }[];
     detail?: unknown;
   };
   error?: string;

@@ -103,17 +103,17 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ error: "Too many requests" }));
       return;
     }
-    authHandler(req, res);
+    void authHandler(req, res);
     return;
   }
 
   if (req.url?.startsWith("/api/webhooks/fal") && req.method === "POST") {
-    falWebhookHandler(req, res);
+    void falWebhookHandler(req, res);
     return;
   }
 
   if (req.url?.startsWith("/api/images/")) {
-    imageHandler(req, res);
+    void imageHandler(req, res);
     return;
   }
 

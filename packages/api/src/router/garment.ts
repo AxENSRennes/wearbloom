@@ -149,7 +149,7 @@ export const garmentRouter = {
                 .set({ bgRemovalStatus: "failed" })
                 .where(eq(garments.id, garmentId));
             }
-          } catch (bgErr) {
+          } catch {
             try {
               await ctx.db
                 .update(garments)

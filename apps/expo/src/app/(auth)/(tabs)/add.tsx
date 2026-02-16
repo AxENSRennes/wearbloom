@@ -148,6 +148,7 @@ export default function AddGarmentScreen() {
         if (source === "camera") {
           const permission =
             await ImagePicker.requestCameraPermissionsAsync();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
           if (permission.status !== "granted") {
             showToast({
               message: "Camera permission is required to take a photo.",
@@ -162,6 +163,7 @@ export default function AddGarmentScreen() {
         } else {
           const permission =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
           if (permission.status !== "granted") {
             showToast({
               message: "Photo library permission is required.",
@@ -374,7 +376,7 @@ export default function AddGarmentScreen() {
                   color={wearbloomTheme.colors["text-primary"]}
                 />
               ),
-              onPress: () => handleCapture("camera"),
+              onPress: () => void handleCapture("camera"),
             },
             {
               label: "Import from Gallery",
@@ -384,7 +386,7 @@ export default function AddGarmentScreen() {
                   color={wearbloomTheme.colors["text-primary"]}
                 />
               ),
-              onPress: () => handleCapture("gallery"),
+              onPress: () => void handleCapture("gallery"),
             },
           ]}
         />

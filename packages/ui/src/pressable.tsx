@@ -1,5 +1,6 @@
+import type { PressableProps } from "react-native";
 import React from "react";
-import { Pressable as RNPressable, type PressableProps } from "react-native";
+import { Pressable as RNPressable } from "react-native";
 
 export interface ThemedPressableProps extends PressableProps {
   className?: string;

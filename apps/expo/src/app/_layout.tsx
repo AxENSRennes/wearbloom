@@ -14,7 +14,7 @@ import { clientPersister } from "~/utils/query-persister";
 
 import "../styles.css";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [consented, setConsented] = useState(() => hasAcceptedConsent());
@@ -28,7 +28,7 @@ export default function RootLayout() {
       if (fontError) {
         console.warn("Failed to load DM Serif Display font:", fontError);
       }
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 

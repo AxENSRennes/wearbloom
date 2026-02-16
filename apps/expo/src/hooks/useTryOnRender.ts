@@ -10,12 +10,7 @@ export function useTryOnRender() {
   const pollCount = useRef(0);
 
   const requestMutation = useMutation(
-    trpc.tryon.requestRender.mutationOptions({
-      onSuccess: (data) => {
-        setRenderId(data.renderId);
-        pollCount.current = 0;
-      },
-    }),
+    trpc.tryon.requestRender.mutationOptions(),
   );
 
   const statusQuery = useQuery({
@@ -34,7 +29,15 @@ export function useTryOnRender() {
 
   const startRender = useCallback(
     (garmentId: string) => {
-      requestMutation.mutate({ garmentId });
+      requestMutation.mutate(
+        { garmentId },
+        {
+          onSuccess: (data) => {
+            setRenderId(data.renderId);
+            pollCount.current = 0;
+          },
+        },
+      );
     },
     [requestMutation],
   );

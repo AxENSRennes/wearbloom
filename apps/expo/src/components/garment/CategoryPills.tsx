@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import {
-  type LayoutChangeEvent,
+  
   LayoutAnimation,
   Pressable,
   ScrollView,
-  Text,
+  Text
 } from "react-native";
+import type {LayoutChangeEvent} from "react-native";
 
 import { cn } from "@acme/ui";
 

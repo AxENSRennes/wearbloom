@@ -1,5 +1,5 @@
-import React from "react";
-import { ActivityIndicator, type ActivityIndicatorProps } from "react-native";
+import type { ActivityIndicatorProps } from "react-native";
+import { ActivityIndicator } from "react-native";
 
 import { wearbloomTheme } from "./gluestack-config";
 

@@ -88,7 +88,7 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
         const online = await assertOnline();
         if (!online) return;
         onTryOn(garment.id);
-      } catch (_error) {
+      } catch {
         showToast({ message: "Something went wrong", variant: "error" });
       }
     }, [garment, onTryOn]);

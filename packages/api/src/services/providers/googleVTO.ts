@@ -8,9 +8,7 @@ import type {
   TryOnResult,
 } from "../tryOnProvider";
 
-export interface GoogleVTOFetcher {
-  (url: string, init: RequestInit): Promise<Response>;
-}
+export type GoogleVTOFetcher = (url: string, init: RequestInit) => Promise<Response>;
 
 export class GoogleVTOProvider implements TryOnProvider {
   readonly name = "google_vto" as const;
@@ -82,10 +80,10 @@ export class GoogleVTOProvider implements TryOnProvider {
     }
 
     const data = (await response.json()) as {
-      predictions: Array<{
+      predictions: {
         bytesBase64Encoded: string;
         mimeType?: string;
-      }>;
+      }[];
     };
 
     const prediction = data.predictions[0];
@@ -110,8 +108,8 @@ export class GoogleVTOProvider implements TryOnProvider {
     return { jobId };
   }
 
-  async getResult(jobId: string): Promise<TryOnResult | null> {
-    return this.resultStore.get(jobId) ?? null;
+  getResult(jobId: string): Promise<TryOnResult | null> {
+    return Promise.resolve(this.resultStore.get(jobId) ?? null);
   }
 
   private async toBase64(image: string | Buffer): Promise<string> {

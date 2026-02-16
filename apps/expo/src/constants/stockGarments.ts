@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment */
 import type { CategoryFilter, GarmentCategory } from "./categories";
 
 export interface StockGarment {

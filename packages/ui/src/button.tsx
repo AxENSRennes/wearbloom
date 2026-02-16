@@ -1,12 +1,10 @@
 import React from "react";
+import type { PressableProps, TextProps, ViewProps } from "react-native";
 import {
   ActivityIndicator,
   Pressable,
   Text,
   View,
-  type PressableProps,
-  type TextProps,
-  type ViewProps,
 } from "react-native";
 import { createButton } from "@gluestack-ui/core";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";

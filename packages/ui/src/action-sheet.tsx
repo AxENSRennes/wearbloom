@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 

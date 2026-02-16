@@ -165,10 +165,10 @@ describe("GoogleVTOProvider", () => {
       RequestInit,
     ];
     const body = JSON.parse(callArgs[1].body as string) as {
-      instances: Array<{
+      instances: {
         personImage: { image: { bytesBase64Encoded: string } };
-        productImages: Array<{ image: { bytesBase64Encoded: string } }>;
-      }>;
+        productImages: { image: { bytesBase64Encoded: string } }[];
+      }[];
       parameters: { sampleCount: number };
     };
 

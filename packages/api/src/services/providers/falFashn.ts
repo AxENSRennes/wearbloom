@@ -22,12 +22,12 @@ export interface FalClient {
       modelId: string,
       opts: { requestId: string },
     ): Promise<{
-      images: Array<{
+      images: {
         url: string;
         content_type: string;
         width: number;
         height: number;
-      }>;
+      }[];
     }>;
   };
   storage: {

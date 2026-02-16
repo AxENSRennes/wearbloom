@@ -88,8 +88,8 @@ export const userRouter = {
           filePath,
           mimeType: file.type,
           fileSize: file.size,
-          width: width || undefined,
-          height: height || undefined,
+          width: width ?? undefined,
+          height: height ?? undefined,
         })
         .returning({ id: bodyPhotos.id });
 

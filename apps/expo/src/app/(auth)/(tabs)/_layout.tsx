@@ -1,4 +1,3 @@
-import React from "react";
 import { Text, View } from "react-native";
 import { Tabs } from "expo-router";
 import { Home, Plus, User } from "lucide-react-native";

@@ -1,5 +1,5 @@
-import React from "react";
-import { Text, type TextProps } from "react-native";
+import type { TextProps } from "react-native";
+import { Text } from "react-native";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 

@@ -9,7 +9,10 @@ export function useNetworkStatus(options?: UseNetworkStatusOptions) {
   const netInfo = useNetInfo();
   const wasOffline = useRef(false);
   const onReconnectRef = useRef(options?.onReconnect);
-  onReconnectRef.current = options?.onReconnect;
+
+  useEffect(() => {
+    onReconnectRef.current = options?.onReconnect;
+  }, [options?.onReconnect]);
 
   const isConnected = netInfo.isConnected ?? true;
   const isInternetReachable = netInfo.isInternetReachable ?? true;

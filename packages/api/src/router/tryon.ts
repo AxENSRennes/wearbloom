@@ -198,7 +198,6 @@ export const tryonRouter = {
       const renderTimeoutMs = ctx.renderTimeoutMs ?? 30000;
       if (
         (render.status === "pending" || render.status === "processing") &&
-        render.createdAt &&
         Date.now() - render.createdAt.getTime() > renderTimeoutMs
       ) {
         await ctx.db
@@ -247,6 +246,7 @@ export const tryonRouter = {
         .limit(1);
 
       const render = renderResult[0];
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
       if (!render || render.userId !== userId) {
         throw new TRPCError({
           code: "NOT_FOUND",
