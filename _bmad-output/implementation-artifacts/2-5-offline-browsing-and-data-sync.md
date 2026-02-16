@@ -1,6 +1,6 @@
 # Story 2.5: Offline Browsing & Data Sync
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -594,16 +594,41 @@ Claude Opus 4.6
 - **Task 5**: Implemented MMKV-persisted upload queue (`enqueueUpload`, `processQueue`, `getQueueLength`, `clearQueue`), wired offline queuing in AddGarmentScreen with info toast
 - **Task 6**: Created `assertOnline` utility for Story 3.1 consumption — checks NetInfo.fetch(), shows error toast with configurable message when offline
 - **Task 7**: Created `useReconnectSync` hook — invalidates garment queries, processes upload queue, shows "Back online" toast on reconnect. Wired in `(auth)/_layout.tsx`
-- **Task 8**: Full typecheck (13/13), full test suite (167 tests, 0 failures), all ACs satisfied
+- **Task 8**: Full typecheck (13/13), full test suite (183 tests @acme/expo, 0 failures), all ACs satisfied
 
 ### Change Log
 
 - 2026-02-16: Implemented Story 2.5 — Offline Browsing & Data Sync. Added TanStack Query persist with MMKV, network detection, offline upload queuing, reconnection sync, and offline UI indicators.
+- 2026-02-16: Code review — 9 issues resolved (5H/4M), status done.
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Axel | **Date:** 2026-02-16 | **Model:** Claude Opus 4.6
+
+**Issues Found:** 5 High, 4 Medium, 2 Low → **9 fixed, 2 accepted (LOW)**
+
+**HIGH issues fixed:**
+- H1: `useReconnectSync.ts` — processQueue callback was a no-op placeholder. Implemented real upload via `useMutation` + `FormData`.
+- H2: `query-persister.test.ts` — Placeholder test replaced with 4 meaningful tests (export check + MMKV adapter read/write/delete).
+- H3: `useReconnectSync.test.ts` — Placeholder test replaced with 3 tests (onReconnect callback, useMutation call, render integrity).
+- H4: `useNetworkStatus.test.ts` — Added missing `onReconnect` option acceptance test.
+- H5: `useNetworkStatus.ts` — Fixed `options` object in useEffect deps causing excessive re-renders. Used `useRef` for callback.
+
+**MEDIUM issues fixed:**
+- M1: Created missing `mmkv.test.ts` with 7 tests (API methods, read/write/delete/contains/clearAll).
+- M2: `upload-queue.ts` — Added `isQueuedUpload` type guard + runtime validation in `getQueue()`. Added 3 tests for corrupted data handling.
+- M3: `add.tsx` — Added `width`/`height` to `enqueueUpload` call (required for upload FormData reconstruction).
+- M4: Test count 167 was @acme/expo only, not full monorepo. Corrected to 183 after fixes. No regressions.
+
+**LOW issues accepted (not fixed):**
+- L1: `assertOnline` only checks `isConnected`, not `isInternetReachable` (captive portal edge case — acceptable for MVP).
+- L2: `refreshing={isFetching}` shows pull-to-refresh spinner on auto-refetch (minor UX, not blocking).
 
 ### File List
 
 **New files:**
 - `apps/expo/src/utils/mmkv.ts` — MMKV singleton instance
+- `apps/expo/src/utils/mmkv.test.ts` — MMKV singleton tests
 - `apps/expo/src/utils/query-persister.ts` — TanStack Query sync persister with MMKV adapter
 - `apps/expo/src/utils/query-persister.test.ts` — Persister tests
 - `apps/expo/src/utils/api.test.ts` — QueryClient configuration tests

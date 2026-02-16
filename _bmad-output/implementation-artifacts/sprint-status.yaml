@@ -51,12 +51,12 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Wardrobe Management
-  epic-2: in-progress
+  epic-2: done
   2-1-add-garment-with-photo-capture: done
   2-2-wardrobe-grid-and-category-browsing: done
   2-3-stock-garment-library: done
   2-4-remove-garment: done
-  2-5-offline-browsing-and-data-sync: review
+  2-5-offline-browsing-and-data-sync: done
   epic-2-retrospective: optional
 
   # Epic 3: AI Virtual Try-On Experience

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { showToast } from "@acme/ui";
 
@@ -10,6 +10,7 @@ import { useNetworkStatus } from "./useNetworkStatus";
 
 export function useReconnectSync() {
   const queryClient = useQueryClient();
+  const uploadMutation = useMutation(trpc.garment.upload.mutationOptions());
 
   const handleReconnect = useCallback(() => {
     // Invalidate wardrobe data to get fresh list
@@ -18,16 +19,22 @@ export function useReconnectSync() {
     });
 
     // Process any queued offline uploads
-    void processQueue(async (_payload) => {
-      // The actual upload mutation will be called by the queue processor
-      // For now, this is a placeholder — the real upload logic requires
-      // creating FormData from the stored imageUri, which will be handled
-      // when the upload infrastructure supports it
+    void processQueue(async (payload) => {
+      const formData = new FormData();
+      formData.append("photo", {
+        uri: payload.imageUri,
+        type: "image/jpeg",
+        name: "garment.jpg",
+      } as unknown as Blob);
+      formData.append("category", payload.category);
+      formData.append("width", String(payload.width));
+      formData.append("height", String(payload.height));
+      await uploadMutation.mutateAsync(formData);
     });
 
     // Show reconnection toast
     showToast({ message: "Back online", variant: "info" });
-  }, [queryClient]);
+  }, [queryClient, uploadMutation]);
 
   useNetworkStatus({ onReconnect: handleReconnect });
 }

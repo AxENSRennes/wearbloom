@@ -4,7 +4,22 @@ export interface QueuedUpload {
   id: string;
   imageUri: string;
   category: string;
+  width: number;
+  height: number;
   queuedAt: string;
+}
+
+function isQueuedUpload(item: unknown): item is QueuedUpload {
+  if (typeof item !== "object" || item === null) return false;
+  const obj = item as Record<string, unknown>;
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.imageUri === "string" &&
+    typeof obj.category === "string" &&
+    typeof obj.width === "number" &&
+    typeof obj.height === "number" &&
+    typeof obj.queuedAt === "string"
+  );
 }
 
 const QUEUE_KEY = "wearbloom:upload-queue";
@@ -13,7 +28,9 @@ function getQueue(): QueuedUpload[] {
   const raw = mmkvStorage.getString(QUEUE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(raw) as QueuedUpload[];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isQueuedUpload);
   } catch {
     return [];
   }

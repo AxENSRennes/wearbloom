@@ -196,6 +196,8 @@ export default function AddGarmentScreen() {
         id: createId(),
         imageUri: state.imageUri,
         category: selectedCategory,
+        width: state.width,
+        height: state.height,
         queuedAt: new Date().toISOString(),
       });
       dispatch({ type: "ADD_ANOTHER" });
