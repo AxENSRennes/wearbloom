@@ -58,6 +58,7 @@ export const subscriptionStatus = pgEnum("subscription_status", [
   "subscribed",
   "expired",
   "cancelled",
+  "grace_period",
 ]);
 
 export const subscriptions = pgTable("subscriptions", (t) => ({

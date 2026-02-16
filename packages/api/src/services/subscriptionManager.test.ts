@@ -115,6 +115,33 @@ describe("subscriptionManager", () => {
       });
     });
 
+    test("returns grace_period with active access during billing retry", () => {
+      const state = manager.computeSubscriptionState({
+        status: "grace_period",
+        expiresAt: new Date(Date.now() + 86400000),
+      });
+      expect(state).toEqual({
+        state: "grace_period",
+        isSubscriber: true,
+        rendersAllowed: true,
+        isUnlimited: true,
+      });
+    });
+
+    test("returns grace_period with active access even if expiresAt passed", () => {
+      const state = manager.computeSubscriptionState({
+        status: "grace_period",
+        expiresAt: new Date(Date.now() - 86400000),
+      });
+      // Grace period overrides time-based expiration — Apple controls the grace window
+      expect(state).toEqual({
+        state: "grace_period",
+        isSubscriber: true,
+        rendersAllowed: true,
+        isUnlimited: true,
+      });
+    });
+
     test("returns no_subscription when no subscription exists", () => {
       const state = manager.computeSubscriptionState(null);
       expect(state).toEqual({

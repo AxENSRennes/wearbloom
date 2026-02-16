@@ -37,7 +37,21 @@ describe("Apple Webhook Handler (V2)", () => {
   function createMockSubscriptionManager() {
     return {
       getSubscription: mock(async () =>
-        Promise.resolve({
+        Promise.resolve<
+          | {
+              id: string;
+              userId: string;
+              status: "subscribed";
+              expiresAt: Date;
+              appleTransactionId: string;
+              appleOriginalTransactionId: string;
+              productId: string;
+              startedAt: Date;
+              createdAt: Date;
+              updatedAt: Date;
+            }
+          | undefined
+        >({
           id: "sub-1",
           userId: "user-123",
           status: "subscribed" as const,
@@ -119,10 +133,10 @@ describe("Apple Webhook Handler (V2)", () => {
     expect(result.status).toBe(401);
   });
 
-  test("AC#3: handles RENEWAL INITIAL_BUY notification (subscription created)", async () => {
+  test("AC#3: handles SUBSCRIBED INITIAL_BUY notification (subscription created)", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
-        notificationType: "RENEWAL",
+        notificationType: "SUBSCRIBED",
         subtype: "INITIAL_BUY",
         data: {
           signedTransactionInfo: "signed-txn-info",
@@ -135,10 +149,10 @@ describe("Apple Webhook Handler (V2)", () => {
     expect(mockSubscriptionManager.upsertSubscription).toHaveBeenCalled();
   });
 
-  test("AC#3: handles RENEWAL RESUBSCRIBE notification (user resubscribes)", async () => {
+  test("AC#3: handles SUBSCRIBED RESUBSCRIBE notification (user resubscribes)", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
-        notificationType: "RENEWAL",
+        notificationType: "SUBSCRIBED",
         subtype: "RESUBSCRIBE",
         data: {
           signedTransactionInfo: "signed-txn-info",
@@ -151,11 +165,43 @@ describe("Apple Webhook Handler (V2)", () => {
     expect(mockSubscriptionManager.upsertSubscription).toHaveBeenCalled();
   });
 
-  test("AC#4: handles CANCEL notification (user cancelled subscription)", async () => {
+  test("handles DID_RENEW notification (auto-renewal succeeded)", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
-        notificationType: "CANCEL",
+        notificationType: "DID_RENEW",
         subtype: undefined,
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionManager.upsertSubscription).toHaveBeenCalled();
+  });
+
+  test("handles DID_RENEW BILLING_RECOVERY notification", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "DID_RENEW",
+        subtype: "BILLING_RECOVERY",
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionManager.upsertSubscription).toHaveBeenCalled();
+  });
+
+  test("AC#4: handles DID_CHANGE_RENEWAL_STATUS AUTO_RENEW_DISABLED (user cancelled)", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "DID_CHANGE_RENEWAL_STATUS",
+        subtype: "AUTO_RENEW_DISABLED",
         data: {
           signedTransactionInfo: "signed-txn-info",
         },
@@ -169,6 +215,43 @@ describe("Apple Webhook Handler (V2)", () => {
       "cancelled",
       expect.any(Date),
     );
+  });
+
+  test("AC#4: handles DID_CHANGE_RENEWAL_STATUS AUTO_RENEW_ENABLED (user re-enabled)", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "DID_CHANGE_RENEWAL_STATUS",
+        subtype: "AUTO_RENEW_ENABLED",
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    // Should not update status for AUTO_RENEW_ENABLED
+    expect(mockSubscriptionManager.updateStatus).not.toHaveBeenCalled();
+  });
+
+  test("AC#4: handles DID_CHANGE_RENEWAL_STATUS with no existing subscription", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "DID_CHANGE_RENEWAL_STATUS",
+        subtype: "AUTO_RENEW_DISABLED",
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    mockSubscriptionManager.getSubscription.mockImplementation(() =>
+      Promise.resolve(undefined),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(result.body.skipped).toBe(true);
   });
 
   test("AC#5: handles EXPIRED notification (subscription period ended)", async () => {
@@ -190,7 +273,7 @@ describe("Apple Webhook Handler (V2)", () => {
     );
   });
 
-  test("AC#6: handles DID_FAIL_TO_RENEW notification (grace period active)", async () => {
+  test("AC#6: handles DID_FAIL_TO_RENEW notification (transitions to grace_period)", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
         notificationType: "DID_FAIL_TO_RENEW",
@@ -203,8 +286,10 @@ describe("Apple Webhook Handler (V2)", () => {
 
     const result = await handler.handleNotification("signed-payload");
     expect(result.status).toBe(200);
-    // Verify log was called (grace period is handled by Apple, we just log)
-    expect(mockLogger.warn.mock.calls.length).toBeGreaterThan(0);
+    expect(mockSubscriptionManager.updateStatus).toHaveBeenCalledWith(
+      "user-123",
+      "grace_period",
+    );
   });
 
   test("AC#6: handles GRACE_PERIOD_EXPIRED notification", async () => {
@@ -226,10 +311,48 @@ describe("Apple Webhook Handler (V2)", () => {
     );
   });
 
+  test("handles REFUND notification (revokes access)", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "REFUND",
+        subtype: undefined,
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionManager.updateStatus).toHaveBeenCalledWith(
+      "user-123",
+      "expired",
+    );
+  });
+
+  test("handles REVOKE notification (revokes access)", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "REVOKE",
+        subtype: undefined,
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(mockSubscriptionManager.updateStatus).toHaveBeenCalledWith(
+      "user-123",
+      "expired",
+    );
+  });
+
   test("handles missing transaction data gracefully", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
-        notificationType: "RENEWAL",
+        notificationType: "SUBSCRIBED",
         subtype: "INITIAL_BUY",
         data: undefined,
       }),
@@ -243,7 +366,7 @@ describe("Apple Webhook Handler (V2)", () => {
   test("handles missing appAccountToken gracefully", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.resolve({
-        notificationType: "RENEWAL",
+        notificationType: "SUBSCRIBED",
         subtype: "INITIAL_BUY",
         data: {
           signedTransactionInfo: "signed-txn-info",

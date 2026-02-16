@@ -99,11 +99,17 @@ function nodeHeadersToHeaders(
   return headers;
 }
 
+const MAX_BODY_SIZE = 65536; // 64KB — generous for Apple JWS payloads
+
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
     req.on("data", (chunk: Buffer) => {
       body += chunk.toString();
+      if (body.length > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error("Body too large"));
+      }
     });
     req.on("end", () => resolve(body));
     req.on("error", reject);

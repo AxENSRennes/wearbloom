@@ -178,7 +178,7 @@ export const subscriptionRouter = {
   restorePurchases: protectedProcedure
     .input(
       z.object({
-        signedTransactions: z.array(z.string()),
+        signedTransactions: z.array(z.string()).max(50),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -206,6 +206,10 @@ export const subscriptionRouter = {
           });
 
         if (!decoded) continue;
+
+        // Validate appAccountToken matches authenticated user
+        const appAccountToken = decoded.appAccountToken as string | undefined;
+        if (appAccountToken && appAccountToken !== ctx.session.user.id) continue;
 
         const expiresDate = decoded.expiresDate as number | undefined;
         if (!expiresDate || expiresDate < Date.now()) continue; // skip expired

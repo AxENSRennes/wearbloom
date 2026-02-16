@@ -7,7 +7,7 @@ import { subscriptions } from "@acme/db/schema";
 import type { db as dbType } from "@acme/db/client";
 
 type Subscription = InferSelectModel<typeof subscriptions>;
-type SubscriptionStatusValue = "trial" | "subscribed" | "expired" | "cancelled";
+type SubscriptionStatusValue = "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
 
 export interface SubscriptionState {
   state: string;
@@ -42,6 +42,17 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
 
       const { status, expiresAt } = subscription;
       const now = new Date();
+
+      // Grace period: subscriber retains access while Apple retries billing
+      if (status === "grace_period") {
+        return {
+          state: "grace_period",
+          isSubscriber: true,
+          rendersAllowed: true,
+          isUnlimited: true,
+        };
+      }
+
       const isExpired =
         status === "expired" || (expiresAt !== null && expiresAt < now);
 
