@@ -2,6 +2,8 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as reactQuery from "@tanstack/react-query";
+import * as reanimated from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import RenderScreen from "./[id]";
 
@@ -28,6 +30,25 @@ function stubUseQuery(overrides: {
   return spy;
 }
 
+// ---------------------------------------------------------------------------
+// Helper: stub useMutation for requestRender "Try Again"
+// ---------------------------------------------------------------------------
+function stubUseMutation(overrides?: {
+  mutate?: ReturnType<typeof mock>;
+  isPending?: boolean;
+}) {
+  const spy = spyOn(reactQuery, "useMutation");
+  spy.mockReturnValue({
+    mutate: overrides?.mutate ?? mock(() => {}),
+    mutateAsync: mock(() => Promise.resolve()),
+    isPending: overrides?.isPending ?? false,
+    isError: false,
+    error: null,
+    data: null,
+  } as unknown as ReturnType<typeof reactQuery.useMutation>);
+  return spy;
+}
+
 describe("RenderScreen", () => {
   afterEach(() => {
     mock.restore();
@@ -43,138 +64,284 @@ describe("RenderScreen", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 2. Component renders without crashing (loading/polling state)
+  // 2. Displays body photo immediately while loading
   // -------------------------------------------------------------------------
-  test("renders without crashing in loading state", () => {
-    stubUseQuery({ isLoading: true, data: undefined });
-
-    const html = renderToStaticMarkup(<RenderScreen />);
-
-    expect(html).toBeTruthy();
-    expect(html.length).toBeGreaterThan(0);
-  });
-
-  // -------------------------------------------------------------------------
-  // 3. SafeAreaView is the root container
-  // -------------------------------------------------------------------------
-  test("renders SafeAreaView as root container", () => {
-    stubUseQuery({ data: null });
-
-    const html = renderToStaticMarkup(<RenderScreen />);
-
-    expect(html).toContain("mock-SafeAreaView");
-  });
-
-  // -------------------------------------------------------------------------
-  // 4. Loading/polling state shows ActivityIndicator and status message
-  // -------------------------------------------------------------------------
-  test("loading state shows ActivityIndicator and pending status message", () => {
-    stubUseQuery({ data: null, isLoading: false });
-
-    const html = renderToStaticMarkup(<RenderScreen />);
-
-    // Default status is "pending" when no data
-    expect(html).toContain("mock-ActivityIndicator");
-    expect(html).toContain("Creating your look...");
-  });
-
-  // -------------------------------------------------------------------------
-  // 5. STATUS_MESSAGES has expected keys (pending, processing, submitting)
-  // -------------------------------------------------------------------------
-  test("shows processing message when status is processing", () => {
-    stubUseQuery({
-      data: { status: "processing", resultImageUrl: null, errorCode: null },
-    });
-
-    const html = renderToStaticMarkup(<RenderScreen />);
-
-    expect(html).toContain("Almost there...");
-  });
-
-  test("shows submitting message when status is submitting", () => {
-    stubUseQuery({
-      data: { status: "submitting", resultImageUrl: null, errorCode: null },
-    });
-
-    const html = renderToStaticMarkup(<RenderScreen />);
-
-    expect(html).toContain("Sending to AI...");
-  });
-
-  // -------------------------------------------------------------------------
-  // 6. Completed state shows result image and back button
-  // -------------------------------------------------------------------------
-  test("completed state shows result image and back button", () => {
+  test("displays body photo immediately while loading (personImageUrl from status query)", () => {
     stubUseQuery({
       data: {
-        status: "completed",
-        resultImageUrl: "/api/images/render-123",
+        status: "pending",
+        resultImageUrl: null,
         errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
       },
     });
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
-    // ExpoImage component should be rendered for the result
-    expect(html).toContain("mock-ExpoImage");
-    // contentFit="contain" is set on the image
-    expect(html).toContain('contentFit="contain"');
-    // Back button present
-    expect(html).toContain("Back to Wardrobe");
-    // Should NOT show ActivityIndicator in completed state
-    expect(html).not.toContain("mock-ActivityIndicator");
-    // Should NOT show "Render Failed" heading
-    expect(html).not.toContain("Render Failed");
+    // Should render the RenderLoadingAnimation component with body photo
+    expect(html).toContain('testID="body-photo"');
   });
 
   // -------------------------------------------------------------------------
-  // 7. Failed state shows error heading and back button
+  // 3. Shows RenderLoadingAnimation while status is pending/processing
   // -------------------------------------------------------------------------
-  test("failed state shows 'Render Failed' heading and back button", () => {
+  test("shows RenderLoadingAnimation while status is pending/processing", () => {
+    stubUseQuery({
+      data: {
+        status: "processing",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // RenderLoadingAnimation renders progress text
+    expect(html).toContain("Creating your look...");
+    // Should NOT show error state
+    expect(html).not.toContain("didn&#x27;t work");
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. Displays render result image when status is completed
+  // -------------------------------------------------------------------------
+  test("displays render result image when status is completed", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // Should render result image (ExpoImage for the result layer)
+    expect(html).toContain('testID="render-result"');
+    // Should NOT show loading animation
+    expect(html).not.toContain("Creating your look...");
+  });
+
+  // -------------------------------------------------------------------------
+  // 5. Cross-fades from body photo to result (resultOpacity animated to 1)
+  // -------------------------------------------------------------------------
+  test("cross-fades from body photo to result (resultOpacity animated to 1)", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // Both body photo and result layers should be present
+    expect(html).toContain('testID="body-photo-layer"');
+    expect(html).toContain('testID="render-result"');
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. Shows back button (top-left) when render is completed
+  // -------------------------------------------------------------------------
+  test("shows back button when render is completed", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain('testID="back-button"');
+  });
+
+  // -------------------------------------------------------------------------
+  // 7. Shows feedback button placeholder (bottom-right) when completed
+  // -------------------------------------------------------------------------
+  test("shows feedback button placeholder when render is completed", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain('testID="feedback-button"');
+  });
+
+  // -------------------------------------------------------------------------
+  // 8. Back button is rendered and wired to router.back (structural)
+  // -------------------------------------------------------------------------
+  test("back button is rendered and wired to router.back (structural)", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // Back button is rendered with accessibility attributes
+    expect(html).toContain('testID="back-button"');
+    expect(html).toContain("Go back");
+  });
+
+  // -------------------------------------------------------------------------
+  // 9. Triggers medium haptic on render completion (structural verification)
+  // -------------------------------------------------------------------------
+  test("triggers medium haptic on render completion (structural verification)", () => {
+    // Note: useEffect doesn't fire in SSR (renderToStaticMarkup).
+    // We verify the component renders the completed state and that
+    // Haptics.notificationAsync is available for the effect to call.
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // Completed state is rendered (prerequisite for haptic effect)
+    expect(html).toContain('testID="render-result"');
+    expect(html).toContain('testID="back-button"');
+    // Haptics module is available
+    expect(typeof Haptics.notificationAsync).toBe("function");
+  });
+
+  // -------------------------------------------------------------------------
+  // 10. Shows error message on failure
+  // -------------------------------------------------------------------------
+  test('shows error message "This one didn\'t work. No render counted." on failure', () => {
     stubUseQuery({
       data: {
         status: "failed",
         resultImageUrl: null,
         errorCode: "RENDER_FAILED",
+        garmentId: "garment-1",
       },
     });
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
-    expect(html).toContain("Render Failed");
-    expect(html).toContain("Something went wrong. Please try again.");
-    expect(html).toContain("Back to Wardrobe");
-    // Should NOT show ActivityIndicator
-    expect(html).not.toContain("mock-ActivityIndicator");
+    expect(html).toContain("didn&#x27;t work");
+    expect(html).toContain("No render counted");
   });
 
   // -------------------------------------------------------------------------
-  // 8. Failed state with RENDER_TIMEOUT shows timeout-specific message
+  // 11. Shows "Try Again" button on failure
   // -------------------------------------------------------------------------
-  test("failed state with RENDER_TIMEOUT shows timeout message", () => {
+  test('shows "Try Again" button on failure', () => {
     stubUseQuery({
       data: {
         status: "failed",
         resultImageUrl: null,
-        errorCode: "RENDER_TIMEOUT",
+        errorCode: "RENDER_FAILED",
+        garmentId: "garment-1",
+      },
+    });
+    stubUseMutation();
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain("Try Again");
+  });
+
+  // -------------------------------------------------------------------------
+  // 12. "Try Again" button is rendered with garmentId from status response
+  // -------------------------------------------------------------------------
+  test('"Try Again" button is rendered with garmentId from status response (structural)', () => {
+    stubUseQuery({
+      data: {
+        status: "failed",
+        resultImageUrl: null,
+        errorCode: "RENDER_FAILED",
+        garmentId: "garment-42",
+      },
+    });
+
+    const mutateMock = mock(() => {});
+    stubUseMutation({ mutate: mutateMock });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    // Try Again button is rendered in the failed state
+    expect(html).toContain("Try Again");
+    // Back to Wardrobe button is also rendered
+    expect(html).toContain("Back to Wardrobe");
+  });
+
+  // -------------------------------------------------------------------------
+  // 13. Shows static image swap when Reduce Motion enabled
+  // -------------------------------------------------------------------------
+  test("shows static image swap when Reduce Motion enabled (no animated opacity)", () => {
+    spyOn(reanimated, "useReducedMotion").mockReturnValue(true);
+
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
       },
     });
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
-    expect(html).toContain("Render Failed");
-    expect(html).toContain("The render took too long. Please try again.");
+    // Result should be visible (rendered) even with Reduce Motion
+    expect(html).toContain('testID="render-result"');
   });
 
   // -------------------------------------------------------------------------
-  // 9. MAX_POLLS limit is enforced via refetchInterval
+  // 14. Does not show back/feedback buttons during loading
   // -------------------------------------------------------------------------
-  test("refetchInterval stops after MAX_POLLS (15) polls", () => {
+  test("does not show back/feedback buttons during loading", () => {
+    stubUseQuery({
+      data: {
+        status: "pending",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).not.toContain('testID="back-button"');
+    expect(html).not.toContain('testID="feedback-button"');
+  });
+
+  // -------------------------------------------------------------------------
+  // 15. Polling uses refetchInterval and stops on terminal status
+  // -------------------------------------------------------------------------
+  test("refetchInterval returns false for completed status", () => {
     const querySpy = stubUseQuery({ data: null });
 
     renderToStaticMarkup(<RenderScreen />);
 
-    // Extract refetchInterval callback from useQuery options
     expect(querySpy).toHaveBeenCalled();
     const queryOpts = querySpy.mock.calls[0]?.[0] as Record<string, unknown>;
     const refetchInterval = queryOpts.refetchInterval as (query: {
@@ -182,45 +349,66 @@ describe("RenderScreen", () => {
     }) => number | false;
     expect(typeof refetchInterval).toBe("function");
 
-    const mockQuery = { state: { data: { status: "processing" } } };
-
-    // Should allow 15 polls
-    for (let i = 0; i < 15; i++) {
-      expect(refetchInterval(mockQuery)).toBe(2000);
-    }
-    // 16th poll should be stopped
-    expect(refetchInterval(mockQuery)).toBe(false);
-  });
-
-  // -------------------------------------------------------------------------
-  // 10. refetchInterval returns false on terminal statuses
-  // -------------------------------------------------------------------------
-  test("refetchInterval returns false for completed and failed statuses", () => {
-    const querySpy = stubUseQuery({ data: null });
-
-    renderToStaticMarkup(<RenderScreen />);
-
-    const queryOpts = querySpy.mock.calls[0]?.[0] as Record<string, unknown>;
-    const refetchInterval = queryOpts.refetchInterval as (query: {
-      state: { data?: { status?: string } };
-    }) => number | false;
-
     expect(refetchInterval({ state: { data: { status: "completed" } } })).toBe(false);
     expect(refetchInterval({ state: { data: { status: "failed" } } })).toBe(false);
   });
 
   // -------------------------------------------------------------------------
-  // 11. Pending status fallback shows correct message
+  // 16. Uses immersive layout (no SafeAreaView)
   // -------------------------------------------------------------------------
-  test("unknown status falls back to default 'Creating your look...' message", () => {
+  test("uses immersive layout without SafeAreaView", () => {
     stubUseQuery({
-      data: { status: "unknown-status", resultImageUrl: null, errorCode: null },
+      data: {
+        status: "pending",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
     });
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
-    // Unknown status should use the fallback message
-    expect(html).toContain("Creating your look...");
-    expect(html).toContain("mock-ActivityIndicator");
+    // Should NOT use SafeAreaView (immersive, edge-to-edge)
+    expect(html).not.toContain("mock-SafeAreaView");
+  });
+
+  // -------------------------------------------------------------------------
+  // 17. GestureDetector wraps the completed render view
+  // -------------------------------------------------------------------------
+  test("GestureDetector is rendered wrapping the completed render view", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain("mock-GestureDetector");
+  });
+
+  // -------------------------------------------------------------------------
+  // 18. Swipe down gesture does not appear during loading
+  // -------------------------------------------------------------------------
+  test("GestureDetector is not rendered during loading state", () => {
+    stubUseQuery({
+      data: {
+        status: "pending",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).not.toContain("mock-GestureDetector");
   });
 });

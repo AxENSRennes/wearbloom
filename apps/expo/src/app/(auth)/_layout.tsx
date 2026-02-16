@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { Redirect, Slot } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 
 import { Spinner } from "@acme/ui";
 
@@ -22,5 +22,17 @@ export default function AuthLayout() {
     return <Redirect href="/(public)/sign-in" />;
   }
 
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen
+        name="render/[id]"
+        options={{
+          presentation: "fullScreenModal",
+          headerShown: false,
+          animation: "fade",
+        }}
+      />
+    </Stack>
+  );
 }

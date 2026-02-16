@@ -168,6 +168,17 @@ export const tryonRouter = {
         });
       }
 
+      // Always resolve person/garment image URLs for cross-fade
+      const bodyPhotoResult = await ctx.db
+        .select({ id: bodyPhotos.id })
+        .from(bodyPhotos)
+        .where(eq(bodyPhotos.userId, render.userId))
+        .limit(1);
+
+      const bodyPhoto = bodyPhotoResult[0];
+      const personImageUrl = bodyPhoto ? `/api/images/${bodyPhoto.id}` : null;
+      const garmentImageUrl = `/api/images/${render.garmentId}`;
+
       // Timeout check
       const renderTimeoutMs = ctx.renderTimeoutMs ?? 30000;
       if (
@@ -184,6 +195,9 @@ export const tryonRouter = {
           status: "failed" as const,
           resultImageUrl: null,
           errorCode: "RENDER_TIMEOUT",
+          garmentId: render.garmentId,
+          personImageUrl,
+          garmentImageUrl,
         };
       }
 
@@ -194,6 +208,9 @@ export const tryonRouter = {
             ? `/api/images/render/${render.id}`
             : null,
         errorCode: render.errorCode,
+        garmentId: render.garmentId,
+        personImageUrl,
+        garmentImageUrl,
       };
     }),
 } satisfies TRPCRouterRecord;

@@ -339,18 +339,23 @@ describe("tryon.getRenderStatus", () => {
 
   test("returns current status for valid render", async () => {
     const { db } = await import("@acme/db/client");
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([
-        {
-          id: "render-abc",
-          userId: "user-123",
-          status: "processing",
-          resultPath: null,
-          errorCode: null,
-          createdAt: new Date(),
-        },
-      ]) as never,
-    );
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "processing",
+            resultPath: null,
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-1",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -363,18 +368,23 @@ describe("tryon.getRenderStatus", () => {
 
   test("returns resultImageUrl when completed", async () => {
     const { db } = await import("@acme/db/client");
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([
-        {
-          id: "render-abc",
-          userId: "user-123",
-          status: "completed",
-          resultPath: "user-123/renders/render-abc_result.png",
-          errorCode: null,
-          createdAt: new Date(),
-        },
-      ]) as never,
-    );
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "completed",
+            resultPath: "user-123/renders/render-abc_result.png",
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-1",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -388,18 +398,23 @@ describe("tryon.getRenderStatus", () => {
   test("marks as failed with RENDER_TIMEOUT after 30s", async () => {
     const { db } = await import("@acme/db/client");
     const oldDate = new Date(Date.now() - 35000); // 35 seconds ago
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([
-        {
-          id: "render-abc",
-          userId: "user-123",
-          status: "pending",
-          resultPath: null,
-          errorCode: null,
-          createdAt: oldDate,
-        },
-      ]) as never,
-    );
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "pending",
+            resultPath: null,
+            errorCode: null,
+            createdAt: oldDate,
+            garmentId: "garment-1",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
     updateSpy = spyOn(db as never, "update").mockReturnValue(
       mockDbUpdate() as never,
     );
@@ -437,6 +452,7 @@ describe("tryon.getRenderStatus", () => {
           resultPath: "path.png",
           errorCode: null,
           createdAt: new Date(),
+          garmentId: "garment-1",
         },
       ]) as never,
     );
@@ -446,5 +462,118 @@ describe("tryon.getRenderStatus", () => {
     await expect(
       caller.tryon.getRenderStatus({ renderId: "render-abc" }),
     ).rejects.toThrow(/RENDER_NOT_FOUND/);
+  });
+
+  test("returns garmentId for all renders", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "completed",
+            resultPath: "user-123/renders/render-abc_result.png",
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-42",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getRenderStatus({
+      renderId: "render-abc",
+    });
+
+    expect(result.garmentId).toBe("garment-42");
+  });
+
+  test("returns personImageUrl for pending/processing renders", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "processing",
+            resultPath: null,
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-1",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-99" }]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getRenderStatus({
+      renderId: "render-abc",
+    });
+
+    expect(result.personImageUrl).toBe("/api/images/bp-99");
+  });
+
+  test("returns garmentImageUrl for pending/processing renders", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "pending",
+            resultPath: null,
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-77",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getRenderStatus({
+      renderId: "render-abc",
+    });
+
+    expect(result.garmentImageUrl).toBe("/api/images/garment-77");
+  });
+
+  test("returns personImageUrl/garmentImageUrl for completed renders", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "render-abc",
+            userId: "user-123",
+            status: "completed",
+            resultPath: "user-123/renders/render-abc_result.png",
+            errorCode: null,
+            createdAt: new Date(),
+            garmentId: "garment-1",
+          },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([{ id: "bp-1" }]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getRenderStatus({
+      renderId: "render-abc",
+    });
+
+    expect(result.personImageUrl).toBe("/api/images/bp-1");
+    expect(result.garmentImageUrl).toBe("/api/images/garment-1");
   });
 });

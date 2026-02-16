@@ -209,10 +209,16 @@ mock.module("expo-constants", () => ({
 // ---------------------------------------------------------------------------
 mock.module("expo-haptics", () => ({
   impactAsync: mock(() => Promise.resolve()),
+  notificationAsync: mock(() => Promise.resolve()),
   ImpactFeedbackStyle: {
     Light: "Light",
     Medium: "Medium",
     Heavy: "Heavy",
+  },
+  NotificationFeedbackType: {
+    Success: "Success",
+    Warning: "Warning",
+    Error: "Error",
   },
 }));
 
@@ -309,6 +315,9 @@ mock.module("lucide-react-native", () => ({
   Plus: mockComponent("Icon-Plus"),
   User: mockComponent("Icon-User"),
   ChevronRight: mockComponent("Icon-ChevronRight"),
+  ArrowLeft: mockComponent("Icon-ArrowLeft"),
+  X: mockComponent("Icon-X"),
+  MessageCircle: mockComponent("Icon-MessageCircle"),
 }));
 
 // ---------------------------------------------------------------------------
@@ -476,24 +485,35 @@ mock.module("superjson", () => ({
 // ---------------------------------------------------------------------------
 // react-native-gesture-handler — mock GestureHandlerRootView and gestures
 // ---------------------------------------------------------------------------
-mock.module("react-native-gesture-handler", () => ({
-  GestureHandlerRootView: mockComponent("GestureHandlerRootView"),
-  Gesture: {
-    Pan: () => ({ onUpdate: () => ({}), onEnd: () => ({}) }),
-    Tap: () => ({ onEnd: () => ({}) }),
-  },
-  GestureDetector: mockComponent("GestureDetector"),
-  Swipeable: mockComponent("Swipeable"),
-  DrawerLayout: mockComponent("DrawerLayout"),
-  State: {},
-  PanGestureHandler: mockComponent("PanGestureHandler"),
-  TapGestureHandler: mockComponent("TapGestureHandler"),
-  FlingGestureHandler: mockComponent("FlingGestureHandler"),
-  ForceTouchGestureHandler: mockComponent("ForceTouchGestureHandler"),
-  LongPressGestureHandler: mockComponent("LongPressGestureHandler"),
-  ScrollView: mockComponent("GHScrollView"),
-  FlatList: mockComponent("GHFlatList"),
-}));
+mock.module("react-native-gesture-handler", () => {
+  function createChainableGesture() {
+    const gesture: Record<string, unknown> = {};
+    const methods = ["onBegin", "onUpdate", "onEnd", "onStart", "onFinalize", "minDistance", "activeOffsetY", "failOffsetX"];
+    for (const method of methods) {
+      gesture[method] = () => gesture;
+    }
+    return gesture;
+  }
+
+  return {
+    GestureHandlerRootView: mockComponent("GestureHandlerRootView"),
+    Gesture: {
+      Pan: () => createChainableGesture(),
+      Tap: () => createChainableGesture(),
+    },
+      GestureDetector: mockComponent("GestureDetector"),
+    Swipeable: mockComponent("Swipeable"),
+    DrawerLayout: mockComponent("DrawerLayout"),
+    State: {},
+    PanGestureHandler: mockComponent("PanGestureHandler"),
+    TapGestureHandler: mockComponent("TapGestureHandler"),
+    FlingGestureHandler: mockComponent("FlingGestureHandler"),
+    ForceTouchGestureHandler: mockComponent("ForceTouchGestureHandler"),
+    LongPressGestureHandler: mockComponent("LongPressGestureHandler"),
+    ScrollView: mockComponent("GHScrollView"),
+    FlatList: mockComponent("GHFlatList"),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // @gorhom/bottom-sheet — mock BottomSheet component with ref methods
@@ -565,12 +585,16 @@ mock.module("react-native-reanimated", () => {
     withRepeat: (animation: unknown) => animation,
     withSequence: (...animations: unknown[]) => animations[0],
     useReducedMotion: () => false,
+    runOnJS: (fn: (...args: unknown[]) => unknown) => fn,
     Easing: {
       linear: 0,
       ease: 1,
       inOut: () => 0,
     },
     createAnimatedComponent: (comp: unknown) => comp,
+    StyleSheet: {
+      absoluteFillObject: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
+    },
   };
 });
 
