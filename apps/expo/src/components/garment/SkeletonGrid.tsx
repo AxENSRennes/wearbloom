@@ -52,11 +52,7 @@ export function SkeletonGrid({ columnWidth }: SkeletonGridProps) {
             <Animated.View
               key={colIndex}
               data-testid="skeleton-item"
-              style={{
-                width: columnWidth,
-                height: itemHeight,
-                ...animatedStyle,
-              }}
+              style={[{ width: columnWidth, height: itemHeight }, animatedStyle]}
               className="bg-surface"
             />
           ))}

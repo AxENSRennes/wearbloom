@@ -86,6 +86,12 @@ mock.module("react-native", () => ({
         cb?.({ finished: true }),
     }),
   },
+  LayoutAnimation: {
+    configureNext: mock(() => {}),
+    create: (_duration: number, _type: unknown, _prop: unknown) => ({}),
+    Types: { easeInEaseOut: "easeInEaseOut", linear: "linear", spring: "spring" },
+    Properties: { opacity: "opacity", scaleX: "scaleX", scaleY: "scaleY", scaleXY: "scaleXY" },
+  },
   StyleSheet: {
     create: <T extends Record<string, unknown>>(styles: T): T => styles,
     flatten: (s: unknown) => s,
@@ -431,7 +437,21 @@ mock.module("superjson", () => ({
 // react-native-reanimated — mock animation hooks for press/skeleton animations
 // ---------------------------------------------------------------------------
 mock.module("react-native-reanimated", () => {
-  const AnimatedView = mockComponent("ReanimatedView");
+  // Animated.View flattens style arrays so SSR tests can inspect style values
+  const AnimatedView = React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      const { children, style, ...rest } = props;
+      const flatStyle = Array.isArray(style)
+        ? Object.assign({}, ...(style as Record<string, unknown>[]))
+        : style;
+      return React.createElement(
+        "mock-ReanimatedView",
+        { ...rest, style: flatStyle, ref },
+        children as React.ReactNode,
+      );
+    },
+  );
+  AnimatedView.displayName = "ReanimatedView";
   return {
     default: {
       View: AnimatedView,

@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { type LayoutChangeEvent, Pressable, ScrollView, Text } from "react-native";
+import {
+  type LayoutChangeEvent,
+  LayoutAnimation,
+  Pressable,
+  ScrollView,
+  Text,
+} from "react-native";
 
 import { cn } from "@acme/ui";
 
@@ -25,6 +31,13 @@ export function CategoryPills({
 
   const handleSelect = useCallback(
     (category: string, index: number) => {
+      LayoutAnimation.configureNext(
+        LayoutAnimation.create(
+          150,
+          LayoutAnimation.Types.easeInEaseOut,
+          LayoutAnimation.Properties.opacity,
+        ),
+      );
       onSelect(category);
       const layout = pillLayouts.current.get(index);
       if (layout && scrollViewWidth > 0) {

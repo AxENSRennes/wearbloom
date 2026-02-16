@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -16,8 +17,12 @@ import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 type Garment = RouterOutputs["garment"]["list"][number];
 
 /**
- * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
- * packages/db/src/schema.ts and VALID_CATEGORIES in packages/api/src/router/garment.ts
+ * Garment categories — LOCAL COPY.
+ * Source of truth: packages/db/src/schema.ts → GARMENT_CATEGORIES
+ * Duplicated here because @acme/db is a server-only package (Drizzle/postgres deps)
+ * and cannot be imported in Expo client code.
+ * If categories change in schema.ts, update this array AND VALID_CATEGORIES in
+ * packages/api/src/router/garment.ts.
  */
 const GARMENT_CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"] as const;
 const ALL_CATEGORIES = ["all", ...GARMENT_CATEGORIES] as const;
@@ -30,6 +35,7 @@ const ITEM_HEIGHT = Math.round(COLUMN_WIDTH * 1.2);
 const CATEGORY_PILLS_HEIGHT = 60;
 
 export default function WardrobeScreen() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const queryClient = useQueryClient();
 
@@ -69,7 +75,7 @@ export default function WardrobeScreen() {
           subtext="Add your first garment"
           ctaLabel="Add your first garment"
           onCtaPress={() => {
-            // Navigate to add tab — Story 3.1 / tab navigation
+            router.push("/(auth)/(tabs)/add");
           }}
         />
       );
@@ -80,7 +86,7 @@ export default function WardrobeScreen() {
         subtext={`Add a ${selectedCategory}`}
       />
     );
-  }, [isLoading, selectedCategory]);
+  }, [isLoading, selectedCategory, router]);
 
   if (isError) {
     return (
@@ -88,7 +94,7 @@ export default function WardrobeScreen() {
         <View className="flex-1 items-center justify-center p-4">
           <ThemedText variant="heading">Something went wrong</ThemedText>
           <ThemedText variant="body" className="mt-2 text-center text-text-secondary">
-            {error.message}
+            We couldn't load your wardrobe. Please check your connection and try again.
           </ThemedText>
           <View className="mt-6">
             <Button variant="secondary" label="Try again" onPress={handleRefresh} />

@@ -10,8 +10,7 @@ describe("SkeletonGrid", () => {
 
     // Each skeleton item is a View, count the skeleton item markers
     const skeletonItems = html.match(/data-testid="skeleton-item"/g);
-    expect(skeletonItems).not.toBeNull();
-    expect(skeletonItems!.length).toBe(6);
+    expect(skeletonItems).toHaveLength(6);
   });
 
   test("skeleton items have correct width and height attributes", () => {
@@ -19,7 +18,7 @@ describe("SkeletonGrid", () => {
     const expectedHeight = Math.round(columnWidth * 1.2);
     const html = renderToStaticMarkup(<SkeletonGrid columnWidth={columnWidth} />);
 
-    // Check that the style includes the correct dimensions
+    // The ReanimatedView mock flattens style arrays, so dimensions appear in SSR output
     expect(html).toContain(`width:${columnWidth}px`);
     expect(html).toContain(`height:${expectedHeight}px`);
   });
@@ -29,7 +28,6 @@ describe("SkeletonGrid", () => {
 
     // Should have 3 rows (6 items / 2 columns)
     const rows = html.match(/data-testid="skeleton-row"/g);
-    expect(rows).not.toBeNull();
-    expect(rows!.length).toBe(3);
+    expect(rows).toHaveLength(3);
   });
 });

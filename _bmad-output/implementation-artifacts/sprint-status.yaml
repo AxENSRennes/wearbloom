@@ -53,7 +53,7 @@ development_status:
   # Epic 2: Wardrobe Management
   epic-2: in-progress
   2-1-add-garment-with-photo-capture: done
-  2-2-wardrobe-grid-and-category-browsing: review
+  2-2-wardrobe-grid-and-category-browsing: done
   2-3-stock-garment-library: backlog
   2-4-remove-garment: backlog
   2-5-offline-browsing-and-data-sync: backlog

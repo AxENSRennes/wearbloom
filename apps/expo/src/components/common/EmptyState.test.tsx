@@ -29,8 +29,7 @@ describe("EmptyState", () => {
     // Should only have the headline ThemedText, not a second one for subtext
     // Match opening tags only (closing tags also contain mock-ThemedText)
     const themedTextMatches = html.match(/<mock-ThemedText/g);
-    expect(themedTextMatches).not.toBeNull();
-    expect(themedTextMatches!.length).toBe(1);
+    expect(themedTextMatches).toHaveLength(1);
   });
 
   test("renders CTA button when ctaLabel provided", () => {

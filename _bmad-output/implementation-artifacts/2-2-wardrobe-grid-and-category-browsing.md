@@ -1,6 +1,6 @@
 # Story 2.2: Wardrobe Grid & Category Browsing
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -527,6 +527,7 @@ Claude Opus 4.6
 
 - TypeCheck: 13/13 packages pass
 - Tests: 257 total (was 223, +34 new), 0 fail, 0 regressions
+- Post-review tests: 122 expo + 62 API = 184 total, 0 fail (WardrobeScreen: 8 → 13 tests)
 - Lint: Pre-existing Node.js/ESLint `unstable_native_nodejs_ts_config` compatibility issue (fails on clean tree, not introduced by this story)
 
 ### Completion Notes List
@@ -534,14 +535,31 @@ Claude Opus 4.6
 - **Task 1 (GarmentCard):** Created immersive garment card with expo-image, auth-gated image URL, Reanimated press animation (0.97x spring), blurhash placeholder, full VoiceOver accessibility. 10 tests.
 - **Task 2 (EmptyState):** Created reusable empty state component in `components/common/` with headline, optional subtext, and optional CTA button using `Button label` prop API. 8 tests.
 - **Task 3 (Image serving extension):** Extended `createImageHandler` to query garments table as fallback when body photo not found. Serves cutout (PNG) when bgRemovalStatus=completed, otherwise original. Ownership verification on both tables. Extracted `streamImage` helper to reduce duplication. 9 tests (was 4, +5 new).
-- **Task 4 (WardrobeGrid screen):** Replaced placeholder with full wardrobe grid implementation using LegendList with 2-column grid, CategoryPills sticky header (bg-white/90), pull-to-refresh via TanStack Query invalidation, category filtering, empty states (general + category-specific), error state with retry, and SkeletonGrid loading state. Defined GARMENT_CATEGORIES locally (not from @acme/db/schema since it's not an Expo dependency). 8 tests.
+- **Task 4 (WardrobeGrid screen):** Replaced placeholder with full wardrobe grid implementation using LegendList with 2-column grid, CategoryPills sticky header (bg-white/90), pull-to-refresh via TanStack Query invalidation, category filtering, empty states (general + category-specific), error state with retry, and SkeletonGrid loading state. Defined GARMENT_CATEGORIES locally (not from @acme/db/schema since it's not an Expo dependency). 8 → 13 tests after review rewrite.
 - **Task 5 (SkeletonGrid):** Created 6-item skeleton grid (2x3) with Reanimated pulsing opacity animation (0.3→0.7→0.3, 1.2s loop). Respects Reduce Motion by showing static opacity. 3 tests.
 - **Task 6 (Validation):** All 13/13 packages typecheck. 257/257 tests pass. No regressions.
 - **Test setup additions:** Added mocks for `react-native-reanimated` (useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, withSequence, useReducedMotion, Easing) and `@legendapp/list` (LegendList with data rendering, ListEmptyComponent, ListHeaderComponent support). Fixed LegendList mock to correctly render ListEmptyComponent when data is empty array.
 
+### Code Review Fixes (2026-02-16)
+
+**Issues fixed (7/10 — all HIGH + MEDIUM):**
+- **H1**: SkeletonGrid animated style spread → fixed to style array `[staticStyle, animatedStyle]` for UI-thread animation
+- **H2**: WardrobeScreen tests were 8 smoke tests → rewritten as 13 behavioral tests with `spyOn(useQuery)` per-test control
+- **M1**: Empty state CTA did not navigate → added `router.push("/(auth)/(tabs)/add")`
+- **M2**: GARMENT_CATEGORIES comment was insufficient → expanded JSDoc explaining server-only @acme/db constraint
+- **M3**: Non-null assertions (`!`) in tests → replaced with `toHaveLength()` assertions
+- **M4**: Error state exposed raw `error.message` → replaced with user-friendly text
+- **M5**: CategoryPills had no cross-fade transition → added `LayoutAnimation.configureNext()` (150ms)
+
+**Issues deferred (3 LOW):**
+- **L1**: `Dimensions.get("window")` at module level — acceptable for MVP, recalculation on rotation not needed
+- **L2**: `isFetching` as `refreshing` prop — TanStack Query native behavior, no custom state needed
+- **L3**: `authClient.getCookie()` per render — lightweight sync call, memoization unnecessary
+
 ### Change Log
 
 - 2026-02-16: Story 2.2 implementation complete — wardrobe grid, garment card, empty state, skeleton grid, image serving extension, 34 new tests
+- 2026-02-16: Code review (adversarial) — 10 issues found (2H/5M/3L), 7 fixed (all HIGH + MEDIUM), 3 LOW deferred
 
 ### File List
 
@@ -552,7 +570,7 @@ Claude Opus 4.6
 - `apps/expo/src/components/garment/SkeletonGrid.test.tsx` — 3 tests for SkeletonGrid
 - `apps/expo/src/components/common/EmptyState.tsx` — reusable empty state with headline, subtext, optional CTA
 - `apps/expo/src/components/common/EmptyState.test.tsx` — 8 tests for EmptyState
-- `apps/expo/src/app/(auth)/(tabs)/index.test.tsx` — 8 tests for WardrobeScreen
+- `apps/expo/src/app/(auth)/(tabs)/index.test.tsx` — 13 behavioral tests for WardrobeScreen (rewritten in code review)
 
 **Modified files:**
 - `apps/expo/src/app/(auth)/(tabs)/index.tsx` — replaced placeholder with full wardrobe grid implementation
