@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Dimensions, Pressable, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -13,12 +13,13 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, MessageCircle } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, ThemedText } from "@acme/ui";
+import { Button, showToast, ThemedText } from "@acme/ui";
 
+import { FeedbackButton } from "~/components/tryon/FeedbackButton";
 import { RenderLoadingAnimation } from "~/components/tryon/RenderLoadingAnimation";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
@@ -58,6 +59,39 @@ export default function RenderScreen() {
         router.replace(`/render/${newData.renderId}`);
       },
     }),
+  );
+
+  const submitFeedbackMutation = useMutation(
+    trpc.tryon.submitFeedback.mutationOptions({
+      onSuccess: (result) => {
+        if (result.creditRefunded) {
+          showToast({
+            message: "Thanks for feedback. Render not counted.",
+            variant: "success",
+          });
+        } else {
+          showToast({
+            message: "Thanks for your feedback!",
+            variant: "success",
+          });
+        }
+      },
+      onError: () => {
+        showToast({
+          message: "Couldn't submit feedback. Try again.",
+          variant: "error",
+        });
+      },
+    }),
+  );
+
+  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+
+  const handleFeedbackSubmit = useCallback(
+    (rating: "thumbs_up" | "thumbs_down", category?: string) => {
+      submitFeedbackMutation.mutate({ renderId: id ?? "", rating, category });
+    },
+    [submitFeedbackMutation, id],
   );
 
   const status = data?.status ?? "pending";
@@ -262,30 +296,25 @@ export default function RenderScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Floating feedback button placeholder — bottom-right */}
-        <Animated.View style={uiAnimatedStyle}>
-          <Pressable
-            testID="feedback-button"
-            onPress={() => {
-              // Story 3.4 will implement feedback functionality
-            }}
-            style={{
-              position: "absolute",
-              bottom: insets.bottom + 16,
-              right: 16,
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: "rgba(255,255,255,0.3)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            accessibilityLabel="Give feedback"
-            accessibilityRole="button"
+        {/* Floating feedback button — bottom-right */}
+        {!feedbackDismissed && (
+          <Animated.View
+            style={[
+              uiAnimatedStyle,
+              {
+                position: "absolute",
+                bottom: insets.bottom + 16,
+                right: 16,
+              },
+            ]}
           >
-            <MessageCircle size={20} color="white" />
-          </Pressable>
-        </Animated.View>
+            <FeedbackButton
+              onSubmit={handleFeedbackSubmit}
+              onDismiss={() => setFeedbackDismissed(true)}
+              isSubmitting={submitFeedbackMutation.isPending}
+            />
+          </Animated.View>
+        )}
       </Animated.View>
     </GestureDetector>
   );

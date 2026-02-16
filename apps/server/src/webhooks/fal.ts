@@ -218,7 +218,7 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
         // Update DB
         await deps.db
           .update(tryOnRenders)
-          .set({ status: "completed", resultPath })
+          .set({ status: "completed", resultPath, creditConsumed: true })
           .where(eq(tryOnRenders.id, render.id));
 
         deps.logger.info(

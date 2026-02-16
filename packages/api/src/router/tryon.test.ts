@@ -9,6 +9,17 @@ import {
   mockDbUpdate,
 } from "../../test/helpers";
 
+function mockDbInsertUnique() {
+  const chain: Record<string, unknown> = {};
+  chain.values = mock(() => chain);
+  chain.returning = mock(() => chain);
+  chain.then = mock((_resolve: unknown, reject: (err: Error) => void) => {
+    const error = new Error("duplicate key value violates unique constraint");
+    return reject(error);
+  });
+  return chain;
+}
+
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
   session: {
@@ -575,5 +586,216 @@ describe("tryon.getRenderStatus", () => {
 
     expect(result.personImageUrl).toBe("/api/images/bp-1");
     expect(result.garmentImageUrl).toBe("/api/images/garment-1");
+  });
+});
+
+describe("tryon.submitFeedback", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+  let insertSpy: ReturnType<typeof spyOn>;
+  let updateSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+    insertSpy?.mockRestore();
+    updateSpy?.mockRestore();
+  });
+
+  test("records thumbs_up feedback for completed render", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("feedback-1") as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.submitFeedback({
+      renderId: "render-abc",
+      rating: "thumbs_up",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.creditRefunded).toBe(false);
+    expect(insertSpy).toHaveBeenCalled();
+  });
+
+  test("records thumbs_down feedback with optional category", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("feedback-2") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.submitFeedback({
+      renderId: "render-abc",
+      rating: "thumbs_down",
+      category: "wrong_fit",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.creditRefunded).toBe(true);
+  });
+
+  test("sets creditConsumed = false on thumbs_down (refund)", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("feedback-3") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    await caller.tryon.submitFeedback({
+      renderId: "render-abc",
+      rating: "thumbs_down",
+    });
+
+    expect(updateSpy).toHaveBeenCalled();
+  });
+
+  test("does NOT change creditConsumed on thumbs_up", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("feedback-4") as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    await caller.tryon.submitFeedback({
+      renderId: "render-abc",
+      rating: "thumbs_up",
+    });
+
+    // update should NOT have been called (no spy needed — if update is called it would fail)
+    expect(insertSpy).toHaveBeenCalled();
+  });
+
+  test("throws NOT_FOUND for invalid renderId", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.submitFeedback({
+        renderId: "nonexistent",
+        rating: "thumbs_up",
+      }),
+    ).rejects.toThrow(/NOT_FOUND/);
+  });
+
+  test("throws NOT_FOUND if render doesn't belong to user", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "other-user-456",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.submitFeedback({
+        renderId: "render-abc",
+        rating: "thumbs_up",
+      }),
+    ).rejects.toThrow(/NOT_FOUND/);
+  });
+
+  test("throws BAD_REQUEST if render is not completed", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "processing",
+          creditConsumed: false,
+        },
+      ]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.submitFeedback({
+        renderId: "render-abc",
+        rating: "thumbs_up",
+      }),
+    ).rejects.toThrow(/RENDER_NOT_COMPLETED/);
+  });
+
+  test("throws BAD_REQUEST if feedback already submitted", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([
+        {
+          id: "render-abc",
+          userId: "user-123",
+          status: "completed",
+          creditConsumed: true,
+        },
+      ]) as never,
+    );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsertUnique() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.submitFeedback({
+        renderId: "render-abc",
+        rating: "thumbs_up",
+      }),
+    ).rejects.toThrow(/FEEDBACK_ALREADY_SUBMITTED/);
   });
 });

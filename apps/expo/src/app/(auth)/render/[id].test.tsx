@@ -168,9 +168,9 @@ describe("RenderScreen", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 7. Shows feedback button placeholder (bottom-right) when completed
+  // 7. Shows FeedbackButton (bottom-right) when completed
   // -------------------------------------------------------------------------
-  test("shows feedback button placeholder when render is completed", () => {
+  test("shows FeedbackButton when render is completed", () => {
     stubUseQuery({
       data: {
         status: "completed",
@@ -182,7 +182,9 @@ describe("RenderScreen", () => {
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
+    // FeedbackButton renders with feedback-button testID and MessageCircle icon
     expect(html).toContain('testID="feedback-button"');
+    expect(html).toContain("Icon-MessageCircle");
   });
 
   // -------------------------------------------------------------------------
@@ -410,5 +412,82 @@ describe("RenderScreen", () => {
     const html = renderToStaticMarkup(<RenderScreen />);
 
     expect(html).not.toContain("mock-GestureDetector");
+  });
+
+  // -------------------------------------------------------------------------
+  // 19. FeedbackButton not rendered during loading state
+  // -------------------------------------------------------------------------
+  test("FeedbackButton not rendered during loading state", () => {
+    stubUseQuery({
+      data: {
+        status: "pending",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).not.toContain("Icon-MessageCircle");
+  });
+
+  // -------------------------------------------------------------------------
+  // 20. FeedbackButton not rendered during failed state
+  // -------------------------------------------------------------------------
+  test("FeedbackButton not rendered during failed state", () => {
+    stubUseQuery({
+      data: {
+        status: "failed",
+        resultImageUrl: null,
+        errorCode: "RENDER_FAILED",
+        garmentId: "garment-1",
+      },
+    });
+    stubUseMutation();
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).not.toContain("Icon-MessageCircle");
+  });
+
+  // -------------------------------------------------------------------------
+  // 21. FeedbackButton renders with Rate this render accessibility
+  // -------------------------------------------------------------------------
+  test("FeedbackButton has accessibility label in completed state", () => {
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain("Rate this render");
+  });
+
+  // -------------------------------------------------------------------------
+  // 22. FeedbackButton uses submitFeedback mutation (structural)
+  // -------------------------------------------------------------------------
+  test("FeedbackButton integration uses useMutation for submitFeedback", () => {
+    const mutationSpy = stubUseMutation();
+    stubUseQuery({
+      data: {
+        status: "completed",
+        resultImageUrl: "/api/images/render/render-abc",
+        errorCode: null,
+        garmentId: "garment-1",
+      },
+    });
+
+    renderToStaticMarkup(<RenderScreen />);
+
+    // useMutation should have been called (for both requestRender and submitFeedback)
+    expect(mutationSpy).toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
 import { and, eq } from "@acme/db";
-import { bodyPhotos, garments, tryOnRenders } from "@acme/db/schema";
+import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
 
 import { protectedProcedure } from "../trpc";
 
@@ -211,6 +211,68 @@ export const tryonRouter = {
         garmentId: render.garmentId,
         personImageUrl,
         garmentImageUrl,
+      };
+    }),
+  submitFeedback: protectedProcedure
+    .input(
+      z.object({
+        renderId: z.string(),
+        rating: z.enum(["thumbs_up", "thumbs_down"]),
+        category: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Validate render exists and belongs to user
+      const renderResult = await ctx.db
+        .select()
+        .from(tryOnRenders)
+        .where(eq(tryOnRenders.id, input.renderId))
+        .limit(1);
+
+      const render = renderResult[0];
+      if (!render || render.userId !== userId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "RENDER_NOT_FOUND",
+        });
+      }
+
+      if (render.status !== "completed") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "RENDER_NOT_COMPLETED",
+        });
+      }
+
+      // Insert feedback (unique constraint on renderId prevents duplicates)
+      try {
+        await ctx.db.insert(renderFeedback).values({
+          renderId: input.renderId,
+          userId,
+          rating: input.rating,
+          category:
+            input.rating === "thumbs_down" ? (input.category ?? null) : null,
+        });
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "FEEDBACK_ALREADY_SUBMITTED",
+        });
+      }
+
+      // If thumbs_down, refund credit
+      if (input.rating === "thumbs_down") {
+        await ctx.db
+          .update(tryOnRenders)
+          .set({ creditConsumed: false })
+          .where(eq(tryOnRenders.id, input.renderId));
+      }
+
+      return {
+        success: true,
+        creditRefunded: input.rating === "thumbs_down",
       };
     }),
 } satisfies TRPCRouterRecord;

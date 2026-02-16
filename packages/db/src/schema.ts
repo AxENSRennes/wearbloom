@@ -143,12 +143,36 @@ export const tryOnRenders = pgTable("try_on_renders", (t) => ({
   jobId: t.text(),
   resultPath: t.text(),
   errorCode: t.text(),
+  creditConsumed: t.boolean().notNull().default(false),
   createdAt: t.timestamp().defaultNow().notNull(),
   updatedAt: t
     .timestamp()
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
+}));
+
+export const FEEDBACK_RATINGS = ["thumbs_up", "thumbs_down"] as const;
+
+export const feedbackRating = pgEnum("feedback_rating", FEEDBACK_RATINGS);
+
+export const renderFeedback = pgTable("render_feedback", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  renderId: t
+    .text()
+    .notNull()
+    .references(() => tryOnRenders.id, { onDelete: "cascade" })
+    .unique(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  rating: feedbackRating().notNull(),
+  category: t.text(),
+  createdAt: t.timestamp().defaultNow().notNull(),
 }));
 
 export const verifications = pgTable("verifications", (t) => ({

@@ -257,6 +257,72 @@ describe("fal webhook handler", () => {
       "image/png",
     );
     expect(db.update).toHaveBeenCalled();
+    // Verify creditConsumed is set to true on completion
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "completed", creditConsumed: true }),
+    );
+  });
+
+  test("completed render sets creditConsumed = true", async () => {
+    const db = createMockDb({
+      id: "render-xyz",
+      userId: "user-456",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://cdn.fal.media/result2.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+    await handler(req, res);
+
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ creditConsumed: true }),
+    );
+  });
+
+  test("failed render does NOT set creditConsumed = true", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "ERROR",
+      error: "Something went wrong",
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+    await handler(req, res);
+
+    // Should set status to failed but NOT creditConsumed: true
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed", errorCode: "RENDER_FAILED" }),
+    );
+    // Verify creditConsumed was NOT included in the set call
+    const setCallArgs = (db._updateChain.set as ReturnType<typeof mock>).mock
+      .calls[0] as [Record<string, unknown>];
+    expect(setCallArgs[0]).not.toHaveProperty("creditConsumed");
   });
 
   test("failed render → updates DB with error, does not download", async () => {

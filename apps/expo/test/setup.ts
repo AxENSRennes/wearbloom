@@ -318,6 +318,9 @@ mock.module("lucide-react-native", () => ({
   ArrowLeft: mockComponent("Icon-ArrowLeft"),
   X: mockComponent("Icon-X"),
   MessageCircle: mockComponent("Icon-MessageCircle"),
+  ThumbsUp: mockComponent("Icon-ThumbsUp"),
+  ThumbsDown: mockComponent("Icon-ThumbsDown"),
+  Check: mockComponent("Icon-Check"),
 }));
 
 // ---------------------------------------------------------------------------

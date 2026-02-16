@@ -2,12 +2,15 @@ import { describe, expect, test } from "bun:test";
 
 import {
   BG_REMOVAL_STATUSES,
+  FEEDBACK_RATINGS,
   GARMENT_CATEGORIES,
   RENDER_STATUSES,
   TRYON_PROVIDERS,
   bgRemovalStatusEnum,
+  feedbackRating,
   garmentCategory,
   garments,
+  renderFeedback,
   renderStatus,
   tryOnProviderEnum,
   tryOnRenders,
@@ -123,8 +126,43 @@ describe("tryOnRenders schema", () => {
       "jobId",
       "resultPath",
       "errorCode",
+      "creditConsumed",
       "createdAt",
       "updatedAt",
+    ];
+    for (const col of expected) {
+      expect(columnNames).toContain(col);
+    }
+  });
+
+  test("tryOnRenders table has creditConsumed column", () => {
+    const columnNames = Object.keys(tryOnRenders);
+    expect(columnNames).toContain("creditConsumed");
+  });
+});
+
+describe("renderFeedback schema", () => {
+  test("FEEDBACK_RATINGS has correct values", () => {
+    expect(FEEDBACK_RATINGS).toEqual(["thumbs_up", "thumbs_down"]);
+  });
+
+  test("feedbackRating pgEnum is defined", () => {
+    expect(feedbackRating).toBeDefined();
+    expect(feedbackRating.enumName).toBe("feedback_rating");
+    expect(feedbackRating.enumValues).toEqual(["thumbs_up", "thumbs_down"]);
+  });
+
+  test("renderFeedback table is defined with expected columns", () => {
+    expect(renderFeedback).toBeDefined();
+
+    const columnNames = Object.keys(renderFeedback);
+    const expected = [
+      "id",
+      "renderId",
+      "userId",
+      "rating",
+      "category",
+      "createdAt",
     ];
     for (const col of expected) {
       expect(columnNames).toContain(col);
