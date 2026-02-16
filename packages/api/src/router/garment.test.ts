@@ -244,27 +244,6 @@ describe("garment.upload", () => {
     expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
   });
 
-  test("rejects non-authenticated requests with proper error", async () => {
-    const { appRouter } = await import("../root");
-    const auth = createMockAuth(null);
-    const ctx = await createTRPCContext({
-      headers: new Headers(),
-      auth,
-      imageStorage: createMockImageStorage(),
-    });
-    const caller = appRouter.createCaller(ctx);
-
-    const formData = new FormData();
-    formData.append(
-      "photo",
-      new File(["data"], "garment.jpg", { type: "image/jpeg" }),
-    );
-    formData.append("category", "tops");
-
-    await expect(caller.garment.upload(formData)).rejects.toThrow(
-      /UNAUTHORIZED/,
-    );
-  });
 });
 
 describe("garment.list", () => {

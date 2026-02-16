@@ -116,6 +116,64 @@ describe("createImageStorage", () => {
     });
   });
 
+  describe("saveRenderResult", () => {
+    test("creates file at expected render path", async () => {
+      const imageData = Buffer.from("render-result-data");
+      const filePath = await storage.saveRenderResult(
+        "user-123",
+        "render-abc",
+        imageData,
+        "image/png",
+      );
+
+      expect(filePath).toBe(
+        join("user-123", "renders", "render-abc_result.png"),
+      );
+
+      const absolutePath = storage.getAbsolutePath(filePath);
+      const written = await readFile(absolutePath);
+      expect(written).toEqual(imageData);
+    });
+
+    test("uses .jpg extension for image/jpeg mime type", async () => {
+      const imageData = Buffer.from("jpeg-render-data");
+      const filePath = await storage.saveRenderResult(
+        "user-456",
+        "render-xyz",
+        imageData,
+        "image/jpeg",
+      );
+
+      expect(filePath).toEndWith("_result.jpg");
+      expect(existsSync(storage.getAbsolutePath(filePath))).toBe(true);
+    });
+
+    test("defaults to .png for unknown mime type", async () => {
+      const imageData = Buffer.from("unknown-render-data");
+      const filePath = await storage.saveRenderResult(
+        "user-789",
+        "render-def",
+        imageData,
+        "image/webp",
+      );
+
+      expect(filePath).toEndWith("_result.png");
+    });
+
+    test("creates renders directory if it does not exist", async () => {
+      const imageData = Buffer.from("new-user-render");
+      const filePath = await storage.saveRenderResult(
+        "user-new",
+        "render-first",
+        imageData,
+        "image/png",
+      );
+
+      expect(filePath).toContain("renders");
+      expect(existsSync(storage.getAbsolutePath(filePath))).toBe(true);
+    });
+  });
+
   describe("deleteGarmentFiles", () => {
     test("removes garment original and cutout files", async () => {
       // Create both files
