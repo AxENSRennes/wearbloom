@@ -176,14 +176,7 @@ export function FeedbackButton({
   const renderContent = () => {
     if (state === "confirmed") {
       return (
-        <View
-          style={{
-            width: COLLAPSED_WIDTH,
-            height: 44,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+        <View className="w-11 h-11 items-center justify-center">
           <Check
             size={20}
             color="white"
@@ -195,32 +188,18 @@ export function FeedbackButton({
 
     if (state === "category_picker") {
       return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 8,
-            paddingVertical: 6,
-          }}
-        >
+        <View className="flex-row items-center gap-1.5 px-2 py-1.5">
           {CATEGORIES.map((cat) => (
             <Pressable
               key={cat.key}
               testID={`category-${cat.key}`}
               onPress={() => handleCategorySelect(cat.key)}
               disabled={isSubmitting}
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.2)",
-              }}
+              accessibilityLabel={cat.label}
+              accessibilityRole="button"
+              className="px-2.5 py-1.5 rounded-[14px] bg-white/20"
             >
-              <ThemedText
-                variant="caption"
-                style={{ color: "white", fontSize: 12 }}
-              >
+              <ThemedText variant="caption" className="text-white">
                 {cat.label}
               </ThemedText>
             </Pressable>
@@ -231,25 +210,14 @@ export function FeedbackButton({
 
     if (state === "expanded") {
       return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 16,
-            paddingHorizontal: 16,
-            height: 44,
-          }}
-        >
+        <View className="flex-row items-center gap-4 px-4 h-11">
           <Pressable
             testID="feedback-thumbs-up"
             onPress={handleThumbsUp}
             disabled={isSubmitting}
-            style={{
-              width: 32,
-              height: 32,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            accessibilityLabel="Good result"
+            accessibilityRole="button"
+            className="w-8 h-8 items-center justify-center"
           >
             <ThumbsUp size={20} color="white" />
           </Pressable>
@@ -257,12 +225,9 @@ export function FeedbackButton({
             testID="feedback-thumbs-down"
             onPress={handleThumbsDown}
             disabled={isSubmitting}
-            style={{
-              width: 32,
-              height: 32,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            accessibilityLabel="Bad result"
+            accessibilityRole="button"
+            className="w-8 h-8 items-center justify-center"
           >
             <ThumbsDown size={20} color="white" />
           </Pressable>
@@ -278,22 +243,11 @@ export function FeedbackButton({
         accessibilityLabel="Rate this render"
         accessibilityRole="button"
         accessibilityHint="Double tap to rate quality"
-        style={{
-          width: COLLAPSED_WIDTH,
-          height: 44,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className="w-11 h-11 items-center justify-center"
       >
         <View
           testID="feedback-icon-collapsed"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          className="w-8 h-8 rounded-full items-center justify-center"
         >
           <MessageCircle size={20} color="white" />
         </View>

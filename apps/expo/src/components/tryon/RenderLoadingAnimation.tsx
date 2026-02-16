@@ -95,52 +95,30 @@ export function RenderLoadingAnimation({
 
   if (reducedMotion) {
     return (
-      <View style={{ flex: 1, backgroundColor: "black" }}>
+      <View className="flex-1 bg-black">
         <Image
           source={{ uri: personImageUrl, headers: imageHeaders }}
-          style={{ flex: 1 }}
+          className="flex-1"
           contentFit="cover"
           testID="body-photo"
         />
         {showGarmentThumbnail && (
           <View
             testID="garment-thumbnail"
-            style={{
-              position: "absolute",
-              top: 80,
-              right: 20,
-              width: 64,
-              height: 64,
-              borderRadius: 12,
-              overflow: "hidden",
-            }}
+            className="absolute top-20 right-5 w-16 h-16 rounded-xl overflow-hidden"
           >
             <Image
               source={{ uri: garmentImageUrl, headers: imageHeaders }}
-              style={{ width: 64, height: 64 }}
+              className="w-16 h-16"
               contentFit="cover"
             />
           </View>
         )}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+        <View className="absolute inset-0 items-center justify-center">
           <ActivityIndicator size="large" color="white" />
           <ThemedText
             variant="body"
-            style={{
-              color: "rgba(255,255,255,0.7)",
-              fontSize: 13,
-              marginTop: 12,
-            }}
+            className="text-white/70 text-[13px] mt-3"
           >
             {getProgressText(elapsedMs)}
           </ThemedText>
@@ -150,28 +128,19 @@ export function RenderLoadingAnimation({
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "black" }}>
+    <View className="flex-1 bg-black">
       {/* Base layer: body photo with pulse animation */}
       <Animated.View style={pulseStyle}>
         <Image
           source={{ uri: personImageUrl, headers: imageHeaders }}
-          style={{ flex: 1 }}
+          className="flex-1"
           contentFit="cover"
           testID="body-photo"
         />
       </Animated.View>
 
       {/* Shimmer overlay */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: "hidden",
-        }}
-      >
+      <View className="absolute inset-0 overflow-hidden">
         <Animated.View style={shimmerStyle} />
       </View>
 
@@ -199,25 +168,17 @@ export function RenderLoadingAnimation({
         >
           <Image
             source={{ uri: garmentImageUrl, headers: imageHeaders }}
-            style={{ width: 64, height: 64 }}
+            className="w-16 h-16"
             contentFit="cover"
           />
         </Animated.View>
       )}
 
       {/* Progress text — bottom center */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 80,
-          left: 0,
-          right: 0,
-          alignItems: "center",
-        }}
-      >
+      <View className="absolute bottom-20 inset-x-0 items-center">
         <ThemedText
           variant="body"
-          style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}
+          className="text-white/70 text-[13px]"
         >
           {getProgressText(elapsedMs)}
         </ThemedText>

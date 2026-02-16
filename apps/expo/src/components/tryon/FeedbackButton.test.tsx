@@ -30,9 +30,9 @@ describe("FeedbackButton", () => {
   test("renders with 44x44 touch target dimensions", () => {
     const html = renderToStaticMarkup(<FeedbackButton {...defaultProps} />);
 
-    // Verify the outer pressable has width/height 44 (React SSR adds px suffix)
-    expect(html).toContain("width:44px");
-    expect(html).toContain("height:44px");
+    // Verify the outer pressable uses NativeWind w-11 h-11 (44px) classes
+    expect(html).toContain("w-11");
+    expect(html).toContain("h-11");
   });
 
   // -------------------------------------------------------------------------
@@ -97,10 +97,10 @@ describe("FeedbackButton", () => {
   test("uses semi-transparent white background in collapsed state", () => {
     const html = renderToStaticMarkup(<FeedbackButton {...defaultProps} />);
 
-    // The collapsed icon circle is 32x32 with borderRadius 16 (perfect circle)
-    expect(html).toContain("width:32px");
-    expect(html).toContain("height:32px");
-    expect(html).toContain("border-radius:16px");
+    // The collapsed icon circle uses NativeWind w-8 h-8 rounded-full classes
+    expect(html).toContain("w-8");
+    expect(html).toContain("h-8");
+    expect(html).toContain("rounded-full");
   });
 
   // -------------------------------------------------------------------------
