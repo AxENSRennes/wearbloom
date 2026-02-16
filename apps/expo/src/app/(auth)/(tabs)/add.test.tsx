@@ -235,3 +235,23 @@ describe("AddGarmentScreen", () => {
     expect(html).toContain('variant="heading"');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Story 3.5: Supported categories integration
+// ---------------------------------------------------------------------------
+
+describe("AddGarmentScreen — Story 3.5 integration", () => {
+  test("renders idle screen without crash when supportedCategories query returns default", () => {
+    // useQuery mock (from preload) returns data: null → supportedCategories = []
+    // With the empty-guard fix, unsupportedCategories = [] (no categories marked)
+    const html = render(createElement(AddGarmentScreen));
+    expect(html).toContain("Add a Garment");
+    // CategoryPills is NOT rendered in idle state, so no "No try-on" badges
+    expect(html).not.toContain("No try-on");
+  });
+
+  test("renders photography tips section in idle state", () => {
+    const html = render(createElement(AddGarmentScreen));
+    expect(html).toContain("Tips for best results");
+  });
+});

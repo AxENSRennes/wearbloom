@@ -217,7 +217,8 @@ describe("GarmentDetailSheet", () => {
     // Button should not have disabled attribute and should have standard accessibility hint
     const buttonMatch = html.match(/<mock-Button[^>]*>/);
     expect(buttonMatch).not.toBeNull();
-    expect(buttonMatch![0]).not.toContain("disabled");
+    const buttonTag = buttonMatch?.[0] ?? "";
+    expect(buttonTag).not.toContain("disabled");
     expect(html).toContain('accessibilityHint="Double tap to start virtual try-on"');
   });
 

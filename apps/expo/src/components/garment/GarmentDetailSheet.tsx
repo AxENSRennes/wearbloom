@@ -110,7 +110,7 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
     );
 
     const isCategorySupported = garment
-      ? supportedCategories.includes(garment.category)
+      ? supportedCategories.length === 0 || supportedCategories.includes(garment.category)
       : true;
 
     const categoryLabel = garment

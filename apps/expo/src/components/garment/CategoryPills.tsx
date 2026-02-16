@@ -79,7 +79,7 @@ export function CategoryPills({
             onPress={() => handleSelect(category, index)}
             onLayout={(e) => handlePillLayout(index, e)}
             accessibilityRole="button"
-            accessibilityLabel={category}
+            accessibilityLabel={isUnsupported ? `${category}, try-on not available` : category}
             accessibilityState={{ selected: isActive }}
             className={cn(
               "items-center justify-center rounded-full px-3 py-2",
@@ -96,7 +96,7 @@ export function CategoryPills({
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </Text>
             {isUnsupported && (
-              <Text className="text-[9px] text-text-tertiary">
+              <Text className={cn("text-[9px]", isActive ? "text-white/70" : "text-text-tertiary")}>
                 No try-on
               </Text>
             )}

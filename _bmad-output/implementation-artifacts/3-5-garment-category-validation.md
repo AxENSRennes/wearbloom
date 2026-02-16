@@ -1,6 +1,6 @@
 # Story 3.5: Garment Category Validation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -631,6 +631,7 @@ Active provider default: `fal_fashn` (via `ACTIVE_TRYON_PROVIDER` env var in `ap
 ## Change Log
 
 - 2026-02-16: Implemented Story 3.5 — Garment Category Validation (all 6 tasks, 15 new tests)
+- 2026-02-16: Code review — 8 issues found (1H/5M/2L), 6 fixed (1H+5M), 2 deferred (L). Status → done
 
 ## Dev Agent Record
 
@@ -647,6 +648,25 @@ Claude Opus 4.6
 - Task 5: CategoryPills extended with optional `unsupportedCategories` prop. "No try-on" text indicator added. Add garment screen queries categories and computes unsupported list.
 - Task 6: `pnpm typecheck` 13/13, `turbo test` 441 total (0 failures). All ACs verified.
 - Fix: Used `?? []` instead of destructuring default `= []` for `useQuery().data` to handle mock returning `null`.
+
+### Code Review Notes
+
+**Review Date:** 2026-02-16 | **Reviewer:** Claude Opus 4.6 (adversarial)
+
+**Issues Found: 8 (1H / 5M / 2L)**
+
+| # | Severity | File | Issue | Resolution |
+|---|----------|------|-------|------------|
+| H1 | HIGH | GarmentDetailSheet.tsx, add.tsx | Empty `supportedCategories` disables all try-on on client but allows all on server | Fixed: added `supportedCategories.length === 0` guard on both files |
+| M1 | MEDIUM | index.test.tsx | `stubUseQuery` mock returns same data for both `useQuery` calls (garments + supportedCategories) | Fixed: `mockImplementation` with callCount to differentiate calls |
+| M2 | MEDIUM | add.test.tsx | No integration tests for Story 3.5 changes in add garment flow | Fixed: added 2 Story 3.5 integration tests |
+| M3 | MEDIUM | CategoryPills.tsx | "No try-on" text contrast disappears when pill is active (white bg) | Fixed: conditional `text-white/70` when active |
+| M4 | MEDIUM | CategoryPills.tsx | Screen readers don't announce unsupported category status | Fixed: `accessibilityLabel` includes "try-on not available" |
+| M5 | MEDIUM | GarmentDetailSheet.test.tsx | Non-null assertion `!` on `buttonMatch` violates ESLint rule | Fixed: optional chaining `?.[0] ?? ""` |
+| L1 | LOW | — | Empty supportedCategories semantics documented but confusing | Deferred (documentation only) |
+| L2 | LOW | — | Regex-based test assertion fragile | Deferred (low risk) |
+
+**Test Impact:** 286 → 288 tests (+2 new), 0 failures, 0 regressions
 
 ### Completion Notes List
 

@@ -108,9 +108,9 @@ export default function AddGarmentScreen() {
     trpc.tryon.getSupportedCategories.queryOptions(),
   );
   const supportedCategories = supportedCategoriesQuery.data ?? [];
-  const unsupportedCategories = CATEGORIES.filter(
-    (c) => !supportedCategories.includes(c),
-  );
+  const unsupportedCategories = supportedCategories.length > 0
+    ? CATEGORIES.filter((c) => !supportedCategories.includes(c))
+    : [];
 
   const uploadMutation = useMutation(
     trpc.garment.upload.mutationOptions({

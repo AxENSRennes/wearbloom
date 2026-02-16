@@ -52,15 +52,32 @@ function stubUseQuery(overrides: {
   error?: { message: string } | null;
 }) {
   const spy = spyOn(reactQuery, "useQuery");
-  spy.mockReturnValue({
-    data: overrides.data ?? null,
-    isLoading: overrides.isLoading ?? false,
-    isPending: overrides.isLoading ?? false,
-    isFetching: overrides.isFetching ?? false,
-    isError: overrides.isError ?? false,
-    error: overrides.error ?? null,
-    refetch: mock(() => Promise.resolve()),
-  } as ReturnType<typeof reactQuery.useQuery>);
+  let callCount = 0;
+  spy.mockImplementation(() => {
+    callCount++;
+    // First call: tryon.getSupportedCategories
+    if (callCount === 1) {
+      return {
+        data: ["tops", "bottoms", "dresses"],
+        isLoading: false,
+        isPending: false,
+        isFetching: false,
+        isError: false,
+        error: null,
+        refetch: mock(() => Promise.resolve()),
+      } as ReturnType<typeof reactQuery.useQuery>;
+    }
+    // Second call: garment.list
+    return {
+      data: overrides.data ?? null,
+      isLoading: overrides.isLoading ?? false,
+      isPending: overrides.isLoading ?? false,
+      isFetching: overrides.isFetching ?? false,
+      isError: overrides.isError ?? false,
+      error: overrides.error ?? null,
+      refetch: mock(() => Promise.resolve()),
+    } as ReturnType<typeof reactQuery.useQuery>;
+  });
   return spy;
 }
 
