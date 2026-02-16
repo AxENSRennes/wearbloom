@@ -72,7 +72,7 @@ development_status:
   epic-4: in-progress
   4-1-credit-system-and-free-trial-renders: done
   4-2-apple-iap-subscription-integration: done
-  4-3-paywall-screen: review
+  4-3-paywall-screen: done
   4-4-subscription-lifecycle-and-apple-webhooks: backlog
   epic-4-retrospective: optional
 

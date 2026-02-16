@@ -5,6 +5,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { PaywallScreenProps } from "./PaywallScreen";
 
 // ---------------------------------------------------------------------------
+// NOTE: renderToStaticMarkup cannot test interaction handlers (onPress, etc.).
+// purchase() and restore() handler wiring is verified by TypeScript type-check
+// (handlers are passed inline) and will be covered by E2E tests.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // Mutable mock state — updated per test, read by mocked hooks
 // ---------------------------------------------------------------------------
 const storeKitState = {
@@ -254,5 +260,19 @@ describe("PaywallScreen", () => {
   test("renders price disclosure text", () => {
     const html = render();
     expect(html).toContain("Cancel anytime");
+  });
+
+  test("renders Terms and Privacy Policy links", () => {
+    const html = render();
+    expect(html).toContain("Terms");
+    expect(html).toContain("Privacy Policy");
+    expect(html).toContain('accessibilityLabel="Terms of Service"');
+    expect(html).toContain('accessibilityLabel="Privacy Policy"');
+  });
+
+  test("hero image has accessibility attributes", () => {
+    const html = render();
+    expect(html).toContain('accessibilityRole="image"');
+    expect(html).toContain('accessibilityLabel="Your try-on result preview"');
   });
 });

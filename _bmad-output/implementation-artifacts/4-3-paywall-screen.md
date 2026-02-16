@@ -1,6 +1,6 @@
 # Story 4.3: Paywall Screen
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -524,6 +524,12 @@ Claude Opus 4.6 (claude-opus-4-6)
 - Full VoiceOver accessibility: all interactive elements have labels, roles, and hints
 - Total test count: 173 (was ~150 before, +23 new, 0 regressions)
 - Typecheck: 13/13 packages pass
+- Code review: 8 issues found (2H/5M/1L) — all fixed automatically
+- Added Terms of Service / Privacy Policy links (App Store compliance)
+- Replaced hardcoded hex colors with wearbloomTheme.colors references
+- Fixed displayPrice unsafe cast with null coalescing
+- Added hero image accessibility attributes (accessibilityRole="image")
+- Documented interaction test limitation (SSR can't test onPress handlers)
 
 ### File List
 
@@ -536,6 +542,7 @@ Claude Opus 4.6 (claude-opus-4-6)
 **Modified files:**
 - `apps/expo/src/app/(public)/paywall.tsx` — Replaced stub with full PaywallScreen route
 - `apps/expo/test/setup.ts` — Added Check/X/CircleCheck icons, expo-haptics mock, expo-iap mock, useLocalSearchParams mock
+- `pnpm-lock.yaml` — Updated lockfile (expo-haptics dependency added)
 
 ### Change Log
 
@@ -546,3 +553,4 @@ Claude Opus 4.6 (claude-opus-4-6)
 | 2026-02-16 | Replaced paywall route stub with full implementation | Task 3 — AC #1 |
 | 2026-02-16 | Created usePaywallGuard hook for render gating | Task 4 — AC #1 |
 | 2026-02-16 | Validated typecheck (13/13), lint, tests (173 total, 0 regressions) | Task 5 — all ACs |
+| 2026-02-16 | Code review fixes: Terms/Privacy links, semantic theme colors, displayPrice null guard, hero a11y, test coverage | Code review — 2H/5M/1L |

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { ErrorCode } from "expo-iap";
 import { Check, CircleCheck, X } from "lucide-react-native";
 
-import { Button, ThemedText, Spinner, ThemedPressable, showToast } from "@acme/ui";
+import { Button, ThemedText, Spinner, ThemedPressable, showToast, wearbloomTheme } from "@acme/ui";
 
 import { authClient } from "~/utils/auth";
 import { useStoreKit } from "~/hooks/useStoreKit";
@@ -26,6 +26,7 @@ type DisplayState =
 export interface PaywallScreenProps {
   onClose: () => void;
   onSuccess: () => void;
+  /** Garment for pending render after subscription — consumed by Epic 3 integration */
   garmentId?: string;
   /** @internal Test-only prop to override display state */
   __testDisplayState?: DisplayState;
@@ -176,7 +177,7 @@ export function PaywallScreen({
     return (
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 items-center justify-center gap-4 p-6">
-          <CircleCheck size={64} color="#22c55e" />
+          <CircleCheck size={64} color={wearbloomTheme.colors.success} />
           <ThemedText variant="display">Welcome!</ThemedText>
           <ThemedText variant="body" className="text-center text-text-secondary">
             Try on anything, anytime.
@@ -232,7 +233,12 @@ export function PaywallScreen({
 
       <View className="flex-1 justify-center p-6">
         {/* Hero placeholder */}
-        <View className="mb-6 h-48 items-center justify-center rounded-2xl bg-surface">
+        <View
+          className="mb-6 h-48 items-center justify-center rounded-2xl bg-surface"
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Your try-on result preview"
+        >
           <ThemedText variant="caption" className="text-text-tertiary">
             Your try-on result preview
           </ThemedText>
@@ -247,7 +253,7 @@ export function PaywallScreen({
         <View className="mb-6 gap-3">
           {BENEFITS.map((benefit) => (
             <View key={benefit} className="flex-row items-center gap-3">
-              <Check size={20} color="#1A1A1A" />
+              <Check size={20} color={wearbloomTheme.colors["text-primary"]} />
               <ThemedText variant="body">{benefit}</ThemedText>
             </View>
           ))}
@@ -263,7 +269,7 @@ export function PaywallScreen({
 
         {/* Price disclosure */}
         <ThemedText variant="caption" className="mt-3 text-center text-text-secondary">
-          Then {product?.displayPrice as string}/week. Cancel anytime.
+          Then {String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.
         </ThemedText>
 
         {/* Restore purchases */}
@@ -289,6 +295,35 @@ export function PaywallScreen({
             </ThemedText>
           )}
         </ThemedPressable>
+
+        {/* Terms & Privacy */}
+        <View className="mt-4 flex-row items-center justify-center gap-2">
+          <ThemedPressable
+            onPress={() => void Linking.openURL("https://wearbloom.app/terms")}
+            accessible
+            accessibilityRole="link"
+            accessibilityLabel="Terms of Service"
+            accessibilityHint="Double tap to view terms"
+          >
+            <ThemedText variant="small" className="text-text-tertiary">
+              Terms
+            </ThemedText>
+          </ThemedPressable>
+          <ThemedText variant="small" className="text-text-tertiary">
+            ·
+          </ThemedText>
+          <ThemedPressable
+            onPress={() => void Linking.openURL("https://wearbloom.app/privacy")}
+            accessible
+            accessibilityRole="link"
+            accessibilityLabel="Privacy Policy"
+            accessibilityHint="Double tap to view privacy policy"
+          >
+            <ThemedText variant="small" className="text-text-tertiary">
+              Privacy Policy
+            </ThemedText>
+          </ThemedPressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -308,7 +343,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
       accessibilityLabel="Close paywall"
       accessibilityHint="Double tap to return to wardrobe"
     >
-      <X size={24} color="#868e96" />
+      <X size={24} color={wearbloomTheme.colors["text-secondary"]} />
     </Pressable>
   );
 }
