@@ -49,23 +49,6 @@ describe("createImageStorage", () => {
     });
   });
 
-  describe("deleteBodyPhoto", () => {
-    test("removes file from filesystem", async () => {
-      const fileData = Buffer.from("to-delete");
-      const filePath = await storage.saveBodyPhoto(
-        "user-del",
-        fileData,
-        "image/jpeg",
-      );
-
-      const absolutePath = storage.getAbsolutePath(filePath);
-      expect(existsSync(absolutePath)).toBe(true);
-
-      await storage.deleteBodyPhoto("user-del", filePath);
-      expect(existsSync(absolutePath)).toBe(false);
-    });
-  });
-
   describe("deleteUserDirectory", () => {
     test("removes user directory and all contents", async () => {
       // Create some files for the user
@@ -82,13 +65,6 @@ describe("createImageStorage", () => {
     test("does not throw when directory does not exist", async () => {
       // Should complete without error for a non-existent user
       await storage.deleteUserDirectory("non-existent-user");
-    });
-  });
-
-  describe("getAbsolutePath", () => {
-    test("resolves relative path to absolute", () => {
-      const absolute = storage.getAbsolutePath("user-1/body/avatar_123.jpg");
-      expect(absolute).toBe(join(basePath, "user-1/body/avatar_123.jpg"));
     });
   });
 
@@ -199,6 +175,54 @@ describe("createImageStorage", () => {
       }
       const text = Buffer.concat(chunks).toString();
       expect(text).toBe(content);
+    });
+
+    test("rejects path traversal with ../", () => {
+      expect(() => storage.streamFile("../../etc/passwd")).toThrow(
+        "Path traversal detected",
+      );
+    });
+
+    test("rejects path traversal with encoded sequences", () => {
+      expect(() =>
+        storage.streamFile("user-123/../../etc/passwd"),
+      ).toThrow("Path traversal detected");
+    });
+  });
+
+  describe("getAbsolutePath", () => {
+    test("resolves relative path to absolute", () => {
+      const absolute = storage.getAbsolutePath("user-1/body/avatar_123.jpg");
+      expect(absolute).toBe(join(basePath, "user-1/body/avatar_123.jpg"));
+    });
+
+    test("rejects path traversal", () => {
+      expect(() => storage.getAbsolutePath("../../etc/passwd")).toThrow(
+        "Path traversal detected",
+      );
+    });
+  });
+
+  describe("deleteBodyPhoto", () => {
+    test("removes file from filesystem", async () => {
+      const fileData = Buffer.from("to-delete");
+      const filePath = await storage.saveBodyPhoto(
+        "user-del",
+        fileData,
+        "image/jpeg",
+      );
+
+      const absolutePath = storage.getAbsolutePath(filePath);
+      expect(existsSync(absolutePath)).toBe(true);
+
+      await storage.deleteBodyPhoto("user-del", filePath);
+      expect(existsSync(absolutePath)).toBe(false);
+    });
+
+    test("rejects path traversal", async () => {
+      await expect(
+        storage.deleteBodyPhoto("user-123", "../../etc/passwd"),
+      ).rejects.toThrow("Path traversal detected");
     });
   });
 });

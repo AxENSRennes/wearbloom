@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 
 import type { Logger } from "pino";
@@ -16,6 +16,16 @@ const MIME_EXT: Record<string, string> = {
 };
 
 export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
+  const resolvedBase = resolve(basePath);
+
+  function safePath(filePath: string): string {
+    const absolute = resolve(join(basePath, filePath));
+    if (!absolute.startsWith(resolvedBase + "/")) {
+      throw new Error("Path traversal detected");
+    }
+    return absolute;
+  }
+
   return {
     async saveBodyPhoto(
       userId: string,
@@ -43,7 +53,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
     },
 
     async deleteBodyPhoto(userId: string, filePath: string): Promise<void> {
-      const absolutePath = join(basePath, filePath);
+      const absolutePath = safePath(filePath);
       try {
         await rm(absolutePath);
         logger?.info(
@@ -65,7 +75,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
     },
 
     getAbsolutePath(filePath: string): string {
-      return join(basePath, filePath);
+      return safePath(filePath);
     },
 
     async saveGarmentPhoto(
@@ -166,7 +176,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
     },
 
     streamFile(filePath: string): ReadableStream {
-      const absolutePath = join(basePath, filePath);
+      const absolutePath = safePath(filePath);
       const nodeStream = createReadStream(absolutePath);
       return Readable.toWeb(nodeStream) as ReadableStream;
     },
