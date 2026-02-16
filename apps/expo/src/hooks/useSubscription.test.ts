@@ -60,13 +60,14 @@ const { useSubscription } = await import("./useSubscription");
 // Minimal hook runner
 // ---------------------------------------------------------------------------
 function runHook(): ReturnType<typeof useSubscription> {
-  let result!: ReturnType<typeof useSubscription>;
+  const ref = { current: undefined as ReturnType<typeof useSubscription> | undefined };
   function TestComponent() {
-    result = useSubscription();
+    ref.current = useSubscription();
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  return result;
+  if (!ref.current) throw new Error("Hook must produce a result after render");
+  return ref.current;
 }
 
 // ---------------------------------------------------------------------------

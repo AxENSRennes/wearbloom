@@ -80,7 +80,7 @@ export function useStoreKit({ userId }: { userId: string }) {
       },
       type: "subs",
     });
-  }, [requestPurchase, userId]);
+  }, [setPurchaseError, requestPurchase, userId]);
 
   const restore = useCallback(async () => {
     // Sync with Apple then fetch available purchases (root API returns data)

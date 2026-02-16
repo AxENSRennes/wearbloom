@@ -116,13 +116,14 @@ const { useStoreKit } = await import("./useStoreKit");
 function runHook(
   userId = "user-123",
 ): ReturnType<typeof useStoreKit> {
-  let result!: ReturnType<typeof useStoreKit>;
+  const ref = { current: undefined as ReturnType<typeof useStoreKit> | undefined };
   function TestComponent() {
-    result = useStoreKit({ userId });
+    ref.current = useStoreKit({ userId });
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  return result;
+  if (!ref.current) throw new Error("Hook must produce a result after render");
+  return ref.current;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +209,8 @@ describe("useStoreKit", () => {
     runHook();
     expect(onPurchaseSuccessCallback).toBeDefined();
 
-    await onPurchaseSuccessCallback!({
+    if (!onPurchaseSuccessCallback) throw new Error("expected callback");
+    await onPurchaseSuccessCallback({
       purchaseToken: "signed-jws-token-123",
     });
 
@@ -220,7 +222,8 @@ describe("useStoreKit", () => {
   test("onPurchaseSuccess sends empty string when purchaseToken is undefined", async () => {
     runHook();
 
-    await onPurchaseSuccessCallback!({ purchaseToken: undefined });
+    if (!onPurchaseSuccessCallback) throw new Error("expected callback");
+    await onPurchaseSuccessCallback({ purchaseToken: undefined });
 
     expect(verifyMutateAsync).toHaveBeenCalledWith({
       signedTransactionInfo: "",
@@ -228,15 +231,16 @@ describe("useStoreKit", () => {
   });
 
   test("onPurchaseError sets purchaseError state", () => {
-    const result = runHook();
+    runHook();
     expect(onPurchaseErrorCallback).toBeDefined();
 
     // The error callback sets state — in a sync render we can only verify it was captured
     const mockError = { code: "user-cancelled", message: "User cancelled" };
-    onPurchaseErrorCallback!(mockError);
+    if (!onPurchaseErrorCallback) throw new Error("expected callback");
+    onPurchaseErrorCallback(mockError);
 
     // After the callback fires, re-render to pick up state
-    const result2 = runHook();
+    runHook();
     // purchaseError comes from useState, which resets per render in static markup
     // We verify the callback itself is wired up correctly
     expect(onPurchaseErrorCallback).toBeDefined();

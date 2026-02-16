@@ -53,7 +53,7 @@ export function PaywallScreen({
   __testDisplayState,
 }: PaywallScreenProps) {
   const { data: session } = authClient.useSession();
-  const userId = session?.user?.id ?? "";
+  const userId = session?.user.id ?? "";
 
   const {
     purchase,
@@ -76,6 +76,7 @@ export function PaywallScreen({
   const isExpiredSubscriber =
     subscriptionState === "free_no_credits" && hadSubscription;
 
+  /* eslint-disable react-hooks/set-state-in-effect -- derived from external hook state */
   // Watch for purchase errors (decline / error)
   useEffect(() => {
     if (!purchaseError) return;
@@ -105,6 +106,7 @@ export function PaywallScreen({
     }
     wasPurchasingRef.current = isPurchasing;
   }, [isPurchasing, verifyError, subscriptionRefetch, onSuccess, garmentId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Derive display state
   const displayState: DisplayState =
@@ -120,10 +122,10 @@ export function PaywallScreen({
   // Trial info
   const trialOffer = (
     product?.subscriptionOffers as
-      | Array<{ paymentMode: string; period: { unit: string; value: number } }>
+      | { paymentMode: string; period: { unit: string; value: number } }[]
       | undefined
   )?.find((offer) => offer.paymentMode === "free-trial");
-  const trialDays = trialOffer?.period?.value;
+  const trialDays = trialOffer?.period.value;
 
   // AC#8: Resubscribe messaging for lapsed subscribers
   const ctaLabel = isExpiredSubscriber
@@ -142,8 +144,6 @@ export function PaywallScreen({
       const result = await restore();
       await subscriptionRefetch();
       if (
-        result &&
-        typeof result === "object" &&
         "restored" in result &&
         (result as { restored: number }).restored > 0
       ) {

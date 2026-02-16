@@ -41,13 +41,14 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 function runHook(): ReturnType<typeof usePaywallGuard> {
-  let result!: ReturnType<typeof usePaywallGuard>;
+  const ref = { current: undefined as ReturnType<typeof usePaywallGuard> | undefined };
   function TestComponent() {
-    result = usePaywallGuard();
+    ref.current = usePaywallGuard();
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  return result;
+  if (!ref.current) throw new Error("Hook must produce a result after render");
+  return ref.current;
 }
 
 // ---------------------------------------------------------------------------

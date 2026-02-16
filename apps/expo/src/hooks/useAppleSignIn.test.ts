@@ -160,14 +160,14 @@ function assertDefined<T>(
 function runHook(
   options?: Parameters<typeof useAppleSignIn>[0],
 ): ReturnType<typeof useAppleSignIn> {
-  let result: ReturnType<typeof useAppleSignIn> | undefined;
+  const ref = { current: undefined as ReturnType<typeof useAppleSignIn> | undefined };
   function TestComponent() {
-    result = useAppleSignIn(options);
+    ref.current = useAppleSignIn(options);
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  assertDefined(result, "Hook must produce a result after render");
-  return result;
+  assertDefined(ref.current, "Hook must produce a result after render");
+  return ref.current;
 }
 
 // ---------------------------------------------------------------------------
