@@ -1,15 +1,11 @@
 import type { ReactElement } from "react";
-import { useCallback, useRef } from "react";
-import { View } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
-import Carousel, {
-  Pagination,
-} from "react-native-reanimated-carousel";
 import type { ICarouselInstance } from "react-native-reanimated-carousel";
-import { useWindowDimensions } from "react-native";
+import { useCallback, useRef } from "react";
+import { useWindowDimensions, View } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
+import Carousel, { Pagination } from "react-native-reanimated-carousel";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
-
 import { StepPickGarment } from "./StepPickGarment";
 import { StepSeeTheMagic } from "./StepSeeTheMagic";
 import { StepYourPhoto } from "./StepYourPhoto";
@@ -42,15 +38,12 @@ export function OnboardingFlow({
   const carouselRef = useRef<ICarouselInstance>(null);
   const progress = useSharedValue<number>(0);
 
-  const goToPage = useCallback(
-    (index: number) => {
-      carouselRef.current?.scrollTo({
-        index,
-        animated: true,
-      });
-    },
-    [],
-  );
+  const goToPage = useCallback((index: number) => {
+    carouselRef.current?.scrollTo({
+      index,
+      animated: true,
+    });
+  }, []);
 
   const handlePhotoSelected = useCallback(
     (uri: string, isStock: boolean) => {
@@ -108,7 +101,14 @@ export function OnboardingFlow({
         </View>
       );
     },
-    [handlePhotoSelected, handleGarmentSelected, onCreateAccount, handleTryAnother, bodyPhotoUri, garmentUri],
+    [
+      handlePhotoSelected,
+      handleGarmentSelected,
+      onCreateAccount,
+      handleTryAnother,
+      bodyPhotoUri,
+      garmentUri,
+    ],
   );
 
   return (

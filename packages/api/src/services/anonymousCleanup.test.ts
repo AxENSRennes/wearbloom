@@ -54,7 +54,7 @@ describe("anonymousCleanup", () => {
     await service.cleanupExpiredAnonymousUsers(24);
 
     expect(mockDelete).toHaveBeenCalledTimes(1);
-    const deleteArg = mockDelete.mock.calls[0]![0];
+    const deleteArg = mockDelete.mock.calls.at(0)?.[0];
     expect(deleteArg).toBe(users);
   });
 
@@ -71,7 +71,7 @@ describe("anonymousCleanup", () => {
     await service.cleanupExpiredAnonymousUsers(ttlHours);
 
     expect(mockWhere).toHaveBeenCalledTimes(1);
-    const whereArg = mockWhere.mock.calls[0]![0];
+    const whereArg = mockWhere.mock.calls.at(0)?.[0];
 
     // Build the expected Drizzle expression with the same operators and values
     const expectedFilter = and(
@@ -95,7 +95,7 @@ describe("anonymousCleanup", () => {
 
     await service.cleanupExpiredAnonymousUsers(ttlHours);
 
-    const whereArg = mockWhere.mock.calls[0]![0];
+    const whereArg = mockWhere.mock.calls.at(0)?.[0];
     const expectedFilter = and(
       eq(users.isAnonymous, true),
       lt(users.createdAt, expectedCutoff),
@@ -113,7 +113,7 @@ describe("anonymousCleanup", () => {
 
     await service.cleanupExpiredAnonymousUsers(24);
 
-    const whereArg = mockWhere.mock.calls[0]![0];
+    const whereArg = mockWhere.mock.calls.at(0)?.[0];
 
     // Build an incorrect filter that would target non-anonymous users
     const wrongFilter = and(

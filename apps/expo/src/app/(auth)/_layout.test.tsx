@@ -1,9 +1,8 @@
-import { describe, expect, mock, spyOn, afterEach, test } from "bun:test";
 import { createElement } from "react";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { authClient } from "~/utils/auth";
-
 import AuthLayout from "./_layout";
 
 function render(component: React.ReactElement) {

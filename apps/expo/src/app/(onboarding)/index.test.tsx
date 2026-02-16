@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { createElement } from "react";
+import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
 import OnboardingScreen from "./index";

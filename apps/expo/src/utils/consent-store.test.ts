@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, test } from "bun:test";
 import * as SecureStore from "expo-secure-store";
+import { beforeEach, describe, expect, test } from "bun:test";
 
 import { hasAcceptedConsent, setConsentAccepted } from "./consent-store";
 

@@ -23,7 +23,11 @@ export function createAnonymousCleanupService(deps: CleanupDeps) {
         .returning({ id: users.id });
 
       deps.logger.info(
-        { deletedCount: deleted.length, ttlHours, cutoff: cutoff.toISOString() },
+        {
+          deletedCount: deleted.length,
+          ttlHours,
+          cutoff: cutoff.toISOString(),
+        },
         "Anonymous user cleanup completed",
       );
 

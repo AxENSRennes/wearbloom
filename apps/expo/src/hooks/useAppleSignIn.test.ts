@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 describe("useAppleSignIn — account linking verification", () => {
   test("uses ID token flow (not redirect OAuth) to preserve anonymous session", async () => {
-    const source = await Bun.file(import.meta.dir + "/useAppleSignIn.ts").text();
+    const source = await Bun.file(
+      import.meta.dir + "/useAppleSignIn.ts",
+    ).text();
     // ID token flow: signIn.social with idToken parameter
     expect(source).toContain("idToken:");
     expect(source).toContain("signIn.social");

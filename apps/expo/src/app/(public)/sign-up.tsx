@@ -5,7 +5,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
-import { Button, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
+import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
 import { authClient } from "~/utils/auth";
@@ -239,9 +239,6 @@ export default function SignUpScreen() {
           onPress={handleSignUp}
           isLoading={emailSignUp.isPending}
           disabled={isLoading}
-          accessibilityLabel={
-            isFromOnboarding ? "Create free account" : "Create account"
-          }
         />
 
         <View className="mt-6 items-center">
@@ -251,7 +248,6 @@ export default function SignUpScreen() {
               variant="ghost"
               onPress={() => router.back()}
               disabled={isLoading}
-              accessibilityHint="Returns to onboarding to try more combinations"
             />
           ) : (
             <Button
@@ -259,7 +255,6 @@ export default function SignUpScreen() {
               variant="ghost"
               onPress={() => router.replace("/(public)/sign-in")}
               disabled={isLoading}
-              accessibilityLabel="Sign in to existing account"
             />
           )}
         </View>

@@ -8,8 +8,8 @@ import {
   createAnonymousCleanupService,
   createTRPCContext,
 } from "@acme/api";
-import { db } from "@acme/db/client";
 import { initAuth } from "@acme/auth";
+import { db } from "@acme/db/client";
 
 import { env } from "./env";
 
@@ -26,9 +26,7 @@ const auth = initAuth({
 
 const authHandler = toNodeHandler(auth);
 
-function nodeHeadersToHeaders(
-  nodeHeaders: http.IncomingHttpHeaders,
-): Headers {
+function nodeHeadersToHeaders(nodeHeaders: http.IncomingHttpHeaders): Headers {
   const headers = new Headers();
   for (const [key, value] of Object.entries(nodeHeaders)) {
     if (value === undefined) continue;
@@ -70,10 +68,7 @@ const server = http.createServer((req, res) => {
       cleanupService
         .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
         .catch((err: unknown) => {
-          logger.error(
-            { err },
-            "Anonymous cleanup failed during health check",
-          );
+          logger.error({ err }, "Anonymous cleanup failed during health check");
         });
     }
 
@@ -83,7 +78,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url?.startsWith("/api/auth")) {
-    authHandler(req, res);
+    void authHandler(req, res);
     return;
   }
 

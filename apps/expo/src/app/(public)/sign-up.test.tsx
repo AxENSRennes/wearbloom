@@ -1,9 +1,8 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-
 // @ts-expect-error -- __searchParams is a test-only export from expo-router mock
 import { __searchParams } from "expo-router";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import SignUpScreen from "./sign-up";
 
@@ -106,7 +105,7 @@ describe("SignUpScreen (onboarding context)", () => {
 
   test("benefit messaging has accessibility role", () => {
     const html = render(createElement(SignUpScreen));
-    expect(html).toContain('accessibilityRole');
+    expect(html).toContain("accessibilityRole");
   });
 
   test("still renders form fields", () => {

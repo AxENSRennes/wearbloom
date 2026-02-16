@@ -6,9 +6,7 @@ import { db } from "@acme/db/client";
 
 export interface AuthInstance {
   api: {
-    getSession: (opts: {
-      headers: Headers;
-    }) => Promise<{
+    getSession: (opts: { headers: Headers }) => Promise<{
       user: {
         id: string;
         name: string | null;

@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
-import { useCallback, useState } from "react";
 import type { ImageSourcePropType } from "react-native";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button, ThemedText } from "@acme/ui";
 
@@ -51,8 +51,7 @@ export function StepYourPhoto({
   }, [onPhotoSelected]);
 
   const handleGallery = useCallback(async () => {
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -78,10 +77,7 @@ export function StepYourPhoto({
           First, let&apos;s see you
         </ThemedText>
 
-        <ThemedText
-          variant="body"
-          className="mt-2 text-center text-[#6B6B6B]"
-        >
+        <ThemedText variant="body" className="mt-2 text-center text-[#6B6B6B]">
           Take a photo or use an example
         </ThemedText>
 

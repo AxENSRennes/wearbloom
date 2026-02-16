@@ -1,7 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 
 // Access the mock betterAuth from preload
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { mockBetterAuth } = require("../test/setup") as {
   mockBetterAuth: ReturnType<typeof mock>;
 };
@@ -53,7 +52,10 @@ describe("initAuth", () => {
       logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const socialProviders = config.socialProviders as {
       apple: { appBundleIdentifier: string; clientId: string };
     };
@@ -72,7 +74,10 @@ describe("initAuth", () => {
       logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const origins = config.trustedOrigins as string[];
     expect(origins).toContain("expo://");
     expect(origins).toContain("exp://");
@@ -89,7 +94,10 @@ describe("initAuth", () => {
       logger: { info: mock(), error: mock() },
     });
 
-    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    const config = mockBetterAuth.mock.calls.at(-1)?.[0] as Record<
+      string,
+      unknown
+    >;
     const origins = config.trustedOrigins as string[];
     expect(origins).toContain("expo://");
     expect(origins).not.toContain("exp://");
@@ -135,7 +143,7 @@ describe("initAuth", () => {
       string,
       unknown
     >;
-    const plugins = config.plugins as Array<{ id: string; _opts?: unknown }>;
+    const plugins = config.plugins as { id: string; _opts?: unknown }[];
     const anonPlugin = plugins.find((p) => p.id === "anonymous");
     expect(anonPlugin).toBeDefined();
     expect(anonPlugin?._opts).toEqual(
@@ -158,10 +166,10 @@ describe("initAuth", () => {
       string,
       unknown
     >;
-    const plugins = config.plugins as Array<{ id: string; _opts?: unknown }>;
+    const plugins = config.plugins as { id: string; _opts?: unknown }[];
     const anonPlugin = plugins.find((p) => p.id === "anonymous");
     const opts = anonPlugin?._opts as { onLinkAccount?: unknown };
-    expect(typeof opts?.onLinkAccount).toBe("function");
+    expect(typeof opts.onLinkAccount).toBe("function");
   });
 
   test("configures rate limiting for anonymous sign-in endpoint", async () => {
@@ -182,7 +190,7 @@ describe("initAuth", () => {
     const rateLimit = config.rateLimit as {
       customRules?: Record<string, { window: number; max: number }>;
     };
-    expect(rateLimit?.customRules?.["/sign-in/anonymous"]).toBeDefined();
-    expect(rateLimit?.customRules?.["/sign-in/anonymous"]?.max).toBe(5);
+    expect(rateLimit.customRules?.["/sign-in/anonymous"]).toBeDefined();
+    expect(rateLimit.customRules?.["/sign-in/anonymous"]?.max).toBe(5);
   });
 });

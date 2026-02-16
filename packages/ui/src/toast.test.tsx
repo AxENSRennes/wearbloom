@@ -5,7 +5,9 @@ import { showToast, ToastProvider, VARIANT_STYLES } from "./toast";
 
 describe("VARIANT_STYLES configuration", () => {
   test("success variant has correct borderColor and defaultDuration", () => {
-    expect(VARIANT_STYLES.success.borderColor).toBe(wearbloomTheme.colors.success);
+    expect(VARIANT_STYLES.success.borderColor).toBe(
+      wearbloomTheme.colors.success,
+    );
     expect(VARIANT_STYLES.success.defaultDuration).toBe(2000);
   });
 
@@ -15,7 +17,9 @@ describe("VARIANT_STYLES configuration", () => {
   });
 
   test("info variant has correct borderColor and defaultDuration", () => {
-    expect(VARIANT_STYLES.info.borderColor).toBe(wearbloomTheme.colors["text-tertiary"]);
+    expect(VARIANT_STYLES.info.borderColor).toBe(
+      wearbloomTheme.colors["text-tertiary"],
+    );
     expect(VARIANT_STYLES.info.defaultDuration).toBe(3000);
   });
 });

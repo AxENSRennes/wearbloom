@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { useFonts, DMSerifDisplay_400Regular } from "@expo-google-fonts/dm-serif-display";
 import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import {
+  DMSerifDisplay_400Regular,
+  useFonts,
+} from "@expo-google-fonts/dm-serif-display";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { ToastProvider } from "@acme/ui";
@@ -13,7 +16,7 @@ import { hasCompletedOnboarding } from "~/utils/onboardingState";
 
 import "../styles.css";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [consented, setConsented] = useState(() => hasAcceptedConsent());
@@ -29,7 +32,7 @@ export default function RootLayout() {
       if (fontError) {
         console.warn("Failed to load DM Serif Display font:", fontError);
       }
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
@@ -48,8 +51,7 @@ export default function RootLayout() {
   }
 
   // Determine onboarding redirect: only redirect when state is fully resolved to false
-  const showOnboardingRedirect =
-    consented && onboardingDone === false;
+  const showOnboardingRedirect = consented && onboardingDone === false;
 
   return (
     <QueryClientProvider client={queryClient}>

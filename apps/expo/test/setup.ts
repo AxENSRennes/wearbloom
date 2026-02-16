@@ -1,5 +1,5 @@
-import { mock } from "bun:test";
 import { plugin } from "bun";
+import { mock } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // Image asset loader — Metro resolves require("*.png") to numeric IDs at build
@@ -10,13 +10,10 @@ let imageIdCounter = 1;
 plugin({
   name: "image-loader",
   setup(build) {
-    build.onLoad(
-      { filter: /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/ },
-      () => ({
-        contents: `export default ${imageIdCounter++};`,
-        loader: "js",
-      }),
-    );
+    build.onLoad({ filter: /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/ }, () => ({
+      contents: `export default ${imageIdCounter++};`,
+      loader: "js",
+    }));
   },
 });
 
@@ -28,10 +25,14 @@ globalThis.process.env.EXPO_OS = "ios";
 // @ts-expect-error -- expo global is set by expo-modules-core native runtime
 globalThis.expo = {
   EventEmitter: class MockEventEmitter {
-    addListener() { return { remove: () => {} }; }
+    addListener() {
+      return { remove: () => {} };
+    }
     removeAllListeners() {}
     emit() {}
-    listenerCount() { return 0; }
+    listenerCount() {
+      return 0;
+    }
   },
   modules: {},
   uuidv4: () => "mock-uuid",
@@ -84,15 +85,15 @@ mock.module("react-native", () => ({
   TouchableOpacity: mockComponent("TouchableOpacity"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Image: mockComponent("Image"),
-  FlatList: React.forwardRef(
-    (props: Record<string, unknown>, ref: unknown) => {
-      const { data, renderItem, keyExtractor, ...rest } = props as {
-        data?: unknown[];
-        renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
-        keyExtractor?: (item: unknown, index: number) => string;
-        [key: string]: unknown;
-      };
-      const items = Array.isArray(data) && renderItem
+  FlatList: React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+    const { data, renderItem, keyExtractor, ...rest } = props as {
+      data?: unknown[];
+      renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
+      keyExtractor?: (item: unknown, index: number) => string;
+      [key: string]: unknown;
+    };
+    const items =
+      Array.isArray(data) && renderItem
         ? data.map((item, index) =>
             React.createElement(
               "mock-FlatListItem",
@@ -101,9 +102,8 @@ mock.module("react-native", () => ({
             ),
           )
         : null;
-      return React.createElement("mock-FlatList", { ...rest, ref }, items);
-    },
-  ),
+    return React.createElement("mock-FlatList", { ...rest, ref }, items);
+  }),
   Animated: {
     Value: class AnimatedValue {
       _value: number;
@@ -136,15 +136,30 @@ mock.module("react-native", () => ({
   TurboModuleRegistry: { get: () => null, getEnforcing: () => ({}) },
   NativeModules: {},
   NativeEventEmitter: class NativeEventEmitter {
-    addListener() { return { remove: () => {} }; }
+    addListener() {
+      return { remove: () => {} };
+    }
     removeAllListeners() {}
-    listenerCount() { return 0; }
+    listenerCount() {
+      return 0;
+    }
   },
-  AppState: { currentState: "active", addEventListener: () => ({ remove: () => {} }) },
-  Dimensions: { get: () => ({ width: 375, height: 812, scale: 2, fontScale: 1 }) },
+  AppState: {
+    currentState: "active",
+    addEventListener: () => ({ remove: () => {} }),
+  },
+  Dimensions: {
+    get: () => ({ width: 375, height: 812, scale: 2, fontScale: 1 }),
+  },
   PixelRatio: { get: () => 2, getPixelSizeForLayoutSize: (s: number) => s * 2 },
-  Appearance: { getColorScheme: () => "light", addChangeListener: () => ({ remove: () => {} }) },
-  Linking: { openURL: mock(() => Promise.resolve()), canOpenURL: mock(() => Promise.resolve(true)) },
+  Appearance: {
+    getColorScheme: () => "light",
+    addChangeListener: () => ({ remove: () => {} }),
+  },
+  Linking: {
+    openURL: mock(() => Promise.resolve()),
+    canOpenURL: mock(() => Promise.resolve(true)),
+  },
   Alert: { alert: mock(() => {}) },
   I18nManager: { isRTL: false },
   StatusBar: mockComponent("RNStatusBar"),
@@ -185,19 +200,26 @@ mock.module("@gluestack-ui/core", () => ({
 }));
 
 mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
-  tva: (config: Record<string, unknown>) => (props: Record<string, unknown>) => {
-    const base = (config.base as string) ?? "";
-    const variants = config.variants as Record<string, Record<string, string>> | undefined;
-    const defaultVariants = config.defaultVariants as Record<string, string> | undefined;
-    let cls = base;
-    if (variants) {
-      for (const [key, map] of Object.entries(variants)) {
-        const val = (props[key] as string) ?? (defaultVariants?.[key] as string | undefined);
-        if (val && map[val]) cls += " " + map[val];
+  tva:
+    (config: Record<string, unknown>) => (props: Record<string, unknown>) => {
+      const base = (config.base as string) ?? "";
+      const variants = config.variants as
+        | Record<string, Record<string, string>>
+        | undefined;
+      const defaultVariants = config.defaultVariants as
+        | Record<string, string>
+        | undefined;
+      let cls = base;
+      if (variants) {
+        for (const [key, map] of Object.entries(variants)) {
+          const val =
+            (props[key] as string) ??
+            (defaultVariants?.[key] as string | undefined);
+          if (val && map[val]) cls += " " + map[val];
+        }
       }
-    }
-    return cls;
-  },
+      return cls;
+    },
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
   withStyleContext: () => (comp: unknown) => comp,
   useStyleContext: () => ({}),
@@ -399,10 +421,18 @@ mock.module("react-native-reanimated", () => {
     withSpring: (toValue: number) => toValue,
     useReducedMotion: () => false,
     runOnJS: (fn: (...args: unknown[]) => unknown) => fn,
-    Easing: { bezier: () => (t: number) => t, linear: (t: number) => t, ease: (t: number) => t },
+    Easing: {
+      bezier: () => (t: number) => t,
+      linear: (t: number) => t,
+      ease: (t: number) => t,
+    },
     FadeIn: { duration: () => ({ delay: () => ({}) }) },
     FadeOut: { duration: () => ({}) },
-    interpolate: (value: number, inputRange: number[], outputRange: number[]) => {
+    interpolate: (
+      value: number,
+      inputRange: number[],
+      outputRange: number[],
+    ) => {
       const i = inputRange.indexOf(value);
       return i >= 0 ? outputRange[i] : outputRange[0];
     },
@@ -468,13 +498,17 @@ mock.module("expo-image-picker", () => ({
   launchCameraAsync: mock(() =>
     Promise.resolve({
       canceled: false,
-      assets: [{ uri: "file:///mock-camera-photo.jpg", width: 800, height: 1200 }],
+      assets: [
+        { uri: "file:///mock-camera-photo.jpg", width: 800, height: 1200 },
+      ],
     }),
   ),
   launchImageLibraryAsync: mock(() =>
     Promise.resolve({
       canceled: false,
-      assets: [{ uri: "file:///mock-gallery-photo.jpg", width: 800, height: 1200 }],
+      assets: [
+        { uri: "file:///mock-gallery-photo.jpg", width: 800, height: 1200 },
+      ],
     }),
   ),
   requestCameraPermissionsAsync: mock(() =>
@@ -494,7 +528,11 @@ mock.module("expo-haptics", () => ({
   notificationAsync: mock(() => Promise.resolve()),
   selectionAsync: mock(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
-  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+  NotificationFeedbackType: {
+    Success: "success",
+    Warning: "warning",
+    Error: "error",
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -504,9 +542,15 @@ const asyncStore = new Map<string, string>();
 mock.module("@react-native-async-storage/async-storage", () => ({
   default: {
     getItem: mock(async (key: string) => asyncStore.get(key) ?? null),
-    setItem: mock(async (key: string, value: string) => { asyncStore.set(key, value); }),
-    removeItem: mock(async (key: string) => { asyncStore.delete(key); }),
-    clear: mock(async () => { asyncStore.clear(); }),
+    setItem: mock(async (key: string, value: string) => {
+      asyncStore.set(key, value);
+    }),
+    removeItem: mock(async (key: string) => {
+      asyncStore.delete(key);
+    }),
+    clear: mock(async () => {
+      asyncStore.clear();
+    }),
     getAllKeys: mock(async () => [...asyncStore.keys()]),
   },
   __asyncStore: asyncStore,

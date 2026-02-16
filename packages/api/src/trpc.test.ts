@@ -1,5 +1,5 @@
-import { describe, expect, mock, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
+import { describe, expect, mock, test } from "bun:test";
 
 import type { AuthInstance } from "./trpc";
 import { createTRPCContext, createTRPCRouter } from "./trpc";

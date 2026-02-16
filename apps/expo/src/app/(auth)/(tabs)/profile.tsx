@@ -1,10 +1,16 @@
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
 import { useMutation } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react-native";
 
-import { Button, ThemedPressable, ThemedText, showToast, wearbloomTheme } from "@acme/ui";
+import {
+  Button,
+  showToast,
+  ThemedPressable,
+  ThemedText,
+  wearbloomTheme,
+} from "@acme/ui";
 
 import { authClient } from "~/utils/auth";
 
@@ -59,7 +65,10 @@ export default function ProfileScreen() {
             <ThemedText variant="body" className="text-text-secondary">
               Privacy Policy
             </ThemedText>
-            <ChevronRight size={20} color={wearbloomTheme.colors["text-tertiary"]} />
+            <ChevronRight
+              size={20}
+              color={wearbloomTheme.colors["text-tertiary"]}
+            />
           </ThemedPressable>
 
           <View className="mt-4">

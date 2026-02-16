@@ -39,7 +39,7 @@ export function initAuth<
       expo(),
       anonymous({
         emailDomainName: "anon.wearbloom.app",
-        onLinkAccount: async ({ anonymousUser, newUser }) => {
+        onLinkAccount: ({ anonymousUser, newUser }) => {
           try {
             // TODO(Story-3.2): Enable when renders table exists
             // await db.update(renders).set({ userId: newUser.user.id }).where(eq(renders.userId, anonymousUser.user.id));

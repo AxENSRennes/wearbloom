@@ -1,18 +1,18 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
-import { Image } from "expo-image";
-import * as Haptics from "expo-haptics";
 import Animated, {
   FadeIn,
   useAnimatedStyle,
-  useSharedValue,
   useReducedMotion,
+  useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 
 import { Button, Spinner, ThemedText } from "@acme/ui";
 
@@ -42,7 +42,9 @@ export function StepSeeTheMagic({
   // TODO(Epic-3): Replace with TanStack Query mutation state
   const [isRendering, setIsRendering] = useState(true);
   const [resultUri, setResultUri] = useState<string | null>(null);
-  const [progressText, setProgressText] = useState<string>(PROGRESS_TEXTS[0].text);
+  const [progressText, setProgressText] = useState<string>(
+    PROGRESS_TEXTS[0].text,
+  );
   const startTimeRef = useRef(Date.now());
   const reducedMotion = useReducedMotion();
 
@@ -114,7 +116,7 @@ export function StepSeeTheMagic({
 
   // Sign in anonymously and trigger mock render on mount
   useEffect(() => {
-    let cancelled = false;
+    const cancelledRef = { current: false };
     startTimeRef.current = Date.now();
 
     void (async () => {
@@ -130,7 +132,7 @@ export function StepSeeTheMagic({
         bodyPhotoUri ?? "stock-body-01",
         garmentUri ?? "stock-garment",
       );
-      if (!cancelled) {
+      if (!cancelledRef.current) {
         setResultUri(result.resultUri);
         setIsRendering(false);
         // Cross-fade the result image in (or instant swap for reduced motion)
@@ -144,7 +146,7 @@ export function StepSeeTheMagic({
     })();
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
     // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,9 +185,7 @@ export function StepSeeTheMagic({
                     </>
                   ) : (
                     <Image
-                      source={
-                        resultUri ?? bodyPhotoUri ?? STOCK_BODY_PHOTO
-                      }
+                      source={resultUri ?? bodyPhotoUri ?? STOCK_BODY_PHOTO}
                       style={{ width: 280, height: 420 }}
                       contentFit="cover"
                       accessibilityLabel="Virtual try-on result"
@@ -249,10 +249,7 @@ export function StepSeeTheMagic({
 
             {/* Progress text — visible only during loading */}
             {isRendering && (
-              <ThemedText
-                variant="caption"
-                className="mt-4 text-white/70"
-              >
+              <ThemedText variant="caption" className="mt-4 text-white/70">
                 {progressText}
               </ThemedText>
             )}

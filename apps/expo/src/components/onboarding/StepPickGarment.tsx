@@ -1,14 +1,14 @@
 import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
-import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 
 import { Button, ThemedText } from "@acme/ui";
 
@@ -46,9 +46,11 @@ function GarmentCard({
     <Pressable
       onPress={onPress}
       onPressIn={() => {
+        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value API
         pressScale.value = withSpring(0.97, PRESS_SPRING_CONFIG);
       }}
       onPressOut={() => {
+        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value API
         pressScale.value = withSpring(1, PRESS_SPRING_CONFIG);
       }}
       className="flex-1 p-1"
@@ -87,8 +89,7 @@ export function StepPickGarment({
   );
 
   const handlePhotographOwn = useCallback(async () => {
-    const permission =
-      await ImagePicker.requestCameraPermissionsAsync();
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchCameraAsync({

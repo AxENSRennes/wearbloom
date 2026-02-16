@@ -16,12 +16,9 @@ export default function OnboardingScreen() {
     isStock: boolean;
   } | null>(null);
 
-  const handlePhotoSelected = useCallback(
-    (uri: string, isStock: boolean) => {
-      setBodyPhoto({ uri, isStock });
-    },
-    [],
-  );
+  const handlePhotoSelected = useCallback((uri: string, isStock: boolean) => {
+    setBodyPhoto({ uri, isStock });
+  }, []);
 
   const handleGarmentSelected = useCallback(
     (uri: string, category: GarmentCategory, isStock: boolean) => {

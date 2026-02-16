@@ -1,7 +1,10 @@
-import { afterEach, describe, expect, test } from "bun:test";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { afterEach, describe, expect, test } from "bun:test";
 
-import { hasCompletedOnboarding, markOnboardingComplete } from "./onboardingState";
+import {
+  hasCompletedOnboarding,
+  markOnboardingComplete,
+} from "./onboardingState";
 
 describe("onboardingState", () => {
   afterEach(async () => {
