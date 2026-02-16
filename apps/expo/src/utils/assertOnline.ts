@@ -10,7 +10,7 @@ export async function assertOnline(
   message = "Needs internet for try-on",
 ): Promise<boolean> {
   const state = await NetInfo.fetch();
-  if (!state.isConnected) {
+  if (!state.isConnected || state.isInternetReachable === false) {
     showToast({ message, variant: "error" });
     return false;
   }

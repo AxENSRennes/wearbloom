@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegendList } from "@legendapp/list";
@@ -30,6 +30,7 @@ export default function WardrobeScreen() {
   const [garmentToDelete, setGarmentToDelete] = useState<PersonalGarment | null>(null);
   const queryClient = useQueryClient();
   const { isConnected } = useNetworkStatus();
+  const isManualRefresh = useRef(false);
 
   const deleteMutation = useMutation(
     trpc.garment.delete.mutationOptions({
@@ -67,8 +68,16 @@ export default function WardrobeScreen() {
       showToast({ message: "No internet connection", variant: "error" });
       return;
     }
+    isManualRefresh.current = true;
     void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
   }, [queryClient, isConnected]);
+
+  // Reset manual refresh flag when fetch completes
+  useEffect(() => {
+    if (!isFetching) {
+      isManualRefresh.current = false;
+    }
+  }, [isFetching]);
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {
     const personal: WardrobeItem[] = (garments ?? []).map((g) => ({
@@ -156,7 +165,7 @@ export default function WardrobeScreen() {
             numColumns={NUM_COLUMNS}
             estimatedItemSize={ITEM_HEIGHT}
             recycleItems
-            refreshing={isFetching}
+            refreshing={isManualRefresh.current && isFetching}
             onRefresh={handleRefresh}
             contentContainerStyle={{ paddingTop: CATEGORY_PILLS_HEIGHT }}
             columnWrapperStyle={{ gap: GUTTER }}

@@ -599,13 +599,13 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-16: Implemented Story 2.5 — Offline Browsing & Data Sync. Added TanStack Query persist with MMKV, network detection, offline upload queuing, reconnection sync, and offline UI indicators.
-- 2026-02-16: Code review — 9 issues resolved (5H/4M), status done.
+- 2026-02-16: Code review — 11 issues resolved (5H/4M/2L), status done.
 
 ### Senior Developer Review (AI)
 
 **Reviewer:** Axel | **Date:** 2026-02-16 | **Model:** Claude Opus 4.6
 
-**Issues Found:** 5 High, 4 Medium, 2 Low → **9 fixed, 2 accepted (LOW)**
+**Issues Found:** 5 High, 4 Medium, 2 Low → **11 fixed (all)**
 
 **HIGH issues fixed:**
 - H1: `useReconnectSync.ts` — processQueue callback was a no-op placeholder. Implemented real upload via `useMutation` + `FormData`.
@@ -620,9 +620,9 @@ Claude Opus 4.6
 - M3: `add.tsx` — Added `width`/`height` to `enqueueUpload` call (required for upload FormData reconstruction).
 - M4: Test count 167 was @acme/expo only, not full monorepo. Corrected to 183 after fixes. No regressions.
 
-**LOW issues accepted (not fixed):**
-- L1: `assertOnline` only checks `isConnected`, not `isInternetReachable` (captive portal edge case — acceptable for MVP).
-- L2: `refreshing={isFetching}` shows pull-to-refresh spinner on auto-refetch (minor UX, not blocking).
+**LOW issues fixed (second pass):**
+- L1: `assertOnline` now also checks `isInternetReachable === false` (captive portal). Null is treated optimistically. 2 tests added.
+- L2: Pull-to-refresh spinner now only shows on user-initiated refresh (useRef gate), not on auto-refetch.
 
 ### File List
 
