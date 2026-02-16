@@ -9,6 +9,7 @@ import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 import type { CategoryFilter, GarmentCategory } from "~/constants/categories";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
 import { isStockGarment } from "~/types/wardrobe";
+import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { trpc } from "~/utils/api";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
@@ -28,6 +29,7 @@ export default function WardrobeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
   const [garmentToDelete, setGarmentToDelete] = useState<PersonalGarment | null>(null);
   const queryClient = useQueryClient();
+  const { isConnected } = useNetworkStatus();
 
   const deleteMutation = useMutation(
     trpc.garment.delete.mutationOptions({
@@ -61,8 +63,12 @@ export default function WardrobeScreen() {
   );
 
   const handleRefresh = useCallback(() => {
+    if (!isConnected) {
+      showToast({ message: "No internet connection", variant: "error" });
+      return;
+    }
     void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
-  }, [queryClient]);
+  }, [queryClient, isConnected]);
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {
     const personal: WardrobeItem[] = (garments ?? []).map((g) => ({
@@ -129,6 +135,13 @@ export default function WardrobeScreen() {
             selected={selectedCategory}
             onSelect={handleCategorySelect}
           />
+          {!isConnected && (
+            <View className="mt-1 items-center rounded bg-amber-100 py-1">
+              <ThemedText variant="caption" className="text-amber-800">
+                Offline
+              </ThemedText>
+            </View>
+          )}
         </View>
 
         {isLoading ? (

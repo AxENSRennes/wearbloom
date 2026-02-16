@@ -2,6 +2,7 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as reactQuery from "@tanstack/react-query";
+import * as NetInfo from "@react-native-community/netinfo";
 
 import { showToast } from "@acme/ui";
 
@@ -498,5 +499,65 @@ describe("WardrobeScreen", () => {
     expect(html).toContain('accessibilityLabel="tops garment"');
     // Stock garments render with "stock" prefix in label
     expect(html).toContain("stock tops garment");
+  });
+
+  // -------------------------------------------------------------------------
+  // Offline-awareness tests (Story 2.5)
+  // -------------------------------------------------------------------------
+  test("cached data renders when isFetching=true but data exists (no skeleton)", () => {
+    stubUseQuery({
+      data: [mockGarment1, mockGarment2],
+      isLoading: false,
+      isFetching: true,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Data should be visible — no skeleton
+    expect(html).toContain("garment-1");
+    expect(html).toContain("garment-2");
+    expect(html).not.toContain("skeleton-item");
+  });
+
+  test("offline indicator shown when isConnected is false", () => {
+    spyOn(NetInfo, "useNetInfo").mockReturnValue({
+      isConnected: false,
+      isInternetReachable: false,
+      type: "none",
+    } as ReturnType<typeof NetInfo.useNetInfo>);
+
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(html).toContain("Offline");
+  });
+
+  test("no offline indicator when connected", () => {
+    spyOn(NetInfo, "useNetInfo").mockReturnValue({
+      isConnected: true,
+      isInternetReachable: true,
+      type: "wifi",
+    } as ReturnType<typeof NetInfo.useNetInfo>);
+
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(html).not.toContain("Offline");
   });
 });

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import { createId } from "@paralleldrive/cuid2";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, ImageIcon } from "lucide-react-native";
 
@@ -16,8 +17,10 @@ import {
 } from "@acme/ui";
 
 import { CategoryPills } from "~/components/garment/CategoryPills";
+import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { trpc } from "~/utils/api";
 import { compressImage } from "~/utils/image-compressor";
+import { enqueueUpload } from "~/utils/upload-queue";
 
 /**
  * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
@@ -99,6 +102,7 @@ export default function AddGarmentScreen() {
   const [showActionSheet, setShowActionSheet] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { isConnected } = useNetworkStatus();
 
   const uploadMutation = useMutation(
     trpc.garment.upload.mutationOptions({
@@ -187,6 +191,18 @@ export default function AddGarmentScreen() {
   const handleSave = useCallback(() => {
     if (state.step !== "previewing") return;
 
+    if (!isConnected) {
+      enqueueUpload({
+        id: createId(),
+        imageUri: state.imageUri,
+        category: selectedCategory,
+        queuedAt: new Date().toISOString(),
+      });
+      dispatch({ type: "ADD_ANOTHER" });
+      showToast({ message: "Saved for upload when back online", variant: "info" });
+      return;
+    }
+
     dispatch({ type: "UPLOAD_START", category: selectedCategory });
 
     const formData = new FormData();
@@ -200,7 +216,7 @@ export default function AddGarmentScreen() {
     formData.append("height", String(state.height));
 
     uploadMutation.mutate(formData);
-  }, [state, selectedCategory, uploadMutation]);
+  }, [state, selectedCategory, uploadMutation, isConnected]);
 
   // ---------------------------------------------------------------------------
   // Render

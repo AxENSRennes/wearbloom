@@ -22,6 +22,28 @@ globalThis.expo = {
 const React = await import("react");
 
 // ---------------------------------------------------------------------------
+// react-native-mmkv — in-memory Map simulating MMKV
+// ---------------------------------------------------------------------------
+const mmkvStore = new Map<string, string>();
+
+mock.module("react-native-mmkv", () => ({
+  createMMKV: mock(() => ({
+    getString: mock((key: string) => mmkvStore.get(key) ?? undefined),
+    set: mock((key: string, value: string) => {
+      mmkvStore.set(key, value);
+    }),
+    remove: mock((key: string) => {
+      mmkvStore.delete(key);
+      return true;
+    }),
+    contains: mock((key: string) => mmkvStore.has(key)),
+    clearAll: mock(() => {
+      mmkvStore.clear();
+    }),
+  })),
+}));
+
+// ---------------------------------------------------------------------------
 // expo-secure-store — in-memory mock for consent/session storage
 // ---------------------------------------------------------------------------
 const store = new Map<string, string>();
@@ -335,8 +357,13 @@ mock.module("expo-apple-authentication", () => ({
 // ---------------------------------------------------------------------------
 mock.module("@tanstack/react-query", () => ({
   QueryClient: class MockQueryClient {
-    defaultOptions = {};
-    constructor() {}
+    _defaultOptions: Record<string, unknown>;
+    constructor(opts?: { defaultOptions?: Record<string, unknown> }) {
+      this._defaultOptions = opts?.defaultOptions ?? {};
+    }
+    getDefaultOptions() {
+      return this._defaultOptions;
+    }
   },
   QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -535,4 +562,53 @@ mock.module("@legendapp/list", () => ({
       );
     },
   ),
+}));
+
+// ---------------------------------------------------------------------------
+// @react-native-community/netinfo — default to connected
+// ---------------------------------------------------------------------------
+mock.module("@react-native-community/netinfo", () => ({
+  useNetInfo: mock(() => ({
+    isConnected: true,
+    isInternetReachable: true,
+    type: "wifi",
+  })),
+  addEventListener: mock(() => mock(() => {})),
+  fetch: mock(() =>
+    Promise.resolve({ isConnected: true, isInternetReachable: true }),
+  ),
+  default: {
+    useNetInfo: mock(() => ({
+      isConnected: true,
+      isInternetReachable: true,
+      type: "wifi",
+    })),
+    addEventListener: mock(() => mock(() => {})),
+    fetch: mock(() =>
+      Promise.resolve({ isConnected: true, isInternetReachable: true }),
+    ),
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// @tanstack/react-query-persist-client — mock PersistQueryClientProvider
+// ---------------------------------------------------------------------------
+mock.module("@tanstack/react-query-persist-client", () => ({
+  PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+}));
+
+// ---------------------------------------------------------------------------
+// @tanstack/query-sync-storage-persister — mock createSyncStoragePersister
+// ---------------------------------------------------------------------------
+mock.module("@tanstack/query-sync-storage-persister", () => ({
+  createSyncStoragePersister: mock(() => ({})),
+}));
+
+// ---------------------------------------------------------------------------
+// @paralleldrive/cuid2 — mock ID generation
+// ---------------------------------------------------------------------------
+let cuidCounter = 0;
+mock.module("@paralleldrive/cuid2", () => ({
+  createId: mock(() => `mock-cuid-${++cuidCounter}`),
 }));
