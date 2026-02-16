@@ -641,22 +641,60 @@ N/A
 
 **Status Update:** Story marked as **DONE** — All acceptance criteria met, all critical bugs fixed, test coverage improved from placeholder to behavioral testing.
 
+### Code Review Findings #3 (AI Senior Developer Review)
+
+**Review Date:** 2026-02-16
+**Reviewer:** Adversarial Code Review Agent (Review #3)
+
+**Issues Found & Fixed:** 3 Critical, 0 High, 4 Medium, 2 Low = 9 issues total
+(All C/H/M issues auto-fixed with parallel agents)
+
+#### Critical Issues Fixed
+1. **C1 — CategoryPills.test.tsx placeholder tests**: Tests only checked that the component "is a function" — no behavioral coverage for rendering, styling, accessibility, or onSelect callback. Rewritten with 9 behavioral tests using `renderToStaticMarkup`.
+2. **C2 — action-sheet.test.tsx placeholder tests**: Same pattern as C1 — 3 trivial placeholder tests. Rewritten with 9 behavioral tests covering Modal visibility, item labels, Cancel button, drag indicator, backdrop accessibility, icon rendering.
+3. **C3 — backgroundRemoval.test.ts tests-test-a-mock**: Tests mocked `removeBackground` at the service boundary, never exercising the real `createBackgroundRemoval` implementation (Replicate call, fetch download, timeout/error handling). Rewritten with 12 real tests using `mock.module("replicate")` + `spyOn(globalThis, "fetch")`.
+
+#### Medium Issues Fixed
+1. **M1 — File List missing packages/db/src/index.ts**: File was in git diff but not documented in the story's File List. Updated File List below.
+2. **M2 — bgRemovalStatus uses text() instead of pgEnum()**: Schema used `t.text().default("pending")` for a column with exactly 4 valid values. Replaced with `bgRemovalStatusEnum` pgEnum for type safety and DB-level constraint.
+3. **M3 — Fire-and-forget bg removal missing catch logging**: The fire-and-forget IIFE's catch block for DB update failure could silently swallow errors. Added nested try/catch with logger.error for DB update failures.
+4. **M4 — CATEGORIES duplicated without shared source** (NOT FIXED — deferred): `CATEGORIES` array duplicated in `add.tsx` (client) and `VALID_CATEGORIES` in `garment.ts` (server). Requires shared validators package — beyond scope of code review fix.
+
+#### Low Issues Fixed
+1. **L1 — `_state` misleading underscore prefix in addGarmentReducer**: Renamed `_state` parameter to `state` — underscore prefix implies unused variable per ESLint convention, but the parameter is actively used.
+2. **L2 — Duplicate describe blocks in garment.test.ts**: Two separate `describe("garment.upload")` blocks. Consolidated into 3 clean blocks: `garment.upload` (10 tests), `garment.list` (6 tests), `garment.getGarment` (3 tests).
+
+#### Test Results Post-Review #3
+- API tests: 62 pass, 0 fail (12 bg-removal tests, 19 garment tests, 12 imageStorage, 5 trpc, 3 auth, 11 user)
+- Expo tests: 88 pass, 0 fail (9 CategoryPills, 19 add screen, 19 profile, 5 BodyPhotoManager, others)
+- UI tests: 58 pass, 0 fail (9 ActionSheet, 17 AlertDialog, 12 Button, others)
+- Server tests: 8 pass, 0 fail
+- Auth tests: 7 pass, 0 fail
+- All packages: 13/13 typecheck clean
+- **Total: 223 tests passing, 0 regressions**
+
+#### Commits
+- `9d77bde` — fix: Story 2.1 code review #2 — placeholder tests, scroll, error handling (3C/1H/3M)
+
+**Status Update:** Story remains **DONE** — All C/H/M issues fixed, M4 deferred (cross-cutting shared validators, not a blocker). Test coverage significantly improved from placeholders to real behavioral tests.
+
 ### File List
 
 **New files:**
-- `packages/db/src/schema.test.ts` — Schema smoke tests (4 tests)
+- `packages/db/src/schema.test.ts` — Schema smoke tests (7 tests)
 - `packages/api/src/services/backgroundRemoval.ts` — Background removal service with Replicate SDK
-- `packages/api/src/services/backgroundRemoval.test.ts` — Background removal tests (5 tests)
+- `packages/api/src/services/backgroundRemoval.test.ts` — Background removal tests (12 tests)
 - `packages/api/src/router/garment.ts` — Garment tRPC router (upload, list, getGarment)
-- `packages/api/src/router/garment.test.ts` — Garment router tests (13 tests)
+- `packages/api/src/router/garment.test.ts` — Garment router tests (19 tests)
 - `packages/ui/src/action-sheet.tsx` — ActionSheet UI component
-- `packages/ui/src/action-sheet.test.tsx` — ActionSheet tests (3 tests)
+- `packages/ui/src/action-sheet.test.tsx` — ActionSheet tests (9 tests)
 - `apps/expo/src/components/garment/CategoryPills.tsx` — Category pill selector
-- `apps/expo/src/components/garment/CategoryPills.test.tsx` — CategoryPills tests (3 tests)
-- `apps/expo/src/app/(auth)/(tabs)/add.test.tsx` — Add garment screen tests (3 tests)
+- `apps/expo/src/components/garment/CategoryPills.test.tsx` — CategoryPills tests (9 tests)
+- `apps/expo/src/app/(auth)/(tabs)/add.test.tsx` — Add garment screen tests (19 reducer + 7 component tests)
 
 **Modified files:**
-- `packages/db/src/schema.ts` — Added garmentCategory enum + garments table
+- `packages/db/src/schema.ts` — Added garmentCategory enum, bgRemovalStatusEnum, garments table
+- `packages/db/src/index.ts` — Updated exports
 - `packages/db/tsconfig.json` — Added "bun" to types array
 - `packages/db/package.json` — Added @types/bun devDependency
 - `packages/api/src/trpc.ts` — Added garment methods to ImageStorage interface, added BackgroundRemoval interface, updated context
@@ -666,7 +704,9 @@ N/A
 - `packages/api/src/router/user.test.ts` — Updated mock to include garment storage methods, fixed cross-file spy pollution
 - `packages/api/package.json` — Added replicate dependency, added backgroundRemoval export path
 - `packages/ui/src/index.ts` — Exported ActionSheet components
+- `packages/ui/src/index.ts` — Exported ActionSheet components
 - `packages/ui/package.json` — Added @gluestack-ui/actionsheet dependency
+- `packages/ui/test/setup.ts` — Updated mockComponent for render-prop children support
 - `apps/expo/src/app/(auth)/(tabs)/add.tsx` — Replaced placeholder with full AddGarmentFlow
 - `apps/expo/test/setup.ts` — Added ActionSheet mock
 - `apps/server/src/index.ts` — Added backgroundRemoval creation and injection

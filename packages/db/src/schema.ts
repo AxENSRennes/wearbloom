@@ -76,6 +76,18 @@ export const GARMENT_CATEGORIES = [
 
 export const garmentCategory = pgEnum("garment_category", GARMENT_CATEGORIES);
 
+export const BG_REMOVAL_STATUSES = [
+  "pending",
+  "completed",
+  "failed",
+  "skipped",
+] as const;
+
+export const bgRemovalStatusEnum = pgEnum(
+  "bg_removal_status",
+  BG_REMOVAL_STATUSES,
+);
+
 export const garments = pgTable("garments", (t) => ({
   id: t
     .text()
@@ -88,7 +100,7 @@ export const garments = pgTable("garments", (t) => ({
   category: garmentCategory().notNull(),
   imagePath: t.text().notNull(),
   cutoutPath: t.text(),
-  bgRemovalStatus: t.text().default("pending").notNull(),
+  bgRemovalStatus: bgRemovalStatusEnum().default("pending").notNull(),
   mimeType: t.text().notNull(),
   width: t.integer(),
   height: t.integer(),

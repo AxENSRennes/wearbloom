@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { GARMENT_CATEGORIES, garmentCategory, garments } from "./schema";
+import {
+  BG_REMOVAL_STATUSES,
+  GARMENT_CATEGORIES,
+  bgRemovalStatusEnum,
+  garmentCategory,
+  garments,
+} from "./schema";
 
 describe("garments schema", () => {
   test("garments table export exists", () => {
@@ -44,5 +50,18 @@ describe("garments schema", () => {
 
   test("GARMENT_CATEGORIES has correct values", () => {
     expect(GARMENT_CATEGORIES).toEqual(["tops", "bottoms", "dresses", "shoes", "outerwear"]);
+  });
+
+  test("bgRemovalStatusEnum has correct values", () => {
+    expect(bgRemovalStatusEnum.enumValues).toEqual([
+      "pending",
+      "completed",
+      "failed",
+      "skipped",
+    ]);
+  });
+
+  test("BG_REMOVAL_STATUSES has correct values", () => {
+    expect(BG_REMOVAL_STATUSES).toEqual(["pending", "completed", "failed", "skipped"]);
   });
 });

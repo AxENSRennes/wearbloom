@@ -9,7 +9,12 @@ const React = await import("react");
 function mockComponent(name: string) {
   const comp = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
     const { children, ...rest } = props;
-    return React.createElement(`mock-${name}`, { ...rest, ref }, children as React.ReactNode);
+    // Support render-prop children (e.g. Pressable's ({ pressed }) => ...)
+    const resolved =
+      typeof children === "function"
+        ? (children as (state: { pressed: boolean }) => React.ReactNode)({ pressed: false })
+        : children;
+    return React.createElement(`mock-${name}`, { ...rest, ref }, resolved as React.ReactNode);
   });
   comp.displayName = name;
   return comp;

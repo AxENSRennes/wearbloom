@@ -54,7 +54,7 @@ export type AddAction =
   | { type: "RETAKE" }
   | { type: "ADD_ANOTHER" };
 
-export function addGarmentReducer(_state: AddState, action: AddAction): AddState {
+export function addGarmentReducer(state: AddState, action: AddAction): AddState {
   switch (action.type) {
     case "PHOTO_SELECTED":
       return {
@@ -67,22 +67,22 @@ export function addGarmentReducer(_state: AddState, action: AddAction): AddState
       return {
         step: "uploading",
         imageUri:
-          _state.step === "previewing" ? _state.imageUri : "",
-        width: _state.step === "previewing" ? _state.width : 0,
-        height: _state.step === "previewing" ? _state.height : 0,
+          state.step === "previewing" ? state.imageUri : "",
+        width: state.step === "previewing" ? state.width : 0,
+        height: state.step === "previewing" ? state.height : 0,
         category: action.category,
       };
     case "UPLOAD_SUCCESS":
       return { step: "success", garmentId: action.garmentId };
     case "UPLOAD_ERROR":
-      return _state.step === "uploading"
+      return state.step === "uploading"
         ? {
             step: "previewing",
-            imageUri: _state.imageUri,
-            width: _state.width,
-            height: _state.height,
+            imageUri: state.imageUri,
+            width: state.width,
+            height: state.height,
           }
-        : _state;
+        : state;
     case "RETAKE":
     case "ADD_ANOTHER":
       return { step: "idle" };
@@ -313,6 +313,19 @@ export default function AddGarmentScreen() {
         >
           Take a photo of your garment or import one from your gallery.
         </ThemedText>
+
+        {/* Photography tips */}
+        <View className="mb-6 w-full rounded-xl bg-surface p-4">
+          <ThemedText variant="caption" className="mb-1 font-semibold text-text-primary">
+            Tips for best results
+          </ThemedText>
+          <ThemedText variant="caption" className="text-text-secondary">
+            • Place garment flat on a plain surface{"\n"}
+            • Use good, even lighting{"\n"}
+            • Avoid wrinkles and shadows{"\n"}
+            • Capture the full garment in frame
+          </ThemedText>
+        </View>
 
         <View className="w-full gap-3">
           <Button

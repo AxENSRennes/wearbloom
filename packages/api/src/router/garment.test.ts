@@ -232,121 +232,6 @@ describe("garment.upload", () => {
       /UNAUTHORIZED/,
     );
   });
-});
-
-describe("garment.list", () => {
-  let selectSpy: ReturnType<typeof spyOn>;
-
-  afterEach(() => {
-    selectSpy?.mockRestore();
-  });
-
-  test("returns garments for the authenticated user", async () => {
-    const { db } = await import("@acme/db/client");
-    const mockResults = [
-      { id: "g1", userId: "user-123", category: "tops", imagePath: "path1" },
-      { id: "g2", userId: "user-123", category: "bottoms", imagePath: "path2" },
-    ];
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect(mockResults) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-    const result = await caller.garment.list();
-
-    expect(result).toHaveLength(2);
-  });
-
-  test("returns garments filtered by category", async () => {
-    const { db } = await import("@acme/db/client");
-    const mockResults = [
-      { id: "g1", userId: "user-123", category: "tops", imagePath: "path1" },
-    ];
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect(mockResults) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-    const result = await caller.garment.list({ category: "tops" });
-
-    expect(result).toHaveLength(1);
-  });
-
-  test("returns all garments when no filter provided", async () => {
-    const { db } = await import("@acme/db/client");
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([]) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-    const result = await caller.garment.list();
-
-    expect(result).toHaveLength(0);
-  });
-});
-
-describe("garment.getGarment", () => {
-  let selectSpy: ReturnType<typeof spyOn>;
-
-  afterEach(() => {
-    selectSpy?.mockRestore();
-  });
-
-  test("returns garment by id for authenticated owner", async () => {
-    const { db } = await import("@acme/db/client");
-    const garment = {
-      id: "g1",
-      userId: "user-123",
-      category: "tops",
-      imagePath: "path1",
-      bgRemovalStatus: "completed",
-    };
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([garment]) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-    const result = await caller.garment.getGarment({ garmentId: "g1" });
-
-    expect(result.id).toBe("g1");
-    expect(result.bgRemovalStatus).toBe("completed");
-  });
-
-  test("throws NOT_FOUND for non-existent garment", async () => {
-    const { db } = await import("@acme/db/client");
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([]) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-
-    await expect(
-      caller.garment.getGarment({ garmentId: "nonexistent" }),
-    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
-  });
-
-  test("throws NOT_FOUND for non-owner (ownership check in WHERE)", async () => {
-    const { db } = await import("@acme/db/client");
-    selectSpy = spyOn(db as never, "select").mockReturnValue(
-      mockDbSelect([]) as never,
-    );
-
-    const { caller } = await createAuthenticatedCaller();
-
-    await expect(
-      caller.garment.getGarment({ garmentId: "g1" }),
-    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
-  });
-});
-
-describe("garment.upload - error handling verification", () => {
-  let insertSpy: ReturnType<typeof spyOn>;
-  let updateSpy: ReturnType<typeof spyOn>;
-
-  afterEach(() => {
-    insertSpy?.mockRestore();
-    updateSpy?.mockRestore();
-  });
 
   test("properly handles database insert chain methods", async () => {
     const { db } = await import("@acme/db/client");
@@ -424,11 +309,54 @@ describe("garment.upload - error handling verification", () => {
   });
 });
 
-describe("garment.list - filtering and pagination", () => {
+describe("garment.list", () => {
   let selectSpy: ReturnType<typeof spyOn>;
 
   afterEach(() => {
     selectSpy?.mockRestore();
+  });
+
+  test("returns garments for the authenticated user", async () => {
+    const { db } = await import("@acme/db/client");
+    const mockResults = [
+      { id: "g1", userId: "user-123", category: "tops", imagePath: "path1" },
+      { id: "g2", userId: "user-123", category: "bottoms", imagePath: "path2" },
+    ];
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect(mockResults) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list();
+
+    expect(result).toHaveLength(2);
+  });
+
+  test("returns garments filtered by category", async () => {
+    const { db } = await import("@acme/db/client");
+    const mockResults = [
+      { id: "g1", userId: "user-123", category: "tops", imagePath: "path1" },
+    ];
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect(mockResults) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list({ category: "tops" });
+
+    expect(result).toHaveLength(1);
+  });
+
+  test("returns all garments when no filter provided", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.list();
+
+    expect(result).toHaveLength(0);
   });
 
   test("respects category filter parameter", async () => {
@@ -479,3 +407,58 @@ describe("garment.list - filtering and pagination", () => {
     expect(result[2]?.id).toBe("g3");
   });
 });
+
+describe("garment.getGarment", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+  });
+
+  test("returns garment by id for authenticated owner", async () => {
+    const { db } = await import("@acme/db/client");
+    const garment = {
+      id: "g1",
+      userId: "user-123",
+      category: "tops",
+      imagePath: "path1",
+      bgRemovalStatus: "completed",
+    };
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([garment]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.garment.getGarment({ garmentId: "g1" });
+
+    expect(result.id).toBe("g1");
+    expect(result.bgRemovalStatus).toBe("completed");
+  });
+
+  test("throws NOT_FOUND for non-existent garment", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.garment.getGarment({ garmentId: "nonexistent" }),
+    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+  });
+
+  test("throws NOT_FOUND for non-owner (ownership check in WHERE)", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.garment.getGarment({ garmentId: "g1" }),
+    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+  });
+});
+

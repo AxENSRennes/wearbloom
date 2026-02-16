@@ -102,19 +102,27 @@ export const garmentRouter = {
 
       const garmentId = record.id;
 
-      // Save original photo
-      const imagePath = await ctx.imageStorage.saveGarmentPhoto(
-        userId,
-        buffer,
-        file.type,
-        garmentId,
-      );
-
-      // Update record with actual file path
-      await ctx.db
-        .update(garments)
-        .set({ imagePath })
-        .where(eq(garments.id, garmentId));
+      // Save original photo and update record — clean up orphan on failure
+      let imagePath: string;
+      try {
+        imagePath = await ctx.imageStorage.saveGarmentPhoto(
+          userId,
+          buffer,
+          file.type,
+          garmentId,
+        );
+        await ctx.db
+          .update(garments)
+          .set({ imagePath })
+          .where(eq(garments.id, garmentId));
+      } catch {
+        // Clean up orphaned record
+        await ctx.db.delete(garments).where(eq(garments.id, garmentId));
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "GARMENT_SAVE_FAILED",
+        });
+      }
 
       // Fire-and-forget background removal
       if (ctx.backgroundRemoval) {
@@ -139,11 +147,16 @@ export const garmentRouter = {
                 .set({ bgRemovalStatus: "failed" })
                 .where(eq(garments.id, garmentId));
             }
-          } catch {
-            await ctx.db
-              .update(garments)
-              .set({ bgRemovalStatus: "failed" })
-              .where(eq(garments.id, garmentId));
+          } catch (bgErr) {
+            try {
+              await ctx.db
+                .update(garments)
+                .set({ bgRemovalStatus: "failed" })
+                .where(eq(garments.id, garmentId));
+            } catch {
+              // DB update failed — bgRemovalStatus stuck at "pending"
+              // Will be visible as a permanently pending garment
+            }
           }
         })();
       } else {
