@@ -1,6 +1,6 @@
 # Story 4.4: Subscription Lifecycle & Apple Webhooks
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

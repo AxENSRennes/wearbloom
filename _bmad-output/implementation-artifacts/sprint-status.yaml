@@ -69,11 +69,11 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Monetization & Subscription
-  epic-4: in-progress
+  epic-4: done
   4-1-credit-system-and-free-trial-renders: done
   4-2-apple-iap-subscription-integration: done
   4-3-paywall-screen: done
-  4-4-subscription-lifecycle-and-apple-webhooks: review
+  4-4-subscription-lifecycle-and-apple-webhooks: done
   epic-4-retrospective: optional
 
   # Epic 5: Onboarding & First-Time Experience
