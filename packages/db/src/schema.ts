@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
-import { pgEnum, pgTable } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, pgEnum, pgTable } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -85,22 +86,31 @@ export const subscriptions = pgTable("subscriptions", (t) => ({
     .$onUpdateFn(() => new Date()),
 }));
 
-export const credits = pgTable("credits", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" })
-    .unique(),
-  totalGranted: t.integer().notNull().default(0),
-  totalConsumed: t.integer().notNull().default(0),
-  createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: t
-    .timestamp({ withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdateFn(() => new Date()),
-}));
+export const credits = pgTable(
+  "credits",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    totalGranted: t.integer().notNull().default(0),
+    totalConsumed: t.integer().notNull().default(0),
+    createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: t
+      .timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  }),
+  (table) => [
+    check(
+      "credits_consumed_check",
+      sql`${table.totalConsumed} >= 0 AND ${table.totalConsumed} <= ${table.totalGranted}`,
+    ),
+  ],
+);

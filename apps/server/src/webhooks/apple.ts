@@ -201,6 +201,31 @@ export function createAppleWebhookHandler({
               { userId, subtype },
               "Apple webhook: subscription cancelled by user — access retained until period end",
             );
+          } else if (subtype === "AUTO_RENEW_ENABLED") {
+            const currentSubscription =
+              await subscriptionManager.getSubscription(userId);
+
+            if (!currentSubscription) {
+              logger.warn(
+                { userId },
+                "Apple webhook: AUTO_RENEW_ENABLED received but no subscription found — skipping",
+              );
+              return { status: 200, body: { received: true, skipped: true } };
+            }
+
+            if (currentSubscription.status === "cancelled") {
+              await subscriptionManager.updateStatus(userId, "subscribed");
+
+              logger.info(
+                { userId, subtype },
+                "Apple webhook: auto-renew re-enabled — status reverted from cancelled to subscribed",
+              );
+            } else {
+              logger.info(
+                { userId, subtype, currentStatus: currentSubscription.status },
+                "Apple webhook: auto-renew re-enabled — no status change needed",
+              );
+            }
           } else {
             logger.info(
               { userId, subtype },
@@ -224,13 +249,21 @@ export function createAppleWebhookHandler({
 
         case "DID_FAIL_TO_RENEW": {
           // AC#6: Billing issue — Apple is retrying
-          // Transition to grace_period so user retains access during retry
-          await subscriptionManager.updateStatus(userId, "grace_period");
+          // Only grant grace_period access when Apple sends GRACE_PERIOD subtype
+          // (requires Billing Grace Period enabled in App Store Connect)
+          if (subtype === "GRACE_PERIOD") {
+            await subscriptionManager.updateStatus(userId, "grace_period");
 
-          logger.warn(
-            { userId, subtype },
-            "Apple webhook: renewal failed — grace period started",
-          );
+            logger.warn(
+              { userId, subtype },
+              "Apple webhook: renewal failed — grace period started",
+            );
+          } else {
+            logger.warn(
+              { userId, subtype },
+              "Apple webhook: renewal failed — billing retry in progress (no grace period)",
+            );
+          }
           break;
         }
 

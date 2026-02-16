@@ -275,4 +275,19 @@ describe("PaywallScreen", () => {
     expect(html).toContain('accessibilityRole="image"');
     expect(html).toContain('accessibilityLabel="Your try-on result preview"');
   });
+
+  // --- garmentId passthrough ---
+
+  test("accepts garmentId prop and renders normally", () => {
+    const html = render({ garmentId: "garment-abc-123" });
+    expect(html).toContain("Unlimited Try-Ons");
+    expect(html).toContain("Start Your 7-Day Free Trial");
+  });
+
+  test("onSuccess callback type accepts garmentId parameter", () => {
+    const onSuccessMock = mock((_garmentId?: string) => {});
+    // Verify the mock is assignable to the expected prop type
+    const html = render({ onSuccess: onSuccessMock, garmentId: "garment-xyz" });
+    expect(html).toContain("Unlimited Try-Ons");
+  });
 });

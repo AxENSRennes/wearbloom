@@ -14,8 +14,11 @@ export default function PaywallRoute() {
     }
   };
 
-  const handleSuccess = () => {
-    router.replace("/(auth)/(tabs)/");
+  const handleSuccess = (pendingGarmentId?: string) => {
+    router.replace({
+      pathname: "/(auth)/(tabs)/",
+      params: pendingGarmentId ? { pendingGarmentId } : undefined,
+    });
   };
 
   return (

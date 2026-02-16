@@ -25,7 +25,7 @@ type DisplayState =
 
 export interface PaywallScreenProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (garmentId?: string) => void;
   /** Garment for pending render after subscription — consumed by Epic 3 integration */
   garmentId?: string;
   /** @internal Test-only prop to override display state */
@@ -49,6 +49,7 @@ const BENEFITS = [
 export function PaywallScreen({
   onClose,
   onSuccess,
+  garmentId,
   __testDisplayState,
 }: PaywallScreenProps) {
   const { data: session } = authClient.useSession();
@@ -94,7 +95,7 @@ export function PaywallScreen({
 
       const timer = setTimeout(() => {
         void subscriptionRefetch();
-        onSuccess();
+        onSuccess(garmentId);
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -103,7 +104,7 @@ export function PaywallScreen({
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
     wasPurchasingRef.current = isPurchasing;
-  }, [isPurchasing, verifyError, subscriptionRefetch, onSuccess]);
+  }, [isPurchasing, verifyError, subscriptionRefetch, onSuccess, garmentId]);
 
   // Derive display state
   const displayState: DisplayState =
@@ -147,7 +148,7 @@ export function PaywallScreen({
         (result as { restored: number }).restored > 0
       ) {
         showToast({ message: "Subscription restored!", variant: "success" });
-        onSuccess();
+        onSuccess(garmentId);
       } else {
         showToast({
           message: "No previous purchases found",
@@ -160,7 +161,7 @@ export function PaywallScreen({
         variant: "error",
       });
     }
-  }, [restore, subscriptionRefetch, onSuccess]);
+  }, [restore, subscriptionRefetch, onSuccess, garmentId]);
 
   const handleRetry = useCallback(() => {
     setViewState("ready");
