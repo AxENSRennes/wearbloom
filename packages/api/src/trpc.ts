@@ -4,6 +4,8 @@ import { ZodError } from "zod/v4";
 
 import { db } from "@acme/db/client";
 
+import { RateLimiter } from "./rateLimit";
+
 export interface AuthInstance {
   api: {
     getSession: (opts: {
@@ -112,4 +114,32 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
       session: { ...ctx.session, user: ctx.session.user },
     },
   });
+});
+
+// ---------------------------------------------------------------------------
+// Rate-limited procedures (audit S10-1)
+// ---------------------------------------------------------------------------
+export const renderLimiter = new RateLimiter(10, 60_000); // 10 req/min per user
+export const uploadLimiter = new RateLimiter(20, 60_000); // 20 req/min per user
+
+/** For AI render requests — most expensive operation. */
+export const renderProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!renderLimiter.check(ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "RATE_LIMIT_EXCEEDED",
+    });
+  }
+  return next();
+});
+
+/** For file uploads (garment photos, body photos). */
+export const uploadProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!uploadLimiter.check(ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "RATE_LIMIT_EXCEEDED",
+    });
+  }
+  return next();
 });

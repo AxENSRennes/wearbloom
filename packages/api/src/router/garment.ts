@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 import { and, desc, eq } from "@acme/db";
 import { GARMENT_CATEGORIES, garments } from "@acme/db/schema";
 
-import { protectedProcedure } from "../trpc";
+import { protectedProcedure, uploadProcedure } from "../trpc";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
@@ -16,7 +16,7 @@ const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
 const VALID_CATEGORIES = GARMENT_CATEGORIES;
 
 export const garmentRouter = {
-  upload: protectedProcedure
+  upload: uploadProcedure
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       const formData = input as unknown as {

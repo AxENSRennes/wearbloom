@@ -18,6 +18,10 @@
     "./services/tryOnProvider": {
       "types": "./dist/services/tryOnProvider.d.ts",
       "default": "./src/services/tryOnProvider.ts"
+    },
+    "./rateLimit": {
+      "types": "./dist/rateLimit.d.ts",
+      "default": "./src/rateLimit.ts"
     }
   },
   "license": "MIT",

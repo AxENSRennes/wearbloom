@@ -5,12 +5,12 @@ import { z } from "zod/v4";
 import { eq } from "@acme/db";
 import { bodyPhotos, users } from "@acme/db/schema";
 
-import { protectedProcedure } from "../trpc";
+import { protectedProcedure, uploadProcedure } from "../trpc";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const userRouter = {
-  uploadBodyPhoto: protectedProcedure
+  uploadBodyPhoto: uploadProcedure
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       // Cast needed: RN FormData typings lack .get(), but server runtime (Bun) has it

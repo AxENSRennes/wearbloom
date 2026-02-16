@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import pino from "pino";
 
 import { appRouter, createTRPCContext } from "@acme/api";
+import { RateLimiter } from "@acme/api/rateLimit";
 import { createBackgroundRemoval } from "@acme/api/services/backgroundRemoval";
 import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
@@ -72,6 +73,9 @@ const falWebhookHandler = createFalWebhookHandler({
   logger,
 });
 
+// Rate limiter for auth routes — IP-based (audit S10-1)
+const authLimiter = new RateLimiter(30, 60_000); // 30 req/min per IP
+
 const trpcHandler = createHTTPHandler({
   router: appRouter,
   createContext: ({ req }) =>
@@ -93,6 +97,12 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url?.startsWith("/api/auth")) {
+    const ip = req.socket.remoteAddress ?? "unknown";
+    if (!authLimiter.check(ip)) {
+      res.writeHead(429, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Too many requests" }));
+      return;
+    }
     authHandler(req, res);
     return;
   }

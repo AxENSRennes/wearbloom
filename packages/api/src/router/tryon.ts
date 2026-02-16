@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 import { and, eq } from "@acme/db";
 import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
 
-import { protectedProcedure, publicProcedure } from "../trpc";
+import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
 
 function is5xxError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -23,7 +23,7 @@ export const tryonRouter = {
     return ctx.tryOnProvider?.supportedCategories ?? [];
   }),
 
-  requestRender: protectedProcedure
+  requestRender: renderProcedure
     .input(z.object({ garmentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;

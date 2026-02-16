@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance, TryOnProviderContext } from "../trpc";
-import { createTRPCContext } from "../trpc";
+import { createTRPCContext, renderLimiter } from "../trpc";
 import {
   createMockImageStorage,
   mockDbInsert,
@@ -108,6 +108,7 @@ describe("tryon.requestRender", () => {
     selectSpy?.mockRestore();
     insertSpy?.mockRestore();
     updateSpy?.mockRestore();
+    renderLimiter.reset();
   });
 
   test("validates user has a body photo", async () => {
