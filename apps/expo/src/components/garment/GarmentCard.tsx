@@ -7,14 +7,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { Image } from "expo-image";
 
-import type { RouterOutputs } from "~/utils/api";
+import type { WardrobeItem } from "~/types/wardrobe";
+import { isStockGarment } from "~/types/wardrobe";
 import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
 
-type Garment = RouterOutputs["garment"]["list"][number];
-
 interface GarmentCardProps {
-  garment: Garment;
+  garment: WardrobeItem;
   onPress: () => void;
   columnWidth: number;
 }
@@ -40,8 +39,20 @@ export function GarmentCard({ garment, onPress, columnWidth }: GarmentCardProps)
   };
 
   const itemHeight = Math.round(columnWidth * 1.2);
-  const cookies = authClient.getCookie();
-  const imageUri = `${getBaseUrl()}/api/images/${garment.id}`;
+
+  const imageSource = isStockGarment(garment)
+    ? garment.imageSource
+    : {
+        uri: `${getBaseUrl()}/api/images/${garment.id}`,
+        headers: (() => {
+          const cookies = authClient.getCookie();
+          return cookies ? { Cookie: cookies } : undefined;
+        })(),
+      };
+
+  const label = isStockGarment(garment)
+    ? `stock ${garment.category} garment`
+    : `${garment.category} garment`;
 
   return (
     <Pressable
@@ -49,16 +60,13 @@ export function GarmentCard({ garment, onPress, columnWidth }: GarmentCardProps)
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       accessible={true}
-      accessibilityLabel={`${garment.category} garment`}
+      accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityHint="Double tap to view details"
     >
       <Animated.View style={animatedStyle}>
         <Image
-          source={{
-            uri: imageUri,
-            headers: cookies ? { Cookie: cookies } : undefined,
-          }}
+          source={imageSource}
           contentFit="cover"
           recyclingKey={garment.id}
           placeholder={{ blurhash: PLACEHOLDER_BLURHASH }}

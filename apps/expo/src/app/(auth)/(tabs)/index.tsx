@@ -1,20 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, ThemedText } from "@acme/ui";
 
-import type { RouterOutputs } from "~/utils/api";
+import type { WardrobeItem } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
 import { GarmentCard } from "~/components/garment/GarmentCard";
 import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
-
-type Garment = RouterOutputs["garment"]["list"][number];
+import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 
 /**
  * Garment categories — LOCAL COPY.
@@ -35,7 +33,6 @@ const ITEM_HEIGHT = Math.round(COLUMN_WIDTH * 1.2);
 const CATEGORY_PILLS_HEIGHT = 60;
 
 export default function WardrobeScreen() {
-  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const queryClient = useQueryClient();
 
@@ -49,8 +46,19 @@ export default function WardrobeScreen() {
     void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
   }, [queryClient]);
 
+  const wardrobeItems: WardrobeItem[] = useMemo(() => {
+    const personal: WardrobeItem[] = (garments ?? []).map((g) => ({
+      ...g,
+      isStock: false as const,
+    }));
+    const stock: WardrobeItem[] = [
+      ...getStockGarmentsByCategory(selectedCategory),
+    ];
+    return [...personal, ...stock];
+  }, [garments, selectedCategory]);
+
   const renderGarment = useCallback(
-    ({ item }: { item: Garment }) => (
+    ({ item }: { item: WardrobeItem }) => (
       <GarmentCard
         garment={item}
         onPress={() => {
@@ -62,31 +70,18 @@ export default function WardrobeScreen() {
     [],
   );
 
-  const keyExtractor = useCallback((item: Garment) => item.id, []);
-
-  const garmentList = useMemo(() => garments ?? [], [garments]);
+  const keyExtractor = useCallback((item: WardrobeItem) => item.id, []);
 
   const emptyComponent = useMemo(() => {
     if (isLoading) return null;
-    if (selectedCategory === "all") {
-      return (
-        <EmptyState
-          headline="Your wardrobe is waiting"
-          subtext="Add your first garment"
-          ctaLabel="Add your first garment"
-          onCtaPress={() => {
-            router.push("/(auth)/(tabs)/add");
-          }}
-        />
-      );
-    }
+    // Stock garments ensure "all" category is never truly empty
     return (
       <EmptyState
         headline="Nothing here yet"
         subtext={`Add a ${selectedCategory}`}
       />
     );
-  }, [isLoading, selectedCategory, router]);
+  }, [isLoading, selectedCategory]);
 
   if (isError) {
     return (
@@ -121,7 +116,7 @@ export default function WardrobeScreen() {
         </View>
       ) : (
         <LegendList
-          data={garmentList}
+          data={wardrobeItems}
           renderItem={renderGarment}
           keyExtractor={keyExtractor}
           numColumns={NUM_COLUMNS}

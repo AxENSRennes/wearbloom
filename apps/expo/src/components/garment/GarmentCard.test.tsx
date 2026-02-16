@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { GarmentCard } from "./GarmentCard";
 
+import type { StockGarment } from "~/constants/stockGarments";
+
 const mockGarment = {
   id: "garment-123",
   userId: "user-1",
@@ -17,6 +19,14 @@ const mockGarment = {
   fileSize: 500000,
   createdAt: new Date("2026-02-15"),
   updatedAt: new Date("2026-02-15"),
+  isStock: false as const,
+};
+
+const mockStockGarment: StockGarment = {
+  id: "stock-dresses-1",
+  category: "dresses",
+  isStock: true,
+  imageSource: 42,
 };
 
 describe("GarmentCard", () => {
@@ -111,5 +121,38 @@ describe("GarmentCard", () => {
 
     // React SSR renders boolean true as empty attribute: accessible=""
     expect(html).toContain("accessible=");
+  });
+
+  // -----------------------------------------------------------------------
+  // Stock garment tests
+  // -----------------------------------------------------------------------
+  test("stock garment renders with local image source (not server URI)", () => {
+    const html = renderToStaticMarkup(
+      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+    );
+
+    expect(html).toContain("mock-ExpoImage");
+    // Stock garments should NOT contain a server URI
+    expect(html).not.toContain("/api/images/");
+  });
+
+  test("stock garment accessibility label includes 'stock'", () => {
+    const html = renderToStaticMarkup(
+      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+    );
+
+    expect(html).toContain('accessibilityLabel="stock dresses garment"');
+  });
+
+  test("stock garment press callback is wired", () => {
+    const onPress = mock(() => {});
+    const element = (
+      <GarmentCard garment={mockStockGarment} onPress={onPress} columnWidth={194} />
+    );
+
+    expect(element.props.onPress).toBe(onPress);
+
+    const html = renderToStaticMarkup(element);
+    expect(html).toContain("mock-Pressable");
   });
 });

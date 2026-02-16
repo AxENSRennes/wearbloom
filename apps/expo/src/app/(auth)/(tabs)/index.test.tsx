@@ -113,9 +113,9 @@ describe("WardrobeScreen", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 4. Empty state when data is empty array (category = "all")
+  // 4. Stock garments shown when server returns empty array (category = "all")
   // -------------------------------------------------------------------------
-  test("shows empty state with CTA when data is empty array", () => {
+  test("does not show 'Your wardrobe is waiting' when server returns empty — stock garments fill the grid", () => {
     stubUseQuery({
       data: [],
       isLoading: false,
@@ -126,16 +126,16 @@ describe("WardrobeScreen", () => {
 
     const html = renderToStaticMarkup(<WardrobeScreen />);
 
-    // EmptyState headline for "all" category
-    expect(html).toContain("Your wardrobe is waiting");
-    // CTA label
-    expect(html).toContain("Add your first garment");
+    // Stock garments ensure the grid is never empty for "all" category
+    expect(html).not.toContain("Your wardrobe is waiting");
+    // Stock garment IDs should appear
+    expect(html).toContain("stock-tops-1");
   });
 
   // -------------------------------------------------------------------------
-  // 5. Empty state when data is null (initial query state)
+  // 5. Stock garments shown when data is null (initial query state)
   // -------------------------------------------------------------------------
-  test("shows empty state when data is null", () => {
+  test("shows stock garments when data is null", () => {
     stubUseQuery({
       data: null,
       isLoading: false,
@@ -146,8 +146,9 @@ describe("WardrobeScreen", () => {
 
     const html = renderToStaticMarkup(<WardrobeScreen />);
 
-    // garments ?? [] coerces null to [], triggering ListEmptyComponent
-    expect(html).toContain("Your wardrobe is waiting");
+    // Stock garments should be rendered even without personal garments
+    expect(html).not.toContain("Your wardrobe is waiting");
+    expect(html).toContain("stock-");
   });
 
   // -------------------------------------------------------------------------
@@ -299,5 +300,65 @@ describe("WardrobeScreen", () => {
     expect(html).toContain("Tops");
     // Skeleton should be visible
     expect(html).toContain("skeleton-item");
+  });
+
+  // -------------------------------------------------------------------------
+  // 12. Stock garments are merged after personal garments
+  // -------------------------------------------------------------------------
+  test("stock garments appear after personal garments in the list", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Personal garment should appear
+    expect(html).toContain("garment-1");
+    // Stock garments should also appear
+    expect(html).toContain("stock-tops-1");
+    // Personal garment should come before stock garment in HTML
+    const personalIdx = html.indexOf("garment-1");
+    const stockIdx = html.indexOf("stock-tops-1");
+    expect(personalIdx).toBeLessThan(stockIdx);
+  });
+
+  // -------------------------------------------------------------------------
+  // 13. Stock garments accessibility labels include "stock"
+  // -------------------------------------------------------------------------
+  test("stock garment cards have 'stock' in accessibility label", () => {
+    stubUseQuery({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Stock garments should have "stock <category> garment" label
+    expect(html).toContain("stock tops garment");
+  });
+
+  // -------------------------------------------------------------------------
+  // 14. Personal garments still render correctly alongside stock
+  // -------------------------------------------------------------------------
+  test("personal garment cards do not have 'stock' in accessibility label", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Personal garment should have category-only label (no "stock" prefix)
+    expect(html).toContain('accessibilityLabel="tops garment"');
   });
 });
