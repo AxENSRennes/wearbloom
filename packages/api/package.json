@@ -10,6 +10,10 @@
     "./services/imageStorage": {
       "types": "./dist/services/imageStorage.d.ts",
       "default": "./src/services/imageStorage.ts"
+    },
+    "./services/backgroundRemoval": {
+      "types": "./dist/services/backgroundRemoval.d.ts",
+      "default": "./src/services/backgroundRemoval.ts"
     }
   },
   "license": "MIT",
@@ -27,6 +31,7 @@
     "@acme/validators": "workspace:*",
     "@trpc/server": "catalog:",
     "pino": "^9.6.0",
+    "replicate": "^1.4.0",
     "superjson": "2.2.3",
     "zod": "catalog:"
   },

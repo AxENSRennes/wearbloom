@@ -26,12 +26,29 @@ export interface ImageStorage {
   deleteUserDirectory(userId: string): Promise<void>;
   getAbsolutePath(filePath: string): string;
   streamFile(filePath: string): ReadableStream;
+  saveGarmentPhoto(
+    userId: string,
+    fileData: Buffer,
+    mimeType: string,
+    garmentId: string,
+  ): Promise<string>;
+  saveCutoutPhoto(
+    userId: string,
+    fileData: Buffer,
+    garmentId: string,
+  ): Promise<string>;
+  deleteGarmentFiles(userId: string, garmentId: string): Promise<void>;
+}
+
+export interface BackgroundRemoval {
+  removeBackground(imageBuffer: Buffer): Promise<Buffer | null>;
 }
 
 export const createTRPCContext = async (opts: {
   headers: Headers;
   auth: AuthInstance;
   imageStorage?: ImageStorage;
+  backgroundRemoval?: BackgroundRemoval;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -40,6 +57,7 @@ export const createTRPCContext = async (opts: {
     auth: opts.auth,
     headers: opts.headers,
     imageStorage: opts.imageStorage,
+    backgroundRemoval: opts.backgroundRemoval,
   };
 };
 

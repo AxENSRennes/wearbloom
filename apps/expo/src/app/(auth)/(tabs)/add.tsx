@@ -1,16 +1,335 @@
-import { View } from "react-native";
+import { useCallback, useReducer, useState } from "react";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Camera, ImageIcon } from "lucide-react-native";
 
-import { ThemedText } from "@acme/ui";
+import {
+  ActionSheet,
+  Button,
+  showToast,
+  ThemedText,
+  wearbloomTheme,
+} from "@acme/ui";
 
-export default function AddScreen() {
+import { CategoryPills } from "~/components/garment/CategoryPills";
+import { trpc } from "~/utils/api";
+import { compressImage } from "~/utils/image-compressor";
+
+const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"];
+
+// ---------------------------------------------------------------------------
+// State machine
+// ---------------------------------------------------------------------------
+
+type AddState =
+  | { step: "idle" }
+  | {
+      step: "previewing";
+      imageUri: string;
+      width: number;
+      height: number;
+    }
+  | {
+      step: "uploading";
+      imageUri: string;
+      category: string;
+    }
+  | { step: "success"; garmentId: string };
+
+type AddAction =
+  | { type: "PHOTO_SELECTED"; uri: string; width: number; height: number }
+  | { type: "UPLOAD_START"; category: string }
+  | { type: "UPLOAD_SUCCESS"; garmentId: string }
+  | { type: "UPLOAD_ERROR" }
+  | { type: "RETAKE" }
+  | { type: "ADD_ANOTHER" };
+
+function reducer(_state: AddState, action: AddAction): AddState {
+  switch (action.type) {
+    case "PHOTO_SELECTED":
+      return {
+        step: "previewing",
+        imageUri: action.uri,
+        width: action.width,
+        height: action.height,
+      };
+    case "UPLOAD_START":
+      return {
+        step: "uploading",
+        imageUri:
+          _state.step === "previewing" ? _state.imageUri : "",
+        category: action.category,
+      };
+    case "UPLOAD_SUCCESS":
+      return { step: "success", garmentId: action.garmentId };
+    case "UPLOAD_ERROR":
+      return _state.step === "uploading"
+        ? {
+            step: "previewing",
+            imageUri: _state.imageUri,
+            width: 0,
+            height: 0,
+          }
+        : _state;
+    case "RETAKE":
+    case "ADD_ANOTHER":
+      return { step: "idle" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function AddGarmentScreen() {
+  const [state, dispatch] = useReducer(reducer, { step: "idle" });
+  const [selectedCategory, setSelectedCategory] = useState("tops");
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const queryClient = useQueryClient();
+
+  const uploadMutation = useMutation(
+    trpc.garment.upload.mutationOptions({
+      onSuccess: (data) => {
+        dispatch({ type: "UPLOAD_SUCCESS", garmentId: data.garmentId });
+        void queryClient.invalidateQueries({
+          queryKey: trpc.garment.list.queryKey(),
+        });
+        showToast({ message: "Garment saved!", variant: "success" });
+      },
+      onError: () => {
+        dispatch({ type: "UPLOAD_ERROR" });
+        showToast({
+          message: "Upload failed. Please try again.",
+          variant: "error",
+        });
+      },
+    }),
+  );
+
+  const handleCapture = useCallback(
+    async (source: "camera" | "gallery") => {
+      try {
+        let result: ImagePicker.ImagePickerResult;
+
+        if (source === "camera") {
+          const permission =
+            await ImagePicker.requestCameraPermissionsAsync();
+          if (permission.status !== "granted") {
+            showToast({
+              message: "Camera permission is required to take a photo.",
+              variant: "error",
+            });
+            return;
+          }
+          result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ["images"],
+            quality: 1,
+          });
+        } else {
+          const permission =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (permission.status !== "granted") {
+            showToast({
+              message: "Photo library permission is required.",
+              variant: "error",
+            });
+            return;
+          }
+          result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            quality: 1,
+          });
+        }
+
+        if (result.canceled || !result.assets[0]) return;
+
+        const asset = result.assets[0];
+        const compressed = await compressImage(asset.uri);
+
+        setImageSize({ width: compressed.width, height: compressed.height });
+        dispatch({
+          type: "PHOTO_SELECTED",
+          uri: compressed.uri,
+          width: compressed.width,
+          height: compressed.height,
+        });
+      } catch {
+        showToast({
+          message: "Could not process the photo. Please try again.",
+          variant: "error",
+        });
+      }
+    },
+    [],
+  );
+
+  const handleSave = useCallback(() => {
+    if (state.step !== "previewing") return;
+
+    dispatch({ type: "UPLOAD_START", category: selectedCategory });
+
+    const formData = new FormData();
+    formData.append("photo", {
+      uri: state.imageUri,
+      type: "image/jpeg",
+      name: "garment.jpg",
+    } as unknown as Blob);
+    formData.append("category", selectedCategory);
+    formData.append("width", String(imageSize.width));
+    formData.append("height", String(imageSize.height));
+
+    uploadMutation.mutate(formData);
+  }, [state, selectedCategory, imageSize, uploadMutation]);
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  // Step: Success
+  if (state.step === "success") {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 items-center justify-center p-6">
+          <ThemedText variant="heading" className="mb-2 text-center">
+            Garment Saved!
+          </ThemedText>
+          <ThemedText
+            variant="body"
+            className="mb-8 text-center text-text-secondary"
+          >
+            Your garment has been added to your wardrobe.
+          </ThemedText>
+          <View className="w-full gap-3">
+            <Button
+              label="Add Another"
+              variant="secondary"
+              onPress={() => dispatch({ type: "ADD_ANOTHER" })}
+            />
+            <Pressable
+              className="items-center justify-center py-3"
+              accessibilityRole="button"
+              accessibilityLabel="Browse wardrobe"
+            >
+              <ThemedText variant="body" className="text-text-secondary">
+                Browse Wardrobe
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Step: Previewing / Uploading
+  if (state.step === "previewing" || state.step === "uploading") {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 p-6">
+          {/* Header */}
+          <ThemedText variant="heading" className="mb-4 text-center">
+            Preview & Categorize
+          </ThemedText>
+
+          {/* Image Preview */}
+          <View className="mb-6 flex-1 items-center justify-center">
+            <View
+              className="aspect-square w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-white"
+              accessibilityRole="image"
+              accessibilityLabel="Garment photo preview"
+            >
+              <Image
+                source={{ uri: state.imageUri }}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="contain"
+              />
+            </View>
+          </View>
+
+          {/* Category Selection */}
+          <View className="mb-6">
+            <ThemedText variant="caption" className="mb-2 text-text-secondary">
+              Select Category
+            </ThemedText>
+            <CategoryPills
+              categories={CATEGORIES}
+              selected={selectedCategory}
+              onSelect={setSelectedCategory}
+            />
+          </View>
+
+          {/* Actions */}
+          <View className="gap-3">
+            <Button
+              label="Save to Wardrobe"
+              variant="primary"
+              onPress={handleSave}
+              isLoading={uploadMutation.isPending}
+              disabled={uploadMutation.isPending}
+            />
+            <Button
+              label="Retake"
+              variant="secondary"
+              onPress={() => dispatch({ type: "RETAKE" })}
+              disabled={uploadMutation.isPending}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Step: Idle — Source selection
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-center p-4">
-        <ThemedText variant="display">Add Garment</ThemedText>
-        <ThemedText variant="body" className="mt-2 text-text-secondary">
-          Capture or upload a garment photo
+      <View className="flex-1 items-center justify-center p-6">
+        <ThemedText variant="heading" className="mb-2 text-center">
+          Add a Garment
         </ThemedText>
+        <ThemedText
+          variant="body"
+          className="mb-8 text-center text-text-secondary"
+        >
+          Take a photo of your garment or import one from your gallery.
+        </ThemedText>
+
+        <View className="w-full gap-3">
+          <Button
+            label="Take Photo"
+            variant="primary"
+            onPress={() => setShowActionSheet(true)}
+          />
+        </View>
+
+        <ActionSheet
+          isOpen={showActionSheet}
+          onClose={() => setShowActionSheet(false)}
+          items={[
+            {
+              label: "Take Photo",
+              icon: (
+                <Camera
+                  size={20}
+                  color={wearbloomTheme.colors["text-primary"]}
+                />
+              ),
+              onPress: () => handleCapture("camera"),
+            },
+            {
+              label: "Import from Gallery",
+              icon: (
+                <ImageIcon
+                  size={20}
+                  color={wearbloomTheme.colors["text-primary"]}
+                />
+              ),
+              onPress: () => handleCapture("gallery"),
+            },
+          ]}
+        />
       </View>
     </SafeAreaView>
   );

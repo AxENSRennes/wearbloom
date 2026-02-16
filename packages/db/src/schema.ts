@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { pgTable, unique } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -65,6 +65,35 @@ export const bodyPhotos = pgTable(
   }),
   (table) => [unique().on(table.userId)],
 );
+
+export const garmentCategory = pgEnum("garment_category", [
+  "tops",
+  "bottoms",
+  "dresses",
+  "shoes",
+  "outerwear",
+]);
+
+export const garments = pgTable("garments", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  category: garmentCategory().notNull(),
+  imagePath: t.text().notNull(),
+  cutoutPath: t.text(),
+  bgRemovalStatus: t.text().default("pending").notNull(),
+  mimeType: t.text().notNull(),
+  width: t.integer(),
+  height: t.integer(),
+  fileSize: t.integer(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
+}));
 
 export const verifications = pgTable("verifications", (t) => ({
   id: t.text().primaryKey(),

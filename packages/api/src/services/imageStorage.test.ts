@@ -92,6 +92,90 @@ describe("createImageStorage", () => {
     });
   });
 
+  describe("saveGarmentPhoto", () => {
+    test("creates file at expected garment path", async () => {
+      const fileData = Buffer.from("garment-image-data");
+      const filePath = await storage.saveGarmentPhoto(
+        "user-123",
+        fileData,
+        "image/jpeg",
+        "garment-abc",
+      );
+
+      expect(filePath).toBe(join("user-123", "garments", "garment-abc_original.jpg"));
+
+      const absolutePath = storage.getAbsolutePath(filePath);
+      const written = await readFile(absolutePath);
+      expect(written).toEqual(fileData);
+    });
+
+    test("creates garments directory if it does not exist", async () => {
+      const fileData = Buffer.from("garment-data");
+      const filePath = await storage.saveGarmentPhoto(
+        "user-new",
+        fileData,
+        "image/png",
+        "garment-xyz",
+      );
+
+      expect(filePath).toEndWith("_original.png");
+      expect(existsSync(storage.getAbsolutePath(filePath))).toBe(true);
+    });
+  });
+
+  describe("saveCutoutPhoto", () => {
+    test("creates PNG cutout at expected path", async () => {
+      const fileData = Buffer.from("cutout-data");
+      const filePath = await storage.saveCutoutPhoto(
+        "user-123",
+        fileData,
+        "garment-abc",
+      );
+
+      expect(filePath).toBe(join("user-123", "garments", "garment-abc_cutout.png"));
+
+      const absolutePath = storage.getAbsolutePath(filePath);
+      const written = await readFile(absolutePath);
+      expect(written).toEqual(fileData);
+    });
+  });
+
+  describe("deleteGarmentFiles", () => {
+    test("removes garment original and cutout files", async () => {
+      // Create both files
+      await storage.saveGarmentPhoto(
+        "user-del",
+        Buffer.from("original"),
+        "image/jpeg",
+        "garment-del",
+      );
+      await storage.saveCutoutPhoto(
+        "user-del",
+        Buffer.from("cutout"),
+        "garment-del",
+      );
+
+      const originalPath = storage.getAbsolutePath(
+        join("user-del", "garments", "garment-del_original.jpg"),
+      );
+      const cutoutPath = storage.getAbsolutePath(
+        join("user-del", "garments", "garment-del_cutout.png"),
+      );
+      expect(existsSync(originalPath)).toBe(true);
+      expect(existsSync(cutoutPath)).toBe(true);
+
+      await storage.deleteGarmentFiles("user-del", "garment-del");
+
+      expect(existsSync(originalPath)).toBe(false);
+      expect(existsSync(cutoutPath)).toBe(false);
+    });
+
+    test("handles missing files gracefully", async () => {
+      // Should not throw for non-existent garment
+      await storage.deleteGarmentFiles("user-ghost", "garment-missing");
+    });
+  });
+
   describe("streamFile", () => {
     test("returns a readable stream for an existing file", async () => {
       const content = "stream-test-data";

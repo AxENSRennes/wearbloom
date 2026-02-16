@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import pino from "pino";
 
 import { appRouter, createTRPCContext } from "@acme/api";
+import { createBackgroundRemoval } from "@acme/api/services/backgroundRemoval";
 import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
 import { db } from "@acme/db/client";
@@ -30,6 +31,13 @@ const imageStorage = createImageStorage({
   logger,
 });
 
+const backgroundRemoval = env.REPLICATE_API_TOKEN
+  ? createBackgroundRemoval({
+      replicateApiToken: env.REPLICATE_API_TOKEN,
+      logger,
+    })
+  : undefined;
+
 const imageHandler = createImageHandler({ db, auth, imageStorage });
 
 const trpcHandler = createHTTPHandler({
@@ -39,6 +47,7 @@ const trpcHandler = createHTTPHandler({
       headers: nodeHeadersToHeaders(req.headers),
       auth,
       imageStorage,
+      backgroundRemoval,
     }),
 });
 

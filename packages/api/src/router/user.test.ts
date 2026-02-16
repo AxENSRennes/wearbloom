@@ -33,6 +33,13 @@ function createMockImageStorage() {
       (p: string) => `/data/images/${p}`,
     ),
     streamFile: mock(() => new ReadableStream()),
+    saveGarmentPhoto: mock(() =>
+      Promise.resolve("user-123/garments/garment-abc_original.jpg"),
+    ),
+    saveCutoutPhoto: mock(() =>
+      Promise.resolve("user-123/garments/garment-abc_cutout.png"),
+    ),
+    deleteGarmentFiles: mock(() => Promise.resolve()),
   };
 }
 
@@ -51,7 +58,27 @@ async function createAuthenticatedCaller(
 }
 
 describe("user.getBodyPhoto", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+  });
+
   test("returns null when user has no body photo", async () => {
+    const { db } = await import("@acme/db/client");
+
+    // Explicitly set up empty result to avoid cross-file spy pollution
+    const chain: Record<string, unknown> = {};
+    const methods = ["select", "from", "where", "limit"];
+    for (const method of methods) {
+      chain[method] = mock(() => chain);
+    }
+    chain.then = mock((...args: unknown[]) => {
+      const resolve = args[0] as (val: unknown[]) => void;
+      return resolve([]);
+    });
+    selectSpy = spyOn(db as never, "select").mockReturnValue(chain as never);
+
     const { caller } = await createAuthenticatedCaller();
 
     const result = await caller.user.getBodyPhoto();

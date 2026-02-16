@@ -383,6 +383,7 @@ mock.module("@acme/ui", () => ({
   AlertDialog: mockComponent("AlertDialog"),
   alertDialogButtonStyle: () => "",
   alertDialogButtonTextStyle: () => "",
+  ActionSheet: mockComponent("ActionSheet"),
   ToastProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
   showToast: mock(() => {}),

@@ -68,6 +68,78 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       return join(basePath, filePath);
     },
 
+    async saveGarmentPhoto(
+      userId: string,
+      fileData: Buffer,
+      mimeType: string,
+      garmentId: string,
+    ): Promise<string> {
+      const ext = MIME_EXT[mimeType] ?? ".jpg";
+      const relativePath = join(
+        userId,
+        "garments",
+        `${garmentId}_original${ext}`,
+      );
+      const absolutePath = join(basePath, relativePath);
+
+      await mkdir(dirname(absolutePath), { recursive: true });
+      await writeFile(absolutePath, fileData);
+
+      logger?.info(
+        { userId, garmentId, filePath: relativePath },
+        "Garment photo saved to disk",
+      );
+
+      return relativePath;
+    },
+
+    async saveCutoutPhoto(
+      userId: string,
+      fileData: Buffer,
+      garmentId: string,
+    ): Promise<string> {
+      const relativePath = join(
+        userId,
+        "garments",
+        `${garmentId}_cutout.png`,
+      );
+      const absolutePath = join(basePath, relativePath);
+
+      await mkdir(dirname(absolutePath), { recursive: true });
+      await writeFile(absolutePath, fileData);
+
+      logger?.info(
+        { userId, garmentId, filePath: relativePath },
+        "Cutout photo saved to disk",
+      );
+
+      return relativePath;
+    },
+
+    async deleteGarmentFiles(
+      userId: string,
+      garmentId: string,
+    ): Promise<void> {
+      const garmentDir = join(basePath, userId, "garments");
+      const patterns = [`${garmentId}_original`, `${garmentId}_cutout`];
+
+      for (const pattern of patterns) {
+        // Try common extensions
+        for (const ext of [".jpg", ".png"]) {
+          const filePath = join(garmentDir, `${pattern}${ext}`);
+          try {
+            await rm(filePath);
+            logger?.info(
+              { userId, garmentId, filePath },
+              "Garment file deleted from disk",
+            );
+          } catch {
+            // File may not exist, which is fine
+          }
+        }
+      }
+    },
+
     streamFile(filePath: string): ReadableStream {
       const absolutePath = join(basePath, filePath);
       const nodeStream = createReadStream(absolutePath);

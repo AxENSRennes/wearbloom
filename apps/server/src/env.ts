@@ -7,6 +7,7 @@ const serverSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   IMAGES_DIR: z.string().default("/data/images"),
+  REPLICATE_API_TOKEN: z.string().default(""),
 });
 
 const authEnvVars = authEnv();

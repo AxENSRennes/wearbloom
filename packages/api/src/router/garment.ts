@@ -1,0 +1,215 @@
+import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod/v4";
+
+import { and, eq } from "@acme/db";
+import { garments } from "@acme/db/schema";
+
+import { protectedProcedure } from "../trpc";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
+const VALID_CATEGORIES = [
+  "tops",
+  "bottoms",
+  "dresses",
+  "shoes",
+  "outerwear",
+] as const;
+
+export const garmentRouter = {
+  upload: protectedProcedure
+    .input(z.instanceof(FormData))
+    .mutation(async ({ ctx, input }) => {
+      const formData = input as unknown as {
+        get(key: string): File | string | null;
+      };
+
+      const file = formData.get("photo");
+      if (!file || typeof file === "string") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "MISSING_PHOTO",
+        });
+      }
+
+      const categoryStr = formData.get("category");
+      if (typeof categoryStr !== "string") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "MISSING_CATEGORY",
+        });
+      }
+
+      const category = categoryStr as (typeof VALID_CATEGORIES)[number];
+      if (!VALID_CATEGORIES.includes(category)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_CATEGORY",
+        });
+      }
+
+      if (!VALID_MIME_TYPES.includes(file.type)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_IMAGE_TYPE",
+        });
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "IMAGE_TOO_LARGE",
+        });
+      }
+
+      if (!ctx.imageStorage) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "IMAGE_STORAGE_NOT_CONFIGURED",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+      const buffer = Buffer.from(await file.arrayBuffer());
+
+      const widthStr = formData.get("width");
+      const heightStr = formData.get("height");
+      const width =
+        typeof widthStr === "string" ? Number(widthStr) : undefined;
+      const height =
+        typeof heightStr === "string" ? Number(heightStr) : undefined;
+
+      // Create garment record first to get the ID
+      const [record] = await ctx.db
+        .insert(garments)
+        .values({
+          userId,
+          category,
+          imagePath: "", // Will be updated after save
+          mimeType: file.type,
+          width: width ?? null,
+          height: height ?? null,
+          fileSize: file.size,
+          bgRemovalStatus: "pending",
+        })
+        .returning({ id: garments.id });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "RECORD_INSERT_FAILED",
+        });
+      }
+
+      const garmentId = record.id;
+
+      // Save original photo
+      const imagePath = await ctx.imageStorage.saveGarmentPhoto(
+        userId,
+        buffer,
+        file.type,
+        garmentId,
+      );
+
+      // Update record with actual file path
+      await ctx.db
+        .update(garments)
+        .set({ imagePath })
+        .where(eq(garments.id, garmentId));
+
+      // Fire-and-forget background removal
+      if (ctx.backgroundRemoval) {
+        const bgRemoval = ctx.backgroundRemoval;
+        const imageStorage = ctx.imageStorage;
+        void (async () => {
+          try {
+            const cutoutBuffer = await bgRemoval.removeBackground(buffer);
+            if (cutoutBuffer) {
+              const cutoutPath = await imageStorage.saveCutoutPhoto(
+                userId,
+                cutoutBuffer,
+                garmentId,
+              );
+              await ctx.db
+                .update(garments)
+                .set({ cutoutPath, bgRemovalStatus: "completed" })
+                .where(eq(garments.id, garmentId));
+            } else {
+              await ctx.db
+                .update(garments)
+                .set({ bgRemovalStatus: "failed" })
+                .where(eq(garments.id, garmentId));
+            }
+          } catch {
+            await ctx.db
+              .update(garments)
+              .set({ bgRemovalStatus: "failed" })
+              .where(eq(garments.id, garmentId));
+          }
+        })();
+      } else {
+        // No background removal service available — skip
+        await ctx.db
+          .update(garments)
+          .set({ bgRemovalStatus: "skipped" })
+          .where(eq(garments.id, garmentId));
+      }
+
+      return { garmentId, imageId: garmentId };
+    }),
+
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          category: z.enum(VALID_CATEGORIES).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const whereClause =
+        input?.category
+          ? and(eq(garments.userId, userId), eq(garments.category, input.category))
+          : eq(garments.userId, userId);
+
+      const results = await ctx.db
+        .select()
+        .from(garments)
+        .where(whereClause)
+        .orderBy(garments.createdAt);
+
+      return results;
+    }),
+
+  getGarment: protectedProcedure
+    .input(z.object({ garmentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const results = await ctx.db
+        .select()
+        .from(garments)
+        .where(eq(garments.id, input.garmentId))
+        .limit(1);
+
+      const garment = results[0];
+      if (!garment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "GARMENT_NOT_FOUND",
+        });
+      }
+
+      if (garment.userId !== userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "NOT_GARMENT_OWNER",
+        });
+      }
+
+      return garment;
+    }),
+} satisfies TRPCRouterRecord;
