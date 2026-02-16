@@ -10,6 +10,9 @@ import {
   mockDbUpdate,
 } from "../../test/helpers";
 
+/** JPEG stub with valid magic bytes (0xFF 0xD8 0xFF) */
+const JPEG_STUB = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
   session: {
@@ -83,7 +86,7 @@ describe("garment.upload", () => {
     const formData = new FormData();
     formData.append(
       "photo",
-      new File(["image-data"], "garment.jpg", { type: "image/jpeg" }),
+      new File([JPEG_STUB], "garment.jpg", { type: "image/jpeg" }),
     );
     formData.append("category", "tops");
     formData.append("width", "1200");
@@ -202,7 +205,7 @@ describe("garment.upload", () => {
     const formData = new FormData();
     formData.append(
       "photo",
-      new File(["image-data"], "garment.jpg", { type: "image/jpeg" }),
+      new File([JPEG_STUB], "garment.jpg", { type: "image/jpeg" }),
     );
     formData.append("category", "tops");
     formData.append("width", "1200");
@@ -228,7 +231,7 @@ describe("garment.upload", () => {
     const { caller, imageStorage } = await createAuthenticatedCaller();
 
     const formData = new FormData();
-    const testFile = new File(["jpeg-data"], "photo.jpg", {
+    const testFile = new File([JPEG_STUB], "photo.jpg", {
       type: "image/jpeg",
     });
     formData.append("photo", testFile);

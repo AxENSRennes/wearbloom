@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import pino from "pino";
 
+import type { db as _dbType } from "@acme/db/client";
+
 import { createFalWebhookHandler, _resetJwksCache } from "./fal";
 
 // Mock libsodium-wrappers
@@ -44,7 +46,7 @@ function createMockDb(renderRecord?: {
     update: mock(() => updateChain),
     _selectChain: selectChain,
     _updateChain: updateChain,
-  };
+  } as unknown as typeof _dbType & { _selectChain: typeof selectChain; _updateChain: typeof updateChain };
 }
 
 function createMockImageStorage() {

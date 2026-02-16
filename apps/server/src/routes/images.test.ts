@@ -166,6 +166,7 @@ describe("createImageHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, {
       "Content-Type": "image/jpeg",
       "Cache-Control": "private, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
     });
     expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/body/avatar.jpg");
   });
@@ -194,6 +195,7 @@ describe("createImageHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, {
       "Content-Type": "image/jpeg",
       "Cache-Control": "private, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
     });
     expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/garments/garment-1/original.jpg");
   });
@@ -220,6 +222,7 @@ describe("createImageHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, {
       "Content-Type": "image/png",
       "Cache-Control": "private, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
     });
     expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/garments/garment-2/cutout.png");
   });

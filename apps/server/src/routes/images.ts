@@ -1,5 +1,7 @@
 import type http from "node:http";
 
+import type { db as _dbInstance } from "@acme/db/client";
+
 import { eq } from "@acme/db";
 import { bodyPhotos, garments, tryOnRenders } from "@acme/db/schema";
 
@@ -10,8 +12,7 @@ interface ImageHandlerImageStorage {
 }
 
 interface ImageHandlerDeps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  db: { select: (...args: any[]) => any };
+  db: typeof _dbInstance;
   auth: {
     api: {
       getSession: (opts: {
@@ -52,7 +53,7 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
         .limit(1);
 
       const render = renderResult[0];
-      if (!render || render.status !== "completed" || !render.resultPath) {
+      if (render?.status !== "completed" || !render.resultPath) {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Not found" }));
         return;
@@ -140,8 +141,8 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
 
     // Serve cutout if available, otherwise original
     const useCutout = garment.bgRemovalStatus === "completed" && garment.cutoutPath;
-    const filePath = useCutout ? garment.cutoutPath : garment.imagePath;
-    const mimeType = useCutout ? "image/png" : garment.mimeType;
+    const filePath = (useCutout ? garment.cutoutPath : garment.imagePath) ?? garment.imagePath;
+    const mimeType = useCutout ? "image/png" : (garment.mimeType ?? "image/jpeg");
 
     return streamImage(res, imageStorage, filePath, mimeType);
   };

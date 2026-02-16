@@ -83,6 +83,6 @@ describe("protectedProcedure", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.getSession();
 
-    expect(result).toEqual(mockSession);
+    expect(result).toEqual({ user: mockSession.user });
   });
 });
