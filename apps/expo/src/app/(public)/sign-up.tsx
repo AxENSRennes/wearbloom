@@ -248,6 +248,7 @@ export default function SignUpScreen() {
               variant="ghost"
               onPress={() => router.back()}
               disabled={isLoading}
+              accessibilityHint="Returns to onboarding to try more combinations"
             />
           ) : (
             <Button

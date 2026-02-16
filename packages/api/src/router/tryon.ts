@@ -106,11 +106,20 @@ export const tryonRouter = {
         });
       }
 
-      // Get image paths
-      const personImagePath = ctx.imageStorage.getAbsolutePath(bodyPhoto.filePath);
-      const garmentImagePath = ctx.imageStorage.getAbsolutePath(
-        garment.cutoutPath ?? garment.imagePath,
-      );
+      // Get image paths (wrap service errors in TRPCError)
+      let personImagePath: string;
+      let garmentImagePath: string;
+      try {
+        personImagePath = ctx.imageStorage.getAbsolutePath(bodyPhoto.filePath);
+        garmentImagePath = ctx.imageStorage.getAbsolutePath(
+          garment.cutoutPath ?? garment.imagePath,
+        );
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_IMAGE_PATH",
+        });
+      }
 
       // Call provider (retry once for 5xx errors)
       const maxAttempts = 2;
