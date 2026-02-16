@@ -552,6 +552,8 @@ Claude Haiku 4.5 (claude-haiku-4-5-20251001)
 - (No new files created — webhook handler already existed, only rewritten)
 
 **Files modified:**
+- `_bmad-output/implementation-artifacts/4-4-subscription-lifecycle-and-apple-webhooks.md` — Story implementation document and dev notes
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — Updated sprint tracking for completion
 - `apps/server/src/webhooks/apple.ts` — Rewrote handler for V2 API notification types (RENEWAL, CANCEL, EXPIRED, DID_FAIL_TO_RENEW, GRACE_PERIOD_EXPIRED)
 - `apps/server/src/webhooks/apple.test.ts` — Updated all tests to use V2 notification types with AC mapping
 - `packages/api/src/router/subscription.ts` — Added `hadSubscription` flag to `getStatus` procedure for resubscribe detection

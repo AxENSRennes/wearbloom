@@ -65,7 +65,7 @@ export function createAppleWebhookHandler({
           { error: String(err) },
           "Apple webhook: JWS verification failed",
         );
-        return { status: 400, body: { error: "INVALID_SIGNATURE" } };
+        return { status: 401, body: { error: "INVALID_SIGNATURE" } };
       }
 
       const { notificationType, subtype, data } = notification;
@@ -149,9 +149,20 @@ export function createAppleWebhookHandler({
           // User retains access until current period ends
           const currentSubscription =
             await subscriptionManager.getSubscription(userId);
-          const expiresAt = currentSubscription?.expiresAt || new Date();
 
-          await subscriptionManager.updateStatus(userId, "cancelled", expiresAt);
+          if (!currentSubscription) {
+            logger.warn(
+              { userId },
+              "Apple webhook: CANCEL received but no subscription found — skipping",
+            );
+            return { status: 200, body: { received: true, skipped: true } };
+          }
+
+          await subscriptionManager.updateStatus(
+            userId,
+            "cancelled",
+            currentSubscription.expiresAt ?? undefined,
+          );
 
           logger.info(
             { userId, subtype },

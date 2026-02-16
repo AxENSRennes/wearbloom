@@ -110,13 +110,13 @@ describe("Apple Webhook Handler (V2)", () => {
     expect(result.status).toBe(200);
   });
 
-  test("returns 400 when verification fails", async () => {
+  test("returns 401 when verification fails", async () => {
     mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
       Promise.reject(new Error("Invalid signature")),
     );
 
     const result = await handler.handleNotification("invalid-payload");
-    expect(result.status).toBe(400);
+    expect(result.status).toBe(401);
   });
 
   test("AC#3: handles RENEWAL INITIAL_BUY notification (subscription created)", async () => {
@@ -264,5 +264,23 @@ describe("Apple Webhook Handler (V2)", () => {
     const result = await handler.handleNotification("signed-payload");
     expect(result.status).toBe(200);
     expect(result.body).toEqual({ received: true, skipped: true });
+  });
+
+  test("handles unknown notification type gracefully", async () => {
+    mockVerifier.verifyAndDecodeNotification.mockImplementation(() =>
+      Promise.resolve({
+        notificationType: "UNKNOWN_FUTURE_TYPE",
+        subtype: undefined,
+        data: {
+          signedTransactionInfo: "signed-txn-info",
+        },
+      }),
+    );
+
+    const result = await handler.handleNotification("signed-payload");
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({ received: true });
+    // Verify handler logged the unhandled notification type
+    expect(mockLogger.info.mock.calls.length).toBeGreaterThan(0);
   });
 });
