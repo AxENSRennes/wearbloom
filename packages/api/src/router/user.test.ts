@@ -2,6 +2,11 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
+import {
+  createMockImageStorage,
+  mockDbDelete,
+  mockDbSelect,
+} from "../../test/helpers";
 
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
@@ -21,28 +26,6 @@ function createMockAuth(
       getSession: mock(() => Promise.resolve(session)),
       signOut: mock(() => Promise.resolve()),
     },
-  };
-}
-
-function createMockImageStorage() {
-  return {
-    saveBodyPhoto: mock(() => Promise.resolve("user-123/body/avatar_123.jpg")),
-    deleteBodyPhoto: mock(() => Promise.resolve()),
-    deleteUserDirectory: mock(() => Promise.resolve()),
-    getAbsolutePath: mock(
-      (p: string) => `/data/images/${p}`,
-    ),
-    streamFile: mock(() => new ReadableStream()),
-    saveGarmentPhoto: mock(() =>
-      Promise.resolve("user-123/garments/garment-abc_original.jpg"),
-    ),
-    saveCutoutPhoto: mock(() =>
-      Promise.resolve("user-123/garments/garment-abc_cutout.png"),
-    ),
-    deleteGarmentFiles: mock(() => Promise.resolve()),
-    saveRenderResult: mock(() =>
-      Promise.resolve("user-123/renders/render-abc_result.png"),
-    ),
   };
 }
 
@@ -69,18 +52,9 @@ describe("user.getBodyPhoto", () => {
 
   test("returns null when user has no body photo", async () => {
     const { db } = await import("@acme/db/client");
-
-    // Explicitly set up empty result to avoid cross-file spy pollution
-    const chain: Record<string, unknown> = {};
-    const methods = ["select", "from", "where", "limit"];
-    for (const method of methods) {
-      chain[method] = mock(() => chain);
-    }
-    chain.then = mock((...args: unknown[]) => {
-      const resolve = args[0] as (val: unknown[]) => void;
-      return resolve([]);
-    });
-    selectSpy = spyOn(db as never, "select").mockReturnValue(chain as never);
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
 
     const { caller } = await createAuthenticatedCaller();
 
@@ -91,20 +65,8 @@ describe("user.getBodyPhoto", () => {
 
   test("returns imageUrl when user has a body photo", async () => {
     const { db } = await import("@acme/db/client");
-
-    // Override the chain to return a photo record for this test
-    const photoResult = [{ id: "photo-abc" }];
-    const chain: Record<string, unknown> = {};
-    const methods = ["select", "from", "where", "limit"];
-    for (const method of methods) {
-      chain[method] = mock(() => chain);
-    }
-    chain.then = mock((...args: unknown[]) => {
-      const resolve = args[0] as (val: unknown[]) => void;
-      return resolve(photoResult);
-    });
-    const selectSpy = spyOn(db as never, "select").mockReturnValue(
-      chain as never,
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([{ id: "photo-abc" }]) as never,
     );
 
     const { caller } = await createAuthenticatedCaller();
@@ -141,16 +103,6 @@ describe("user.uploadBodyPhoto", () => {
 
 describe("user.deleteAccount", () => {
   let deleteSpy: ReturnType<typeof spyOn>;
-
-  function mockDbDelete() {
-    const chain: Record<string, unknown> = {};
-    chain.where = mock(() => chain);
-    chain.then = mock((...args: unknown[]) => {
-      const resolve = args[0] as (val: unknown) => void;
-      return resolve(undefined);
-    });
-    return chain;
-  }
 
   afterEach(() => {
     deleteSpy?.mockRestore();

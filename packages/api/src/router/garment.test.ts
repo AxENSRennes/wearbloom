@@ -2,6 +2,13 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance, BackgroundRemoval } from "../trpc";
 import { createTRPCContext } from "../trpc";
+import {
+  createMockImageStorage,
+  mockDbDelete,
+  mockDbInsert,
+  mockDbSelect,
+  mockDbUpdate,
+} from "../../test/helpers";
 
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
@@ -24,67 +31,12 @@ function createMockAuth(
   };
 }
 
-function createMockImageStorage() {
-  return {
-    saveBodyPhoto: mock(() => Promise.resolve("user-123/body/avatar_123.jpg")),
-    deleteBodyPhoto: mock(() => Promise.resolve()),
-    deleteUserDirectory: mock(() => Promise.resolve()),
-    getAbsolutePath: mock((p: string) => `/data/images/${p}`),
-    streamFile: mock(() => new ReadableStream()),
-    saveGarmentPhoto: mock(() =>
-      Promise.resolve("user-123/garments/garment-abc_original.jpg"),
-    ),
-    saveCutoutPhoto: mock(() =>
-      Promise.resolve("user-123/garments/garment-abc_cutout.png"),
-    ),
-    deleteGarmentFiles: mock(() => Promise.resolve()),
-    saveRenderResult: mock(() =>
-      Promise.resolve("user-123/renders/render-abc_result.png"),
-    ),
-  };
-}
-
 function createMockBackgroundRemoval(): BackgroundRemoval {
   return {
     removeBackground: mock(() =>
       Promise.resolve(Buffer.from("mock-cutout")),
     ),
   };
-}
-
-function mockDbInsert(returnId = "garment-abc") {
-  const chain: Record<string, unknown> = {};
-  chain.values = mock(() => chain);
-  chain.returning = mock(() => chain);
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown[]) => void;
-    return resolve([{ id: returnId }]);
-  });
-  return chain;
-}
-
-function mockDbUpdate() {
-  const chain: Record<string, unknown> = {};
-  chain.set = mock(() => chain);
-  chain.where = mock(() => chain);
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown) => void;
-    return resolve(undefined);
-  });
-  return chain;
-}
-
-function mockDbSelect(results: unknown[] = []) {
-  const chain: Record<string, unknown> = {};
-  const methods = ["select", "from", "where", "limit", "orderBy"];
-  for (const method of methods) {
-    chain[method] = mock(() => chain);
-  }
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown[]) => void;
-    return resolve(results);
-  });
-  return chain;
 }
 
 async function createAuthenticatedCaller(
@@ -465,16 +417,6 @@ describe("garment.getGarment", () => {
   });
 });
 
-function mockDbDelete() {
-  const chain: Record<string, unknown> = {};
-  chain.where = mock(() => chain);
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown) => void;
-    return resolve(undefined);
-  });
-  return chain;
-}
-
 describe("garment.delete", () => {
   let selectSpy: ReturnType<typeof spyOn>;
   let deleteSpy: ReturnType<typeof spyOn>;
@@ -585,4 +527,3 @@ describe("garment.delete", () => {
     expect(deleteSpy).not.toHaveBeenCalled();
   });
 });
-

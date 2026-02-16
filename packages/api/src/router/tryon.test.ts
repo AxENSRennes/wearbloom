@@ -2,6 +2,12 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance, TryOnProviderContext } from "../trpc";
 import { createTRPCContext } from "../trpc";
+import {
+  createMockImageStorage,
+  mockDbInsert,
+  mockDbSelect,
+  mockDbUpdate,
+} from "../../test/helpers";
 
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
@@ -24,22 +30,6 @@ function createMockAuth(
   };
 }
 
-function createMockImageStorage() {
-  return {
-    saveBodyPhoto: mock(() => Promise.resolve("user-123/body/avatar_123.jpg")),
-    deleteBodyPhoto: mock(() => Promise.resolve()),
-    deleteUserDirectory: mock(() => Promise.resolve()),
-    getAbsolutePath: mock((p: string) => `/data/images/${p}`),
-    streamFile: mock(() => new ReadableStream()),
-    saveGarmentPhoto: mock(() => Promise.resolve("path.jpg")),
-    saveCutoutPhoto: mock(() => Promise.resolve("cutout.png")),
-    deleteGarmentFiles: mock(() => Promise.resolve()),
-    saveRenderResult: mock(() =>
-      Promise.resolve("user-123/renders/render-abc_result.png"),
-    ),
-  };
-}
-
 function createMockTryOnProvider(): TryOnProviderContext {
   return {
     name: "fal_fashn",
@@ -51,41 +41,6 @@ function createMockTryOnProvider(): TryOnProviderContext {
       }),
     ),
   };
-}
-
-function mockDbSelect(results: unknown[] = []) {
-  const chain: Record<string, unknown> = {};
-  const methods = ["select", "from", "where", "limit", "orderBy"];
-  for (const method of methods) {
-    chain[method] = mock(() => chain);
-  }
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown[]) => void;
-    return resolve(results);
-  });
-  return chain;
-}
-
-function mockDbInsert(returnId = "render-abc") {
-  const chain: Record<string, unknown> = {};
-  chain.values = mock(() => chain);
-  chain.returning = mock(() => chain);
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown[]) => void;
-    return resolve([{ id: returnId }]);
-  });
-  return chain;
-}
-
-function mockDbUpdate() {
-  const chain: Record<string, unknown> = {};
-  chain.set = mock(() => chain);
-  chain.where = mock(() => chain);
-  chain.then = mock((...args: unknown[]) => {
-    const resolve = args[0] as (val: unknown) => void;
-    return resolve(undefined);
-  });
-  return chain;
 }
 
 async function createAuthenticatedCaller(
@@ -136,18 +91,13 @@ describe("tryon.requestRender", () => {
 
   test("validates garment exists and belongs to user", async () => {
     const { db } = await import("@acme/db/client");
-    let callCount = 0;
-    selectSpy = spyOn(db as never, "select").mockImplementation((() => {
-      callCount++;
-      if (callCount === 1) {
-        // bodyPhotos — found
-        return mockDbSelect([
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
           { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
-        ]);
-      }
-      // garments — not found
-      return mockDbSelect([]);
-    }) as never);
+        ]) as never,
+      )
+      .mockReturnValueOnce(mockDbSelect([]) as never);
 
     const { caller } = await createAuthenticatedCaller();
 
@@ -158,23 +108,22 @@ describe("tryon.requestRender", () => {
 
   test("creates render record in DB", async () => {
     const { db } = await import("@acme/db/client");
-    let selectCallCount = 0;
-    selectSpy = spyOn(db as never, "select").mockImplementation((() => {
-      selectCallCount++;
-      if (selectCallCount === 1) {
-        return mockDbSelect([
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
           { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
-        ]);
-      }
-      return mockDbSelect([
-        {
-          id: "garment-1",
-          imagePath: "user-123/garments/g1_original.jpg",
-          cutoutPath: "user-123/garments/g1_cutout.png",
-          category: "tops",
-        },
-      ]);
-    }) as never);
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-new") as never,
     );
@@ -191,23 +140,22 @@ describe("tryon.requestRender", () => {
 
   test("calls provider.submitRender with correct images", async () => {
     const { db } = await import("@acme/db/client");
-    let selectCallCount = 0;
-    selectSpy = spyOn(db as never, "select").mockImplementation((() => {
-      selectCallCount++;
-      if (selectCallCount === 1) {
-        return mockDbSelect([
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
           { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
-        ]);
-      }
-      return mockDbSelect([
-        {
-          id: "garment-1",
-          imagePath: "user-123/garments/g1_original.jpg",
-          cutoutPath: "user-123/garments/g1_cutout.png",
-          category: "tops",
-        },
-      ]);
-    }) as never);
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-abc") as never,
     );
@@ -231,23 +179,22 @@ describe("tryon.requestRender", () => {
 
   test("returns renderId", async () => {
     const { db } = await import("@acme/db/client");
-    let selectCallCount = 0;
-    selectSpy = spyOn(db as never, "select").mockImplementation((() => {
-      selectCallCount++;
-      if (selectCallCount === 1) {
-        return mockDbSelect([
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
           { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
-        ]);
-      }
-      return mockDbSelect([
-        {
-          id: "garment-1",
-          imagePath: "path.jpg",
-          cutoutPath: null,
-          category: "tops",
-        },
-      ]);
-    }) as never);
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "path.jpg",
+            cutoutPath: null,
+            category: "tops",
+          },
+        ]) as never,
+      );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-xyz") as never,
     );
@@ -276,16 +223,13 @@ describe("tryon.requestRender", () => {
 
   test("throws NOT_FOUND if garment missing", async () => {
     const { db } = await import("@acme/db/client");
-    let callCount = 0;
-    selectSpy = spyOn(db as never, "select").mockImplementation((() => {
-      callCount++;
-      if (callCount === 1) {
-        return mockDbSelect([
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
           { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
-        ]);
-      }
-      return mockDbSelect([]);
-    }) as never);
+        ]) as never,
+      )
+      .mockReturnValueOnce(mockDbSelect([]) as never);
 
     const { caller } = await createAuthenticatedCaller();
 
