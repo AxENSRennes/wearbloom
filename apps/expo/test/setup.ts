@@ -1,4 +1,13 @@
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { mock } from "bun:test";
+
+// Register DOM globals (document, window, HTMLElement, etc.) for behavioral tests
+// This is safe for SSR tests — renderToStaticMarkup works with or without DOM globals.
+GlobalRegistrator.register();
+
+// Tell React that we're inside a test environment so act() warnings are suppressed
+// @ts-expect-error -- IS_REACT_ACT_ENVIRONMENT is a global checked by React internals
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // Define globals normally provided by Metro/React Native bundler
 // @ts-expect-error -- __DEV__ is a global set by Metro bundler
@@ -581,10 +590,20 @@ mock.module("react-native-reanimated", () => {
       createAnimatedComponent: (comp: unknown) => comp,
     },
     View: AnimatedView,
-    useSharedValue: (initial: number) => ({ value: initial }),
+    useSharedValue: (initial: number) => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const ref = React.useRef({ value: initial });
+      return ref.current;
+    },
     useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
-    withSpring: (toValue: number) => toValue,
-    withTiming: (toValue: number) => toValue,
+    withSpring: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
+      callback?.(true);
+      return toValue;
+    },
+    withTiming: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
+      callback?.(true);
+      return toValue;
+    },
     withRepeat: (animation: unknown) => animation,
     withSequence: (...animations: unknown[]) => animations[0],
     useReducedMotion: () => false,

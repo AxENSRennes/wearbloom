@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -37,6 +38,11 @@ const CATEGORIES = [
 
 const AUTO_HIDE_MS = 10_000;
 const CONFIRM_DISMISS_MS = 800;
+const FADE_OUT_MS = 200;
+
+const COLLAPSED_WIDTH = 44;
+const EXPANDED_WIDTH = 120;
+const CATEGORY_PICKER_WIDTH = 260;
 
 export function FeedbackButton({
   onSubmit,
@@ -48,16 +54,36 @@ export function FeedbackButton({
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reducedMotion = useReducedMotion();
 
+  // Ref to avoid stale closure in reanimated worklet callbacks
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
+
   // Animation values
-  const expandWidth = useSharedValue(44);
+  const expandWidth = useSharedValue(COLLAPSED_WIDTH);
   const fadeOpacity = useSharedValue(1);
+
+  /** Animate fade-out then call onDismiss */
+  const animateDismiss = useCallback(() => {
+    if (reducedMotion) {
+      onDismissRef.current();
+      return;
+    }
+
+    fadeOpacity.value = withTiming(0, { duration: FADE_OUT_MS }, (finished) => {
+      if (finished) {
+        runOnJS(onDismissRef.current)();
+      }
+    });
+  }, [reducedMotion, fadeOpacity]);
 
   const resetAutoHide = useCallback(() => {
     if (autoHideTimer.current) clearTimeout(autoHideTimer.current);
     autoHideTimer.current = setTimeout(() => {
-      onDismiss();
+      animateDismiss();
     }, AUTO_HIDE_MS);
-  }, [onDismiss]);
+  }, [animateDismiss]);
 
   // Start auto-hide timer on mount
   useEffect(() => {
@@ -74,9 +100,9 @@ export function FeedbackButton({
     setState("expanded");
 
     if (reducedMotion) {
-      expandWidth.value = 120;
+      expandWidth.value = EXPANDED_WIDTH;
     } else {
-      expandWidth.value = withSpring(120, { damping: 15, stiffness: 300 });
+      expandWidth.value = withSpring(EXPANDED_WIDTH, { damping: 15, stiffness: 300 });
     }
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -87,13 +113,20 @@ export function FeedbackButton({
     resetAutoHide();
     setState("confirmed");
 
+    // Collapse back to small size for confirmed state
+    if (reducedMotion) {
+      expandWidth.value = COLLAPSED_WIDTH;
+    } else {
+      expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });
+    }
+
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onSubmit("thumbs_up", undefined);
 
     confirmTimer.current = setTimeout(() => {
-      onDismiss();
+      animateDismiss();
     }, CONFIRM_DISMISS_MS);
-  }, [isSubmitting, resetAutoHide, onSubmit, onDismiss]);
+  }, [isSubmitting, resetAutoHide, onSubmit, animateDismiss, reducedMotion, expandWidth]);
 
   const handleThumbsDown = useCallback(() => {
     if (isSubmitting) return;
@@ -101,9 +134,9 @@ export function FeedbackButton({
     setState("category_picker");
 
     if (reducedMotion) {
-      expandWidth.value = 260;
+      expandWidth.value = CATEGORY_PICKER_WIDTH;
     } else {
-      expandWidth.value = withSpring(260, { damping: 15, stiffness: 300 });
+      expandWidth.value = withSpring(CATEGORY_PICKER_WIDTH, { damping: 15, stiffness: 300 });
     }
   }, [isSubmitting, resetAutoHide, reducedMotion, expandWidth]);
 
@@ -112,31 +145,36 @@ export function FeedbackButton({
       if (isSubmitting) return;
       setState("confirmed");
 
+      // Collapse back to small size for confirmed state
+      if (reducedMotion) {
+        expandWidth.value = COLLAPSED_WIDTH;
+      } else {
+        expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });
+      }
+
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSubmit("thumbs_down", category);
 
       confirmTimer.current = setTimeout(() => {
-        onDismiss();
+        animateDismiss();
       }, CONFIRM_DISMISS_MS);
     },
-    [isSubmitting, onSubmit, onDismiss],
+    [isSubmitting, onSubmit, animateDismiss, reducedMotion, expandWidth],
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
+    width: expandWidth.value,
   }));
 
-  // --- CONFIRMED STATE ---
-  if (state === "confirmed") {
-    return (
-      <Animated.View style={reducedMotion ? undefined : animatedStyle}>
+  // --- Render inner content based on state ---
+  const renderContent = () => {
+    if (state === "confirmed") {
+      return (
         <View
-          testID="feedback-button"
           style={{
-            width: 44,
+            width: COLLAPSED_WIDTH,
             height: 44,
-            borderRadius: 22,
-            backgroundColor: "rgba(255,255,255,0.3)",
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -147,24 +185,18 @@ export function FeedbackButton({
             testID="feedback-icon-confirmed"
           />
         </View>
-      </Animated.View>
-    );
-  }
+      );
+    }
 
-  // --- CATEGORY PICKER STATE ---
-  if (state === "category_picker") {
-    return (
-      <Animated.View style={reducedMotion ? undefined : animatedStyle}>
+    if (state === "category_picker") {
+      return (
         <View
-          testID="feedback-button"
           style={{
             flexDirection: "row",
             alignItems: "center",
             gap: 6,
             paddingHorizontal: 8,
             paddingVertical: 6,
-            borderRadius: 22,
-            backgroundColor: "rgba(255,255,255,0.3)",
           }}
         >
           {CATEGORIES.map((cat) => (
@@ -189,24 +221,18 @@ export function FeedbackButton({
             </Pressable>
           ))}
         </View>
-      </Animated.View>
-    );
-  }
+      );
+    }
 
-  // --- EXPANDED STATE ---
-  if (state === "expanded") {
-    return (
-      <Animated.View style={reducedMotion ? undefined : animatedStyle}>
+    if (state === "expanded") {
+      return (
         <View
-          testID="feedback-button"
           style={{
             flexDirection: "row",
             alignItems: "center",
             gap: 16,
             paddingHorizontal: 16,
             height: 44,
-            borderRadius: 22,
-            backgroundColor: "rgba(255,255,255,0.3)",
           }}
         >
           <Pressable
@@ -236,25 +262,20 @@ export function FeedbackButton({
             <ThumbsDown size={20} color="white" />
           </Pressable>
         </View>
-      </Animated.View>
-    );
-  }
+      );
+    }
 
-  // --- COLLAPSED STATE (default) ---
-  return (
-    <Animated.View style={reducedMotion ? undefined : animatedStyle}>
+    // Collapsed state (default)
+    return (
       <Pressable
-        testID="feedback-button"
         onPress={handleExpand}
         disabled={isSubmitting}
         accessibilityLabel="Rate this render"
         accessibilityRole="button"
         accessibilityHint="Double tap to rate quality"
         style={{
-          width: 44,
+          width: COLLAPSED_WIDTH,
           height: 44,
-          borderRadius: 22,
-          backgroundColor: "rgba(255,255,255,0.3)",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -272,6 +293,41 @@ export function FeedbackButton({
           <MessageCircle size={20} color="white" />
         </View>
       </Pressable>
+    );
+  };
+
+  return (
+    <Animated.View
+      testID="feedback-button"
+      style={[
+        {
+          height: 44,
+          borderRadius: 22,
+          // Note: backdrop-blur effect requires expo-blur (BlurView) which is not installed.
+          // Using semi-transparent background as fallback.
+          backgroundColor: "rgba(255,255,255,0.3)",
+          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        reducedMotion ? { width: getStaticWidth(state) } : animatedStyle,
+      ]}
+    >
+      {renderContent()}
     </Animated.View>
   );
+}
+
+/** Returns the target width for a given state without animation (reduced motion fallback). */
+function getStaticWidth(state: FeedbackState): number {
+  switch (state) {
+    case "category_picker":
+      return CATEGORY_PICKER_WIDTH;
+    case "expanded":
+      return EXPANDED_WIDTH;
+    case "collapsed":
+    case "confirmed":
+    case "dismissed":
+      return COLLAPSED_WIDTH;
+  }
 }

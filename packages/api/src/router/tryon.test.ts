@@ -672,8 +672,9 @@ describe("tryon.submitFeedback", () => {
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("feedback-3") as never,
     );
+    const updateChain = mockDbUpdate();
     updateSpy = spyOn(db as never, "update").mockReturnValue(
-      mockDbUpdate() as never,
+      updateChain as never,
     );
 
     const { caller } = await createAuthenticatedCaller();
@@ -683,6 +684,9 @@ describe("tryon.submitFeedback", () => {
     });
 
     expect(updateSpy).toHaveBeenCalled();
+    expect(updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ creditConsumed: false }),
+    );
   });
 
   test("does NOT change creditConsumed on thumbs_up", async () => {
@@ -700,6 +704,9 @@ describe("tryon.submitFeedback", () => {
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("feedback-4") as never,
     );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
 
     const { caller } = await createAuthenticatedCaller();
     await caller.tryon.submitFeedback({
@@ -707,8 +714,8 @@ describe("tryon.submitFeedback", () => {
       rating: "thumbs_up",
     });
 
-    // update should NOT have been called (no spy needed — if update is called it would fail)
     expect(insertSpy).toHaveBeenCalled();
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   test("throws NOT_FOUND for invalid renderId", async () => {

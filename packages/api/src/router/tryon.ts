@@ -255,10 +255,21 @@ export const tryonRouter = {
           category:
             input.rating === "thumbs_down" ? (input.category ?? null) : null,
         });
-      } catch {
+      } catch (error) {
+        // PostgreSQL unique constraint violation (Drizzle wraps pg driver errors)
+        if (
+          error instanceof Error &&
+          error.message.includes("unique constraint")
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "FEEDBACK_ALREADY_SUBMITTED",
+          });
+        }
+        // Re-throw unexpected errors (connection timeouts, deadlocks, etc.)
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "FEEDBACK_ALREADY_SUBMITTED",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "FEEDBACK_INSERT_FAILED",
         });
       }
 
