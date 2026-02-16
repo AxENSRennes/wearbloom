@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 import { and, eq } from "@acme/db";
 import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
 
-import { protectedProcedure } from "../trpc";
+import { protectedProcedure, publicProcedure } from "../trpc";
 
 function is5xxError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -19,6 +19,10 @@ function is5xxError(error: unknown): boolean {
 }
 
 export const tryonRouter = {
+  getSupportedCategories: publicProcedure.query(({ ctx }) => {
+    return ctx.tryOnProvider?.supportedCategories ?? [];
+  }),
+
   requestRender: protectedProcedure
     .input(z.object({ garmentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -70,6 +74,17 @@ export const tryonRouter = {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "GARMENT_NOT_FOUND",
+        });
+      }
+
+      // Validate category is supported by active provider
+      if (
+        ctx.tryOnProvider.supportedCategories.length > 0 &&
+        !ctx.tryOnProvider.supportedCategories.includes(garment.category)
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_CATEGORY",
         });
       }
 

@@ -44,6 +44,7 @@ function createMockAuth(
 function createMockTryOnProvider(): TryOnProviderContext {
   return {
     name: "fal_fashn",
+    supportedCategories: ["tops", "bottoms", "dresses"],
     submitRender: mock(() => Promise.resolve({ jobId: "fal-job-123" })),
     getResult: mock(() =>
       Promise.resolve({
@@ -74,6 +75,29 @@ async function createAuthenticatedCaller(
     auth,
   };
 }
+
+describe("tryon.getSupportedCategories", () => {
+  test("returns provider's supported categories", async () => {
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getSupportedCategories();
+
+    expect(result).toEqual(["tops", "bottoms", "dresses"]);
+  });
+
+  test("returns empty array when provider not configured", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth();
+    const ctx = await createTRPCContext({
+      headers: new Headers({ cookie: "session=xyz" }),
+      auth,
+      tryOnProvider: undefined,
+    });
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.tryon.getSupportedCategories();
+
+    expect(result).toEqual([]);
+  });
+});
 
 describe("tryon.requestRender", () => {
   let selectSpy: ReturnType<typeof spyOn>;
@@ -247,6 +271,63 @@ describe("tryon.requestRender", () => {
     await expect(
       caller.tryon.requestRender({ garmentId: "nonexistent" }),
     ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+  });
+
+  test("rejects unsupported category with INVALID_CATEGORY error", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: null,
+            category: "shoes",
+          },
+        ]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.requestRender({ garmentId: "garment-1" }),
+    ).rejects.toThrow(/INVALID_CATEGORY/);
+  });
+
+  test("allows supported category without rejection", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("render-cat-ok") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.requestRender({ garmentId: "garment-1" });
+
+    expect(result.renderId).toBe("render-cat-ok");
   });
 
   test("retries once on 5xx provider error then succeeds", async () => {

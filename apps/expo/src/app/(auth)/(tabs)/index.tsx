@@ -38,6 +38,11 @@ export default function WardrobeScreen() {
   const { isConnected } = useNetworkStatus();
   const isManualRefresh = useRef(false);
 
+  const supportedCategoriesQuery = useQuery(
+    trpc.tryon.getSupportedCategories.queryOptions(),
+  );
+  const supportedCategories = supportedCategoriesQuery.data ?? [];
+
   const deleteMutation = useMutation(
     trpc.garment.delete.mutationOptions({
       onSuccess: () => {
@@ -103,7 +108,9 @@ export default function WardrobeScreen() {
         router.push(`/render/${data.renderId}` as never);
       },
       onError: (error) => {
-        if (error.message === "RENDER_FAILED") {
+        if (error.message === "INVALID_CATEGORY") {
+          showToast({ message: "Try-on not available for this category.", variant: "error" });
+        } else if (error.message === "RENDER_FAILED") {
           showToast({ message: "Render failed. Try again.", variant: "error" });
         } else {
           showToast({ message: "Something went wrong.", variant: "error" });
@@ -226,6 +233,7 @@ export default function WardrobeScreen() {
         garment={selectedGarment}
         onDismiss={handleSheetDismiss}
         onTryOn={handleTryOn}
+        supportedCategories={supportedCategories}
       />
     </>
   );

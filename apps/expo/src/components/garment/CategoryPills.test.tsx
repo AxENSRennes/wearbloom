@@ -137,6 +137,53 @@ describe("CategoryPills", () => {
     expect(bottomsPill).not.toContain("bg-text-primary");
   });
 
+  // -------------------------------------------------------------------------
+  // Unsupported category visual indicators (Story 3.5)
+  // -------------------------------------------------------------------------
+  test("pill for unsupported category shows 'No try-on' text", () => {
+    const html = renderToStaticMarkup(
+      <CategoryPills
+        categories={CATEGORIES}
+        selected="tops"
+        onSelect={() => {}}
+        unsupportedCategories={["shoes", "outerwear"]}
+      />,
+    );
+
+    expect(html).toContain("No try-on");
+  });
+
+  test("pill for supported category does NOT show 'No try-on' text", () => {
+    const html = renderToStaticMarkup(
+      <CategoryPills
+        categories={["tops"]}
+        selected="tops"
+        onSelect={() => {}}
+        unsupportedCategories={["shoes", "outerwear"]}
+      />,
+    );
+
+    expect(html).not.toContain("No try-on");
+  });
+
+  test("unsupported pill is still clickable (has Pressable and onPress)", () => {
+    const onSelect = mock(() => {});
+    const html = renderToStaticMarkup(
+      <CategoryPills
+        categories={["shoes"]}
+        selected="tops"
+        onSelect={onSelect}
+        unsupportedCategories={["shoes"]}
+      />,
+    );
+
+    // Pill should still be a Pressable (interactive)
+    expect(html).toContain("mock-Pressable");
+    expect(html).toContain('accessibilityRole="button"');
+    // Should not have disabled attribute
+    expect(html).not.toContain("disabled");
+  });
+
   test("renders empty when categories array is empty", () => {
     const html = renderToStaticMarkup(
       <CategoryPills categories={[]} selected="" onSelect={() => {}} />,

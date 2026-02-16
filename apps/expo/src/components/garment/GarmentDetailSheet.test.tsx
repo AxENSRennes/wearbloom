@@ -48,6 +48,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -62,6 +63,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockStockGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -77,6 +79,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -92,6 +95,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -111,6 +115,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={onDismiss}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -124,6 +129,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -142,6 +148,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -155,6 +162,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -170,12 +178,73 @@ describe("GarmentDetailSheet", () => {
         garment={null}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
     expect(html).toContain("mock-BottomSheet");
     // Should NOT render garment-specific content
     expect(html).not.toContain("Try On");
+  });
+
+  // -------------------------------------------------------------------------
+  // Category support — disabled button for unsupported categories (Story 3.5)
+  // -------------------------------------------------------------------------
+  test('"Try On" button is disabled when garment category is not in supportedCategories', () => {
+    const html = renderToStaticMarkup(
+      <GarmentDetailSheet
+        garment={mockPersonalGarment}
+        onDismiss={() => {}}
+        onTryOn={() => {}}
+        supportedCategories={["bottoms", "dresses"]}
+      />,
+    );
+
+    expect(html).toContain("disabled");
+    expect(html).toContain('accessibilityHint="Try-on is not available for this garment category"');
+  });
+
+  test('"Try On" button is enabled when garment category is in supportedCategories', () => {
+    const html = renderToStaticMarkup(
+      <GarmentDetailSheet
+        garment={mockPersonalGarment}
+        onDismiss={() => {}}
+        onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
+      />,
+    );
+
+    // Button should not have disabled attribute and should have standard accessibility hint
+    const buttonMatch = html.match(/<mock-Button[^>]*>/);
+    expect(buttonMatch).not.toBeNull();
+    expect(buttonMatch![0]).not.toContain("disabled");
+    expect(html).toContain('accessibilityHint="Double tap to start virtual try-on"');
+  });
+
+  test("unsupported message is shown when category is not supported", () => {
+    const html = renderToStaticMarkup(
+      <GarmentDetailSheet
+        garment={mockPersonalGarment}
+        onDismiss={() => {}}
+        onTryOn={() => {}}
+        supportedCategories={["bottoms", "dresses"]}
+      />,
+    );
+
+    expect(html).toContain("Try-on not yet available for this category");
+  });
+
+  test("unsupported message is NOT shown when category is supported", () => {
+    const html = renderToStaticMarkup(
+      <GarmentDetailSheet
+        garment={mockPersonalGarment}
+        onDismiss={() => {}}
+        onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
+      />,
+    );
+
+    expect(html).not.toContain("Try-on not yet available for this category");
   });
 
   // -------------------------------------------------------------------------
@@ -187,6 +256,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 
@@ -210,6 +280,7 @@ describe("GarmentDetailSheet", () => {
         garment={mockPersonalGarment}
         onDismiss={() => {}}
         onTryOn={() => {}}
+        supportedCategories={["tops", "bottoms", "dresses"]}
       />,
     );
 

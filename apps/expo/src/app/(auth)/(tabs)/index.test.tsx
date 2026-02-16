@@ -502,6 +502,52 @@ describe("WardrobeScreen", () => {
   });
 
   // -------------------------------------------------------------------------
+  // supportedCategories integration (Story 3.5)
+  // -------------------------------------------------------------------------
+  test("useQuery is called twice — garments query and supportedCategories query", () => {
+    const querySpy = stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    renderToStaticMarkup(<WardrobeScreen />);
+
+    // WardrobeScreen now calls useQuery twice: garment.list + tryon.getSupportedCategories
+    expect(querySpy.mock.calls.length).toBe(2);
+  });
+
+  test("INVALID_CATEGORY error shows specific toast message", () => {
+    const mutationSpy = spyOn(reactQuery, "useMutation");
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    renderToStaticMarkup(<WardrobeScreen />);
+
+    // Find the requestRender mutation (second useMutation call — first is delete)
+    const calls = mutationSpy.mock.calls;
+    const renderMutationCall = calls[1];
+    expect(renderMutationCall).toBeDefined();
+    const mutationOpts = (renderMutationCall as unknown[])[0] as Record<string, unknown>;
+    const onError = mutationOpts.onError as (error: { message: string }) => void;
+    expect(onError).toBeDefined();
+
+    onError({ message: "INVALID_CATEGORY" });
+
+    expect(showToast).toHaveBeenCalledWith({
+      message: "Try-on not available for this category.",
+      variant: "error",
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Bottom sheet integration tests (Story 3.1)
   // -------------------------------------------------------------------------
   // Note: SSR testing (renderToStaticMarkup) cannot simulate user interactions

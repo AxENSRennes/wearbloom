@@ -64,6 +64,7 @@ export interface TryOnProviderContext {
     contentType: string;
   } | null>;
   readonly name: string;
+  readonly supportedCategories: readonly string[];
 }
 
 export const createTRPCContext = async (opts: {

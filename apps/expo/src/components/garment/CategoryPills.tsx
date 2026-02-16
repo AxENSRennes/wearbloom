@@ -13,6 +13,7 @@ interface CategoryPillsProps {
   categories: readonly string[];
   selected: string;
   onSelect: (category: string) => void;
+  unsupportedCategories?: readonly string[];
 }
 
 interface PillLayout {
@@ -24,6 +25,7 @@ export function CategoryPills({
   categories,
   selected,
   onSelect,
+  unsupportedCategories,
 }: CategoryPillsProps) {
   const scrollRef = useRef<ScrollView>(null);
   const pillLayouts = useRef<Map<number, PillLayout>>(new Map());
@@ -70,6 +72,7 @@ export function CategoryPills({
     >
       {categories.map((category, index) => {
         const isActive = category === selected;
+        const isUnsupported = unsupportedCategories?.includes(category) ?? false;
         return (
           <Pressable
             key={category}
@@ -92,6 +95,11 @@ export function CategoryPills({
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </Text>
+            {isUnsupported && (
+              <Text className="text-[9px] text-text-tertiary">
+                No try-on
+              </Text>
+            )}
           </Pressable>
         );
       })}

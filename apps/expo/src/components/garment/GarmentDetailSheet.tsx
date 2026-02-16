@@ -23,10 +23,11 @@ interface GarmentDetailSheetProps {
   garment: WardrobeItem | null;
   onDismiss: () => void;
   onTryOn: (garmentId: string) => void;
+  supportedCategories: readonly string[];
 }
 
 export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProps>(
-  function GarmentDetailSheet({ garment, onDismiss, onTryOn }, ref) {
+  function GarmentDetailSheet({ garment, onDismiss, onTryOn, supportedCategories }, ref) {
     const reducedMotion = useReducedMotion();
     const insets = useSafeAreaInsets();
     const snapPoints = useMemo(() => ["60%", "90%"], []);
@@ -108,6 +109,10 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
       [garment],
     );
 
+    const isCategorySupported = garment
+      ? supportedCategories.includes(garment.category)
+      : true;
+
     const categoryLabel = garment
       ? garment.category.charAt(0).toUpperCase() + garment.category.slice(1)
       : "";
@@ -156,13 +161,24 @@ export const GarmentDetailSheet = forwardRef<BottomSheet, GarmentDetailSheetProp
                 </View>
               </View>
 
+              {!isCategorySupported && (
+                <ThemedText variant="caption" className="mt-2 text-text-secondary">
+                  Try-on not yet available for this category
+                </ThemedText>
+              )}
+
               {/* "Try On" button */}
               <View className="mt-4" style={{ marginBottom: Math.max(16, insets.bottom), height: 52 }}>
                 <Button
                   label="Try On"
                   variant="primary"
                   onPress={handleTryOn}
-                  accessibilityHint="Double tap to start virtual try-on"
+                  disabled={!isCategorySupported}
+                  accessibilityHint={
+                    isCategorySupported
+                      ? "Double tap to start virtual try-on"
+                      : "Try-on is not available for this garment category"
+                  }
                 />
               </View>
             </View>

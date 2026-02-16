@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { createId } from "@paralleldrive/cuid2";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, ImageIcon } from "lucide-react-native";
 
 import {
@@ -103,6 +103,14 @@ export default function AddGarmentScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isConnected } = useNetworkStatus();
+
+  const supportedCategoriesQuery = useQuery(
+    trpc.tryon.getSupportedCategories.queryOptions(),
+  );
+  const supportedCategories = supportedCategoriesQuery.data ?? [];
+  const unsupportedCategories = CATEGORIES.filter(
+    (c) => !supportedCategories.includes(c),
+  );
 
   const uploadMutation = useMutation(
     trpc.garment.upload.mutationOptions({
@@ -294,6 +302,7 @@ export default function AddGarmentScreen() {
               categories={CATEGORIES}
               selected={selectedCategory}
               onSelect={setSelectedCategory}
+              unsupportedCategories={unsupportedCategories}
             />
           </View>
 

@@ -65,7 +65,7 @@ development_status:
   3-2-ai-try-on-render-pipeline: done
   3-3-render-result-and-loading-experience: done
   3-4-render-retry-quality-feedback-and-credit-policy: done
-  3-5-garment-category-validation: backlog
+  3-5-garment-category-validation: review
   epic-3-retrospective: optional
 
   # Epic 4: Monetization & Subscription
