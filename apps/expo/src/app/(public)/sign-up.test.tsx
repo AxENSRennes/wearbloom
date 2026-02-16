@@ -1,10 +1,81 @@
-import { createElement } from "react";
+import React, { createElement } from "react";
 // @ts-expect-error -- __searchParams is a test-only export from expo-router mock
 import { __searchParams } from "expo-router";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import SignUpScreen from "./sign-up";
+// ---------------------------------------------------------------------------
+// Re-mock @tanstack/react-query with an instrumented useMutation
+// that tracks calls and captures onSuccess callbacks for behavioral tests.
+// ---------------------------------------------------------------------------
+interface MutationResult {
+  mutate: ReturnType<typeof mock>;
+  mutateAsync: ReturnType<typeof mock>;
+  isPending: boolean;
+  isError: boolean;
+  error: null;
+  data: null;
+}
+
+interface UseMutationCall {
+  opts: Record<string, unknown>;
+  result: MutationResult;
+}
+
+const useMutationCalls: UseMutationCall[] = [];
+const onSuccessCallbacks: (() => Promise<void>)[] = [];
+
+function resetMutationTracking() {
+  useMutationCalls.length = 0;
+  onSuccessCallbacks.length = 0;
+}
+
+mock.module("@tanstack/react-query", () => ({
+  QueryClient: class {},
+  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  useMutation: (opts?: Record<string, unknown>) => {
+    const mutateAsyncMock = mock(() => Promise.resolve());
+    const result: MutationResult = {
+      mutate: mock(() => {}),
+      mutateAsync: mutateAsyncMock,
+      isPending: false,
+      isError: false,
+      error: null,
+      data: null,
+    };
+
+    if (opts && typeof opts === "object") {
+      useMutationCalls.push({ opts, result });
+
+      // If opts has mutationFn, it's the auth mutation — capture onSuccess
+      if ("mutationFn" in opts && typeof opts.onSuccess === "function") {
+        onSuccessCallbacks.push(opts.onSuccess as () => Promise<void>);
+      }
+    }
+
+    return result;
+  },
+  useQuery: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+    error: null,
+    isPending: false,
+    isFetching: false,
+  }),
+}));
+
+// Dynamic import to pick up re-mocked module bindings
+const { default: SignUpScreen } = await import("./sign-up");
+const { showToast } = await import("@acme/ui");
+
+function assertDefined<T>(
+  val: T | undefined,
+  msg = "Expected value to be defined",
+): asserts val is T {
+  if (val === undefined) throw new Error(msg);
+}
 
 function render(component: React.ReactElement) {
   return renderToStaticMarkup(component);
@@ -127,5 +198,61 @@ describe("SignUpScreen (onboarding context)", () => {
     const hookSection = source.substring(hookCallIndex, hookCallIndex + 300);
     expect(hookSection).toContain("markOnboardingComplete");
     expect(hookSection).toContain("onSuccess");
+  });
+});
+
+describe("SignUpScreen credit grant behavior", () => {
+  test("calls grantCredits.mutateAsync after successful sign-up", async () => {
+    resetMutationTracking();
+    render(createElement(SignUpScreen));
+
+    // useMutation is called twice: first for grantCredits, second for emailSignUp
+    expect(useMutationCalls.length).toBeGreaterThanOrEqual(2);
+
+    const grantCreditsMutation = useMutationCalls[0];
+    assertDefined(grantCreditsMutation, "grantCreditsMutation should exist");
+    const authMutation = useMutationCalls[1];
+    assertDefined(authMutation, "authMutation should exist");
+
+    // The auth mutation should have mutationFn and onSuccess
+    expect(authMutation.opts).toHaveProperty("mutationFn");
+    expect(authMutation.opts).toHaveProperty("onSuccess");
+
+    // Invoke onSuccess (simulating successful sign-up)
+    expect(onSuccessCallbacks.length).toBeGreaterThan(0);
+    const onSuccessCb = onSuccessCallbacks[0];
+    assertDefined(onSuccessCb, "onSuccess callback should exist");
+    await onSuccessCb();
+
+    // grantCredits.mutateAsync should have been called
+    expect(grantCreditsMutation.result.mutateAsync).toHaveBeenCalled();
+  });
+
+  test("shows info toast when credit grant fails after sign-up", async () => {
+    resetMutationTracking();
+
+    // Clear any previous showToast calls
+    (showToast as ReturnType<typeof mock>).mockClear();
+
+    // Re-render to get fresh mutation tracking
+    render(createElement(SignUpScreen));
+
+    // Make the grantCredits.mutateAsync reject
+    const grantCreditsMutation = useMutationCalls[0];
+    assertDefined(grantCreditsMutation, "grantCreditsMutation should exist");
+    (
+      grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>
+    ).mockImplementation(() => Promise.reject(new Error("grant failed")));
+
+    // Invoke onSuccess (simulating successful sign-up, but credit grant will fail)
+    const onSuccessCb = onSuccessCallbacks[0];
+    assertDefined(onSuccessCb, "onSuccess callback should exist");
+    await onSuccessCb();
+
+    // showToast should have been called with the info fallback message
+    expect(showToast).toHaveBeenCalledWith({
+      message: "Credits will be granted later",
+      variant: "info",
+    });
   });
 });

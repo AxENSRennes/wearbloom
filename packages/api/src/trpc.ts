@@ -25,6 +25,22 @@ export interface AuthInstance {
   };
 }
 
+export interface AppleIapDeps {
+  verifier: {
+    verifyAndDecodeNotification: (signedPayload: string) => Promise<{
+      notificationType?: string;
+      subtype?: string;
+      data?: unknown;
+    }>;
+    verifyAndDecodeTransaction: (
+      signedTransaction: string,
+    ) => Promise<Record<string, unknown>>;
+  };
+  client: {
+    requestTestNotification: () => Promise<unknown>;
+  };
+}
+
 export interface AnonymousConfig {
   sessionTtlHours: number;
   maxRenders: number;
@@ -33,6 +49,8 @@ export interface AnonymousConfig {
 export const createTRPCContext = async (opts: {
   headers: Headers;
   auth: AuthInstance;
+  freeCreditsCount?: number;
+  appleIap?: AppleIapDeps;
   anonymousConfig?: AnonymousConfig;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
@@ -41,6 +59,8 @@ export const createTRPCContext = async (opts: {
     session,
     auth: opts.auth,
     headers: opts.headers,
+    freeCreditsCount: opts.freeCreditsCount ?? 3,
+    appleIap: opts.appleIap,
     anonymousConfig: opts.anonymousConfig,
   };
 };

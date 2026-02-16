@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
+import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 import { markOnboardingComplete } from "~/utils/onboardingState";
 
@@ -25,6 +26,10 @@ export default function SignUpScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
+  const grantCredits = useMutation(
+    trpc.subscription.grantInitialCredits.mutationOptions(),
+  );
+
   const emailSignUp = useMutation({
     mutationFn: async (data: {
       name: string;
@@ -40,6 +45,14 @@ export default function SignUpScreen() {
         await markOnboardingComplete();
         // TODO(Story-1.5): Associate onboarding body photo with user profile after body avatar management is implemented
         // TODO(Epic-2): Stock garments should appear in wardrobe grid after wardrobe management is implemented
+      }
+      try {
+        await grantCredits.mutateAsync();
+      } catch {
+        showToast({
+          message: "Credits will be granted later",
+          variant: "info",
+        });
       }
       showToast({
         message: "Welcome! Your wardrobe is ready.",

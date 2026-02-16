@@ -271,6 +271,23 @@ mock.module("lucide-react-native", () => ({
   Plus: mockComponent("Icon-Plus"),
   User: mockComponent("Icon-User"),
   ChevronRight: mockComponent("Icon-ChevronRight"),
+  Check: mockComponent("Icon-Check"),
+  X: mockComponent("Icon-X"),
+  CircleCheck: mockComponent("Icon-CircleCheck"),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-haptics — mock haptic feedback
+// ---------------------------------------------------------------------------
+mock.module("expo-haptics", () => ({
+  impactAsync: mock(() => Promise.resolve()),
+  notificationAsync: mock(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+  NotificationFeedbackType: {
+    Success: "success",
+    Warning: "warning",
+    Error: "error",
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -333,6 +350,14 @@ mock.module("@tanstack/react-query", () => ({
     error: null,
     data: null,
   }),
+  useQuery: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+    error: null,
+    isPending: false,
+    isFetching: false,
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -385,6 +410,33 @@ mock.module("@acme/ui", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-iap — mock IAP module (native module not available in test)
+// ---------------------------------------------------------------------------
+mock.module("expo-iap", () => ({
+  useIAP: () => ({
+    connected: false,
+    subscriptions: [],
+    fetchProducts: mock(() => Promise.resolve()),
+    requestPurchase: mock(() => Promise.resolve()),
+    finishTransaction: mock(() => Promise.resolve()),
+    restorePurchases: mock(() => Promise.resolve()),
+  }),
+  getAvailablePurchases: mock(() => Promise.resolve([])),
+  ErrorCode: {
+    ActivityUnavailable: "activity-unavailable",
+    AlreadyOwned: "already-owned",
+    BillingUnavailable: "billing-unavailable",
+    DeferredPayment: "deferred-payment",
+    ItemUnavailable: "item-unavailable",
+    NetworkError: "network-error",
+    PurchaseError: "purchase-error",
+    Unknown: "unknown",
+    UserCancelled: "user-cancelled",
+    UserError: "user-error",
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // tRPC and superjson — imported transitively via ~/utils/api
 // ---------------------------------------------------------------------------
 mock.module("@trpc/client", () => ({
@@ -393,8 +445,22 @@ mock.module("@trpc/client", () => ({
   loggerLink: () => ({}),
 }));
 
+// trpc proxy mock — supports chained property access returning { queryOptions, mutationOptions }
+function createTrpcProxy(): unknown {
+  const handler: ProxyHandler<CallableFunction> = {
+    get: (_target, prop) => {
+      if (prop === "queryOptions" || prop === "mutationOptions") {
+        return () => ({});
+      }
+      return createTrpcProxy();
+    },
+    apply: () => ({}),
+  };
+  return new Proxy(() => {}, handler);
+}
+
 mock.module("@trpc/tanstack-react-query", () => ({
-  createTRPCOptionsProxy: () => ({}),
+  createTRPCOptionsProxy: () => createTrpcProxy(),
 }));
 
 mock.module("superjson", () => ({

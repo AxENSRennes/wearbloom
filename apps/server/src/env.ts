@@ -8,6 +8,12 @@ const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   ANONYMOUS_SESSION_TTL_HOURS: z.coerce.number().default(24),
   ANONYMOUS_MAX_RENDERS: z.coerce.number().default(1),
+  FREE_CREDITS_COUNT: z.coerce.number().int().min(0).default(3),
+  // Apple IAP — optional at startup, validated at point of use
+  APPLE_IAP_KEY_ID: z.string().min(1).optional(),
+  APPLE_IAP_ISSUER_ID: z.string().min(1).optional(),
+  APPLE_IAP_KEY_PATH: z.string().min(1).optional(),
+  APPLE_APP_ID: z.coerce.number().optional(),
 });
 
 const authEnvVars = authEnv();
