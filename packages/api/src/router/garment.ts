@@ -233,11 +233,10 @@ export const garmentRouter = {
           );
 
         return { success: true as const };
-      } catch (error) {
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "GARMENT_DELETION_FAILED",
-          cause: error,
         });
       }
     }),

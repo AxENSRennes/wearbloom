@@ -233,7 +233,7 @@ export const tryonRouter = {
       z.object({
         renderId: z.string(),
         rating: z.enum(["thumbs_up", "thumbs_down"]),
-        category: z.string().optional(),
+        category: z.string().max(100).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

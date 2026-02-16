@@ -137,11 +137,10 @@ export const userRouter = {
       await ctx.db.delete(users).where(eq(users.id, userId));
 
       return { success: true };
-    } catch (error) {
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "ACCOUNT_DELETION_FAILED",
-        cause: error,
       });
     }
   }),
