@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { GarmentCard } from "./GarmentCard";
@@ -29,6 +29,10 @@ const mockStockGarment: StockGarment = {
 };
 
 describe("GarmentCard", () => {
+  afterEach(() => {
+    mock.restore();
+  });
+
   test("renders garment image with expo-image", () => {
     const html = renderToStaticMarkup(
       <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,

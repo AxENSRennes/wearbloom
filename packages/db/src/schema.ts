@@ -181,6 +181,6 @@ export const verifications = pgTable("verifications", (t) => ({
   identifier: t.text().notNull(),
   value: t.text().notNull(),
   expiresAt: t.timestamp().notNull(),
-  createdAt: t.timestamp(),
-  updatedAt: t.timestamp(),
+  createdAt: t.timestamp().notNull().defaultNow(),
+  updatedAt: t.timestamp().notNull().defaultNow(),
 }));

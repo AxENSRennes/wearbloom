@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
-import { Button, ThemedText } from "@acme/ui";
+import { Button, showToast, ThemedText } from "@acme/ui";
 
 import type { GarmentCategory, StockGarment } from "~/constants/stockAssets";
 import { STOCK_GARMENTS } from "~/constants/stockAssets";
@@ -90,7 +90,13 @@ export function StepPickGarment({
 
   const handlePhotographOwn = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      showToast({
+        message: "Camera permission is required to take a photo.",
+        variant: "error",
+      });
+      return;
+    }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

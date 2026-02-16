@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import type { TryOnProviderConfig } from "../tryOnProvider";
 import type { GoogleVTOFetcher } from "./googleVTO";
@@ -42,6 +42,10 @@ describe("GoogleVTOProvider", () => {
   beforeEach(() => {
     mockFetch = createMockFetch();
     provider = new GoogleVTOProvider(baseConfig, mockFetch);
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   test("name returns 'google_vto'", () => {

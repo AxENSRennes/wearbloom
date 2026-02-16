@@ -1,5 +1,5 @@
 import type http from "node:http";
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 
 import { bodyPhotos, garments } from "@acme/db/schema";
 
@@ -94,6 +94,10 @@ function createMockRes() {
 }
 
 describe("createImageHandler", () => {
+  afterEach(() => {
+    mock.restore();
+  });
+
   test("returns 401 when not authenticated", async () => {
     const auth = createMockAuth(null);
     const db = createMockDb();

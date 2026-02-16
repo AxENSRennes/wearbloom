@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { CategoryPills } from "./CategoryPills";
@@ -6,6 +6,10 @@ import { CategoryPills } from "./CategoryPills";
 const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"];
 
 describe("CategoryPills", () => {
+  afterEach(() => {
+    mock.restore();
+  });
+
   test("renders all category names capitalized", () => {
     const html = renderToStaticMarkup(
       <CategoryPills

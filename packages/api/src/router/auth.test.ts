@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
@@ -40,6 +40,10 @@ function createMockAuth(
     },
   };
 }
+
+afterEach(() => {
+  mock.restore();
+});
 
 describe("auth.getSession", () => {
   test("returns session when authenticated", async () => {

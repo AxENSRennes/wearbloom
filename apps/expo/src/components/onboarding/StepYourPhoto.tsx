@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
-import { Button, ThemedText } from "@acme/ui";
+import { Button, showToast, ThemedText } from "@acme/ui";
 
 import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
 
@@ -32,7 +32,13 @@ export function StepYourPhoto({
 
   const handleCamera = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      showToast({
+        message: "Camera permission is required to take a photo.",
+        variant: "error",
+      });
+      return;
+    }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -52,7 +58,13 @@ export function StepYourPhoto({
 
   const handleGallery = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      showToast({
+        message: "Photo library permission is required.",
+        variant: "error",
+      });
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

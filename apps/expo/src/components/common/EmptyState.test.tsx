@@ -1,9 +1,13 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { EmptyState } from "./EmptyState";
 
 describe("EmptyState", () => {
+  afterEach(() => {
+    mock.restore();
+  });
+
   test("renders headline text", () => {
     const html = renderToStaticMarkup(
       <EmptyState headline="Your wardrobe is waiting" />,

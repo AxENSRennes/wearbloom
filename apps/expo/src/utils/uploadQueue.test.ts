@@ -1,4 +1,4 @@
-import { describe, expect, mock, test, beforeEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import {
   clearQueue,
@@ -31,6 +31,10 @@ const mockPayload2: QueuedUpload = {
 describe("upload-queue", () => {
   beforeEach(() => {
     clearQueue();
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   test("enqueueUpload stores upload payload and getQueueLength returns correct count", () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 import type { TryOnProviderConfig } from "../tryOnProvider";
 import type { FalClient } from "./falFashn";
@@ -49,6 +49,10 @@ describe("FalFashnProvider", () => {
   beforeEach(() => {
     mockFalClient = createMockFalClient();
     provider = new FalFashnProvider(baseConfig, mockFalClient);
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   test("name returns 'fal_fashn'", () => {
