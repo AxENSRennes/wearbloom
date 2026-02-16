@@ -1,4 +1,4 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { PaywallScreen } from "~/components/subscription/PaywallScreen";
 

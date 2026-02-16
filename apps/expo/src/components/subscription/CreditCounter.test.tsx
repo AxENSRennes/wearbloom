@@ -5,12 +5,15 @@ import { renderToString } from "react-dom/server";
 import { CreditCounter } from "./CreditCounter";
 
 // We control useQuery behavior per test by re-mocking @tanstack/react-query
-function renderWithSubscription(data: {
-  isSubscriber: boolean;
-  creditsRemaining: number;
-  state: string;
-  canRender: boolean;
-} | null, isLoading = false) {
+function renderWithSubscription(
+  data: {
+    isSubscriber: boolean;
+    creditsRemaining: number;
+    state: string;
+    canRender: boolean;
+  } | null,
+  isLoading = false,
+) {
   mock.module("@tanstack/react-query", () => ({
     QueryClient: class {},
     QueryClientProvider: ({ children }: { children: React.ReactNode }) =>

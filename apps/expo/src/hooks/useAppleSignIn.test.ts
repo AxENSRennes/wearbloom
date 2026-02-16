@@ -1,5 +1,5 @@
-import { describe, expect, mock, test, beforeEach } from "bun:test";
 import React from "react";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -160,14 +160,17 @@ function assertDefined<T>(
 function runHook(
   options?: Parameters<typeof useAppleSignIn>[0],
 ): ReturnType<typeof useAppleSignIn> {
-  const ref = { current: undefined as ReturnType<typeof useAppleSignIn> | undefined };
+  const resultRef = {
+    current: undefined as ReturnType<typeof useAppleSignIn> | undefined,
+  };
   function TestComponent() {
-    ref.current = useAppleSignIn(options);
+    // eslint-disable-next-line react-hooks/immutability -- test-only hook runner, not a real component
+    resultRef.current = useAppleSignIn(options);
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  assertDefined(ref.current, "Hook must produce a result after render");
-  return ref.current;
+  assertDefined(resultRef.current, "Hook must produce a result after render");
+  return resultRef.current;
 }
 
 // ---------------------------------------------------------------------------

@@ -27,9 +27,11 @@ export interface AuthInstance {
 
 export interface AppleIapDeps {
   verifier: {
-    verifyAndDecodeNotification: (
-      signedPayload: string,
-    ) => Promise<{ notificationType?: string; subtype?: string; data?: unknown }>;
+    verifyAndDecodeNotification: (signedPayload: string) => Promise<{
+      notificationType?: string;
+      subtype?: string;
+      data?: unknown;
+    }>;
     verifyAndDecodeTransaction: (
       signedTransaction: string,
     ) => Promise<Record<string, unknown>>;

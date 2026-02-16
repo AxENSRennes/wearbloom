@@ -17,7 +17,9 @@ function createMockDb(overrides?: {
   const onConflictDoNothingMock = mock(
     () => overrides?.insertResult ?? Promise.resolve({ rowCount: 0 }),
   );
-  const valuesMock = mock(() => ({ onConflictDoNothing: onConflictDoNothingMock }));
+  const valuesMock = mock(() => ({
+    onConflictDoNothing: onConflictDoNothingMock,
+  }));
   const insertMock = mock(() => ({ values: valuesMock }));
 
   const whereMockSelect = mock(
@@ -78,9 +80,7 @@ describe("creditService", () => {
   describe("consumeCredit", () => {
     test("returns success with remaining count when credits available", async () => {
       const { db } = createMockDb({
-        updateResult: Promise.resolve([
-          { totalConsumed: 2, totalGranted: 3 },
-        ]),
+        updateResult: Promise.resolve([{ totalConsumed: 2, totalGranted: 3 }]),
       });
       const service = createCreditService({ db });
 
@@ -102,9 +102,7 @@ describe("creditService", () => {
 
     test("returns remaining 0 when last credit consumed", async () => {
       const { db } = createMockDb({
-        updateResult: Promise.resolve([
-          { totalConsumed: 3, totalGranted: 3 },
-        ]),
+        updateResult: Promise.resolve([{ totalConsumed: 3, totalGranted: 3 }]),
       });
       const service = createCreditService({ db });
 
@@ -117,9 +115,7 @@ describe("creditService", () => {
   describe("refundCredit", () => {
     test("calls update to decrement totalConsumed", async () => {
       const { db, mocks } = createMockDb({
-        updateResult: Promise.resolve([
-          { totalConsumed: 1, totalGranted: 3 },
-        ]),
+        updateResult: Promise.resolve([{ totalConsumed: 1, totalGranted: 3 }]),
       });
       const service = createCreditService({ db });
 
@@ -133,9 +129,7 @@ describe("creditService", () => {
   describe("getCreditBalance", () => {
     test("returns balance when credits row exists", async () => {
       const { db } = createMockDb({
-        selectResult: Promise.resolve([
-          { totalGranted: 3, totalConsumed: 1 },
-        ]),
+        selectResult: Promise.resolve([{ totalGranted: 3, totalConsumed: 1 }]),
       });
       const service = createCreditService({ db });
 
@@ -167,9 +161,7 @@ describe("creditService", () => {
   describe("hasCreditsRemaining", () => {
     test("returns true when remaining > 0", async () => {
       const { db } = createMockDb({
-        selectResult: Promise.resolve([
-          { totalGranted: 3, totalConsumed: 1 },
-        ]),
+        selectResult: Promise.resolve([{ totalGranted: 3, totalConsumed: 1 }]),
       });
       const service = createCreditService({ db });
 
@@ -191,9 +183,7 @@ describe("creditService", () => {
 
     test("returns false when all credits consumed", async () => {
       const { db } = createMockDb({
-        selectResult: Promise.resolve([
-          { totalGranted: 3, totalConsumed: 3 },
-        ]),
+        selectResult: Promise.resolve([{ totalGranted: 3, totalConsumed: 3 }]),
       });
       const service = createCreditService({ db });
 

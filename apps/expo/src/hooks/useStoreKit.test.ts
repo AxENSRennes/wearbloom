@@ -1,5 +1,5 @@
-import { describe, expect, mock, test, beforeEach } from "bun:test";
 import React from "react";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -39,9 +39,7 @@ mock.module("expo-iap", () => ({
 // Mock tRPC + TanStack Query — verifyMutation and restoreMutation tracking
 // ---------------------------------------------------------------------------
 const verifyMutateAsync = mock(() => Promise.resolve());
-const restoreMutateAsync = mock(() =>
-  Promise.resolve({ restored: 1 }),
-);
+const restoreMutateAsync = mock(() => Promise.resolve({ restored: 1 }));
 const invalidateQueriesMock = mock(() => Promise.resolve());
 
 const verifyMutationState = {
@@ -113,17 +111,19 @@ const { useStoreKit } = await import("./useStoreKit");
 // ---------------------------------------------------------------------------
 // Minimal hook runner
 // ---------------------------------------------------------------------------
-function runHook(
-  userId = "user-123",
-): ReturnType<typeof useStoreKit> {
-  const ref = { current: undefined as ReturnType<typeof useStoreKit> | undefined };
+function runHook(userId = "user-123"): ReturnType<typeof useStoreKit> {
+  const resultRef = {
+    current: undefined as ReturnType<typeof useStoreKit> | undefined,
+  };
   function TestComponent() {
-    ref.current = useStoreKit({ userId });
+    // eslint-disable-next-line react-hooks/immutability -- test-only hook runner, not a real component
+    resultRef.current = useStoreKit({ userId });
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  if (!ref.current) throw new Error("Hook must produce a result after render");
-  return ref.current;
+  if (!resultRef.current)
+    throw new Error("Hook must produce a result after render");
+  return resultRef.current;
 }
 
 // ---------------------------------------------------------------------------

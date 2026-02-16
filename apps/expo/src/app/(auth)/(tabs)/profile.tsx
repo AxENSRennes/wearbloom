@@ -61,7 +61,10 @@ export default function ProfileScreen() {
             <CreditCounter />
           </View>
 
-          <ThemedText variant="caption" className="mt-2 px-1 text-text-secondary">
+          <ThemedText
+            variant="caption"
+            className="mt-2 px-1 text-text-secondary"
+          >
             Legal
           </ThemedText>
           <ThemedPressable

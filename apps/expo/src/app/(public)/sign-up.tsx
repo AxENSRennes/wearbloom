@@ -49,7 +49,10 @@ export default function SignUpScreen() {
       try {
         await grantCredits.mutateAsync();
       } catch {
-        showToast({ message: "Credits will be granted later", variant: "info" });
+        showToast({
+          message: "Credits will be granted later",
+          variant: "info",
+        });
       }
       showToast({
         message: "Welcome! Your wardrobe is ready.",

@@ -1,5 +1,5 @@
-import { describe, expect, mock, test, beforeEach } from "bun:test";
 import React from "react";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -60,14 +60,18 @@ const { useSubscription } = await import("./useSubscription");
 // Minimal hook runner
 // ---------------------------------------------------------------------------
 function runHook(): ReturnType<typeof useSubscription> {
-  const ref = { current: undefined as ReturnType<typeof useSubscription> | undefined };
+  const resultRef = {
+    current: undefined as ReturnType<typeof useSubscription> | undefined,
+  };
   function TestComponent() {
-    ref.current = useSubscription();
+    // eslint-disable-next-line react-hooks/immutability -- test-only hook runner, not a real component
+    resultRef.current = useSubscription();
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  if (!ref.current) throw new Error("Hook must produce a result after render");
-  return ref.current;
+  if (!resultRef.current)
+    throw new Error("Hook must produce a result after render");
+  return resultRef.current;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,10 +1,10 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   AppStoreServerAPIClient,
   Environment,
   SignedDataVerifier,
 } from "@apple/app-store-server-library";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 export interface AppleIapConfig {
   appleIapKeyId: string;
@@ -17,7 +17,9 @@ export interface AppleIapConfig {
 }
 
 function getEnvironment(nodeEnv: string): Environment {
-  return nodeEnv === "production" ? Environment.PRODUCTION : Environment.SANDBOX;
+  return nodeEnv === "production"
+    ? Environment.PRODUCTION
+    : Environment.SANDBOX;
 }
 
 function loadRootCAs(certsDir: string): Buffer[] {
@@ -29,8 +31,14 @@ function loadRootCAs(certsDir: string): Buffer[] {
   return certFiles.map((file) => readFileSync(resolve(certsDir, file)));
 }
 
-export function createAppleClient(config: AppleIapConfig): AppStoreServerAPIClient {
-  if (!config.appleIapKeyId || !config.appleIapIssuerId || !config.appleIapKeyPath) {
+export function createAppleClient(
+  config: AppleIapConfig,
+): AppStoreServerAPIClient {
+  if (
+    !config.appleIapKeyId ||
+    !config.appleIapIssuerId ||
+    !config.appleIapKeyPath
+  ) {
     throw new Error(
       "Missing Apple IAP configuration: APPLE_IAP_KEY_ID, APPLE_IAP_ISSUER_ID, and APPLE_IAP_KEY_PATH are required",
     );

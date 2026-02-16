@@ -1,18 +1,19 @@
 import { TRPCError } from "@trpc/server";
 
 import type { InferSelectModel } from "@acme/db";
+import type { db as dbType } from "@acme/db/client";
 import { eq } from "@acme/db";
-
 import { subscriptions } from "@acme/db/schema";
 
-import type { db as dbType } from "@acme/db/client";
-
 type Subscription = InferSelectModel<typeof subscriptions>;
-type SubscriptionStatusValue = "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
+type SubscriptionStatusValue =
+  | "trial"
+  | "subscribed"
+  | "expired"
+  | "cancelled"
+  | "grace_period";
 
-export type SubscriptionStateName =
-  | "no_subscription"
-  | SubscriptionStatusValue;
+export type SubscriptionStateName = "no_subscription" | SubscriptionStatusValue;
 
 export interface SubscriptionState {
   state: SubscriptionStateName;
@@ -130,7 +131,10 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
         .returning();
       const row = rows[0];
       if (!row) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "UPSERT_FAILED" });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "UPSERT_FAILED",
+        });
       }
       return row;
     },

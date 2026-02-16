@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import React, { createElement } from "react";
 // @ts-expect-error -- __searchParams is a test-only export from expo-router mock
 import { __searchParams } from "expo-router";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -240,9 +240,9 @@ describe("SignUpScreen credit grant behavior", () => {
     // Make the grantCredits.mutateAsync reject
     const grantCreditsMutation = useMutationCalls[0];
     assertDefined(grantCreditsMutation, "grantCreditsMutation should exist");
-    (grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>).mockImplementation(
-      () => Promise.reject(new Error("grant failed")),
-    );
+    (
+      grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>
+    ).mockImplementation(() => Promise.reject(new Error("grant failed")));
 
     // Invoke onSuccess (simulating successful sign-up, but credit grant will fail)
     const onSuccessCb = onSuccessCallbacks[0];

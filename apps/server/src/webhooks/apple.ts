@@ -1,9 +1,7 @@
 import type { createSubscriptionManager } from "@acme/api/services/subscriptionManager";
 
 interface WebhookVerifier {
-  verifyAndDecodeNotification: (
-    signedPayload: string,
-  ) => Promise<{
+  verifyAndDecodeNotification: (signedPayload: string) => Promise<{
     notificationType?: string;
     subtype?: string;
     data?: {
@@ -57,9 +55,7 @@ export function createAppleWebhookHandler({
   }
 
   return {
-    async handleNotification(
-      signedPayload: string,
-    ): Promise<WebhookResult> {
+    async handleNotification(signedPayload: string): Promise<WebhookResult> {
       let notification;
       try {
         notification =
@@ -96,9 +92,7 @@ export function createAppleWebhookHandler({
         return { status: 200, body: { received: true, skipped: true } };
       }
 
-      const appAccountToken = transaction.appAccountToken as
-        | string
-        | undefined;
+      const appAccountToken = transaction.appAccountToken as string | undefined;
       if (!appAccountToken) {
         logger.warn(
           { notificationType, transactionId: transaction.transactionId },

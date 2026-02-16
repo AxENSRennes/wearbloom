@@ -1,5 +1,5 @@
-import { describe, expect, mock, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
+import { describe, expect, mock, test } from "bun:test";
 
 import type { AppleIapDeps, AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
@@ -17,9 +17,7 @@ const mockSession = {
   },
 };
 
-function createMockAuth(
-  session: typeof mockSession | null,
-): AuthInstance {
+function createMockAuth(session: typeof mockSession | null): AuthInstance {
   return {
     api: {
       getSession: mock(() => Promise.resolve(session)),
@@ -28,12 +26,10 @@ function createMockAuth(
   };
 }
 
-function createMockAppleIap(
-  overrides?: {
-    verifier?: Partial<AppleIapDeps["verifier"]>;
-    client?: Partial<AppleIapDeps["client"]>;
-  },
-): AppleIapDeps {
+function createMockAppleIap(overrides?: {
+  verifier?: Partial<AppleIapDeps["verifier"]>;
+  client?: Partial<AppleIapDeps["client"]>;
+}): AppleIapDeps {
   return {
     verifier: {
       verifyAndDecodeNotification: mock(() => Promise.resolve({})),
@@ -259,15 +255,16 @@ describe("subscription.verifyPurchase", () => {
   test("throws TRANSACTION_USER_MISMATCH when appAccountToken differs", async () => {
     const appleIap = createMockAppleIap({
       verifier: {
-        verifyAndDecodeTransaction: mock(() =>
-          Promise.resolve({
-            originalTransactionId: "orig-txn-mismatch",
-            transactionId: "txn-mismatch",
-            productId: "com.wearbloom.weekly",
-            expiresDate: Date.now() + 7 * 86400000,
-            appAccountToken: "different-user-id",
-            purchaseDate: Date.now(),
-          }) as Promise<Record<string, unknown>>,
+        verifyAndDecodeTransaction: mock(
+          () =>
+            Promise.resolve({
+              originalTransactionId: "orig-txn-mismatch",
+              transactionId: "txn-mismatch",
+              productId: "com.wearbloom.weekly",
+              expiresDate: Date.now() + 7 * 86400000,
+              appAccountToken: "different-user-id",
+              purchaseDate: Date.now(),
+            }) as Promise<Record<string, unknown>>,
         ),
       },
     });
@@ -282,15 +279,16 @@ describe("subscription.verifyPurchase", () => {
   test("throws MISSING_APP_ACCOUNT_TOKEN when appAccountToken is absent", async () => {
     const appleIap = createMockAppleIap({
       verifier: {
-        verifyAndDecodeTransaction: mock(() =>
-          Promise.resolve({
-            originalTransactionId: "orig-txn-no-token",
-            transactionId: "txn-no-token",
-            productId: "com.wearbloom.weekly",
-            expiresDate: Date.now() + 7 * 86400000,
-            purchaseDate: Date.now(),
-            // no appAccountToken
-          }) as Promise<Record<string, unknown>>,
+        verifyAndDecodeTransaction: mock(
+          () =>
+            Promise.resolve({
+              originalTransactionId: "orig-txn-no-token",
+              transactionId: "txn-no-token",
+              productId: "com.wearbloom.weekly",
+              expiresDate: Date.now() + 7 * 86400000,
+              purchaseDate: Date.now(),
+              // no appAccountToken
+            }) as Promise<Record<string, unknown>>,
         ),
       },
     });
@@ -348,15 +346,16 @@ describe("subscription.restorePurchases", () => {
   test("skips transactions with missing appAccountToken", async () => {
     const appleIap = createMockAppleIap({
       verifier: {
-        verifyAndDecodeTransaction: mock(() =>
-          Promise.resolve({
-            originalTransactionId: "orig-txn-no-token",
-            transactionId: "txn-no-token",
-            productId: "com.wearbloom.weekly",
-            expiresDate: Date.now() + 7 * 86400000,
-            purchaseDate: Date.now(),
-            // no appAccountToken — must be skipped to prevent cross-user theft
-          }) as Promise<Record<string, unknown>>,
+        verifyAndDecodeTransaction: mock(
+          () =>
+            Promise.resolve({
+              originalTransactionId: "orig-txn-no-token",
+              transactionId: "txn-no-token",
+              productId: "com.wearbloom.weekly",
+              expiresDate: Date.now() + 7 * 86400000,
+              purchaseDate: Date.now(),
+              // no appAccountToken — must be skipped to prevent cross-user theft
+            }) as Promise<Record<string, unknown>>,
         ),
       },
     });
@@ -372,15 +371,16 @@ describe("subscription.restorePurchases", () => {
   test("skips transactions with mismatched appAccountToken", async () => {
     const appleIap = createMockAppleIap({
       verifier: {
-        verifyAndDecodeTransaction: mock(() =>
-          Promise.resolve({
-            originalTransactionId: "orig-txn-other",
-            transactionId: "txn-other",
-            productId: "com.wearbloom.weekly",
-            expiresDate: Date.now() + 7 * 86400000,
-            purchaseDate: Date.now(),
-            appAccountToken: "different-user-id",
-          }) as Promise<Record<string, unknown>>,
+        verifyAndDecodeTransaction: mock(
+          () =>
+            Promise.resolve({
+              originalTransactionId: "orig-txn-other",
+              transactionId: "txn-other",
+              productId: "com.wearbloom.weekly",
+              expiresDate: Date.now() + 7 * 86400000,
+              purchaseDate: Date.now(),
+              appAccountToken: "different-user-id",
+            }) as Promise<Record<string, unknown>>,
         ),
       },
     });

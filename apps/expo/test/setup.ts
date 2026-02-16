@@ -283,7 +283,11 @@ mock.module("expo-haptics", () => ({
   impactAsync: mock(() => Promise.resolve()),
   notificationAsync: mock(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
-  NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+  NotificationFeedbackType: {
+    Success: "success",
+    Warning: "warning",
+    Error: "error",
+  },
 }));
 
 // ---------------------------------------------------------------------------

@@ -4,9 +4,7 @@ import { createAppleWebhookHandler } from "./apple";
 
 describe("Apple Webhook Handler (V2)", () => {
   let mockVerifier: ReturnType<typeof createMockVerifier>;
-  let mockSubscriptionManager: ReturnType<
-    typeof createMockSubscriptionManager
-  >;
+  let mockSubscriptionManager: ReturnType<typeof createMockSubscriptionManager>;
   let mockLogger: ReturnType<typeof createMockLogger>;
   let handler: ReturnType<typeof createAppleWebhookHandler>;
 
@@ -105,10 +103,9 @@ describe("Apple Webhook Handler (V2)", () => {
       verifier: mockVerifier as Parameters<
         typeof createAppleWebhookHandler
       >[0]["verifier"],
-      subscriptionManager:
-        mockSubscriptionManager as unknown as Parameters<
-          typeof createAppleWebhookHandler
-        >[0]["subscriptionManager"],
+      subscriptionManager: mockSubscriptionManager as unknown as Parameters<
+        typeof createAppleWebhookHandler
+      >[0]["subscriptionManager"],
       logger: mockLogger as Parameters<
         typeof createAppleWebhookHandler
       >[0]["logger"],
@@ -246,7 +243,9 @@ describe("Apple Webhook Handler (V2)", () => {
 
     const result = await handler.handleNotification("signed-payload");
     expect(result.status).toBe(200);
-    expect(mockSubscriptionManager.getSubscription).toHaveBeenCalledWith("user-123");
+    expect(mockSubscriptionManager.getSubscription).toHaveBeenCalledWith(
+      "user-123",
+    );
     expect(mockSubscriptionManager.updateStatus).toHaveBeenCalledWith(
       "user-123",
       "subscribed",
@@ -267,7 +266,9 @@ describe("Apple Webhook Handler (V2)", () => {
     // Default mock already returns status: "subscribed"
     const result = await handler.handleNotification("signed-payload");
     expect(result.status).toBe(200);
-    expect(mockSubscriptionManager.getSubscription).toHaveBeenCalledWith("user-123");
+    expect(mockSubscriptionManager.getSubscription).toHaveBeenCalledWith(
+      "user-123",
+    );
     // Should NOT update status when already subscribed
     expect(mockSubscriptionManager.updateStatus).not.toHaveBeenCalled();
   });

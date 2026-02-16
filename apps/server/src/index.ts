@@ -140,73 +140,69 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const server = http.createServer((req, res) => {
   void (async () => {
-  if (req.url === "/health") {
-    // Throttled fire-and-forget cleanup on health check
-    const now = Date.now();
-    if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
-      lastCleanupTime = now;
-      cleanupService
-        .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
-        .catch((err: unknown) => {
-          logger.error({ err }, "Anonymous cleanup failed during health check");
-        });
-    }
+    if (req.url === "/health") {
+      // Throttled fire-and-forget cleanup on health check
+      const now = Date.now();
+      if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+        lastCleanupTime = now;
+        cleanupService
+          .cleanupExpiredAnonymousUsers(env.ANONYMOUS_SESSION_TTL_HOURS)
+          .catch((err: unknown) => {
+            logger.error(
+              { err },
+              "Anonymous cleanup failed during health check",
+            );
+          });
+      }
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", timestamp: new Date() }));
-    return;
-  }
-
-  // Apple webhook route — BEFORE tRPC catch-all
-  if (
-    req.url?.startsWith("/api/webhooks/apple") &&
-    req.method === "POST"
-  ) {
-    if (!appleWebhookHandler) {
-      res.writeHead(503, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "APPLE_IAP_NOT_CONFIGURED" }));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", timestamp: new Date() }));
       return;
     }
 
-    try {
-      const body = await readBody(req);
-      const parsed: unknown = JSON.parse(body);
-      const signedPayload =
-        typeof parsed === "object" &&
-        parsed !== null &&
-        "signedPayload" in parsed
-          ? (parsed as Record<string, unknown>).signedPayload
-          : undefined;
-
-      if (typeof signedPayload !== "string" || signedPayload.length === 0) {
-        logger.warn("Apple webhook: missing or invalid signedPayload");
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "MISSING_SIGNED_PAYLOAD" }));
+    // Apple webhook route — BEFORE tRPC catch-all
+    if (req.url?.startsWith("/api/webhooks/apple") && req.method === "POST") {
+      if (!appleWebhookHandler) {
+        res.writeHead(503, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "APPLE_IAP_NOT_CONFIGURED" }));
         return;
       }
 
-      const result = await appleWebhookHandler.handleNotification(
-        signedPayload,
-      );
-      res.writeHead(result.status, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(result.body));
-    } catch (err) {
-      logger.error(
-        { error: String(err) },
-        "Apple webhook: unhandled error",
-      );
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "INTERNAL_ERROR" }));
+      try {
+        const body = await readBody(req);
+        const parsed: unknown = JSON.parse(body);
+        const signedPayload =
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "signedPayload" in parsed
+            ? (parsed as Record<string, unknown>).signedPayload
+            : undefined;
+
+        if (typeof signedPayload !== "string" || signedPayload.length === 0) {
+          logger.warn("Apple webhook: missing or invalid signedPayload");
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "MISSING_SIGNED_PAYLOAD" }));
+          return;
+        }
+
+        const result =
+          await appleWebhookHandler.handleNotification(signedPayload);
+        res.writeHead(result.status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result.body));
+      } catch (err) {
+        logger.error({ error: String(err) }, "Apple webhook: unhandled error");
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "INTERNAL_ERROR" }));
+      }
+      return;
     }
-    return;
-  }
 
-  if (req.url?.startsWith("/api/auth")) {
-    void authHandler(req, res);
-    return;
-  }
+    if (req.url?.startsWith("/api/auth")) {
+      void authHandler(req, res);
+      return;
+    }
 
-  trpcHandler(req, res);
+    trpcHandler(req, res);
   })();
 });
 
@@ -214,4 +210,7 @@ server.listen(env.PORT);
 logger.info({ port: env.PORT }, "Server listening");
 logger.info({ port: env.PORT, path: "/health" }, "Health check available");
 logger.info({ port: env.PORT, path: "/api/auth/*" }, "Auth routes available");
-logger.info({ port: env.PORT, path: "/api/webhooks/apple" }, "Apple webhook available");
+logger.info(
+  { port: env.PORT, path: "/api/webhooks/apple" },
+  "Apple webhook available",
+);

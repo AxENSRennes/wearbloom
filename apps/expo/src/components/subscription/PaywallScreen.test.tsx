@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, expect, mock, test, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { PaywallScreenProps } from "./PaywallScreen";
@@ -82,9 +82,7 @@ function resetMocks() {
   subscriptionState.refetch = mock(() => Promise.resolve());
 }
 
-function render(
-  overrides: Partial<PaywallScreenProps> = {},
-): string {
+function render(overrides: Partial<PaywallScreenProps> = {}): string {
   return renderToStaticMarkup(
     React.createElement(PaywallScreen, {
       onClose: mock(() => {}),

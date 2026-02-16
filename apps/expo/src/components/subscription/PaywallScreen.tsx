@@ -5,11 +5,18 @@ import * as Haptics from "expo-haptics";
 import { ErrorCode } from "expo-iap";
 import { Check, CircleCheck, X } from "lucide-react-native";
 
-import { Button, ThemedText, Spinner, ThemedPressable, showToast, wearbloomTheme } from "@acme/ui";
+import {
+  Button,
+  showToast,
+  Spinner,
+  ThemedPressable,
+  ThemedText,
+  wearbloomTheme,
+} from "@acme/ui";
 
-import { authClient } from "~/utils/auth";
 import { useStoreKit } from "~/hooks/useStoreKit";
 import { useSubscription } from "~/hooks/useSubscription";
+import { authClient } from "~/utils/auth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,8 +73,11 @@ export function PaywallScreen({
     verifyError,
   } = useStoreKit({ userId });
 
-  const { refetch: subscriptionRefetch, state: subscriptionState, hadSubscription } =
-    useSubscription();
+  const {
+    refetch: subscriptionRefetch,
+    state: subscriptionState,
+    hadSubscription,
+  } = useSubscription();
 
   const [viewState, setViewState] = useState<ViewState>("ready");
   const wasPurchasingRef = useRef(false);
@@ -189,7 +199,10 @@ export function PaywallScreen({
         <View className="flex-1 items-center justify-center gap-4 p-6">
           <CircleCheck size={64} color={wearbloomTheme.colors.success} />
           <ThemedText variant="display">Welcome!</ThemedText>
-          <ThemedText variant="body" className="text-center text-text-secondary">
+          <ThemedText
+            variant="body"
+            className="text-center text-text-secondary"
+          >
             Try on anything, anytime.
           </ThemedText>
         </View>
@@ -205,7 +218,10 @@ export function PaywallScreen({
       <SafeAreaView className="flex-1 bg-background">
         <CloseButton onClose={onClose} />
         <View className="flex-1 items-center justify-center gap-4 p-6">
-          <ThemedText variant="body" className="text-center text-text-secondary">
+          <ThemedText
+            variant="body"
+            className="text-center text-text-secondary"
+          >
             No worries — your wardrobe is always here.
           </ThemedText>
           <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
@@ -278,7 +294,10 @@ export function PaywallScreen({
         />
 
         {/* Price disclosure */}
-        <ThemedText variant="caption" className="mt-3 text-center text-text-secondary">
+        <ThemedText
+          variant="caption"
+          className="mt-3 text-center text-text-secondary"
+        >
           {isExpiredSubscriber
             ? `${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`
             : `Then ${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`}
@@ -325,7 +344,9 @@ export function PaywallScreen({
             ·
           </ThemedText>
           <ThemedPressable
-            onPress={() => void Linking.openURL("https://wearbloom.app/privacy")}
+            onPress={() =>
+              void Linking.openURL("https://wearbloom.app/privacy")
+            }
             accessible
             accessibilityRole="link"
             accessibilityLabel="Privacy Policy"

@@ -1,4 +1,9 @@
-import { describe, expect, mock, test, beforeEach } from "bun:test";
+// ---------------------------------------------------------------------------
+// Minimal hook runner — calls the hook inside a sync render context
+// ---------------------------------------------------------------------------
+import React from "react";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
 // Mutable mock state
@@ -34,21 +39,19 @@ mock.module("expo-router", () => ({
 
 const { usePaywallGuard } = await import("./usePaywallGuard");
 
-// ---------------------------------------------------------------------------
-// Minimal hook runner — calls the hook inside a sync render context
-// ---------------------------------------------------------------------------
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-
 function runHook(): ReturnType<typeof usePaywallGuard> {
-  const ref = { current: undefined as ReturnType<typeof usePaywallGuard> | undefined };
+  const resultRef = {
+    current: undefined as ReturnType<typeof usePaywallGuard> | undefined,
+  };
   function TestComponent() {
-    ref.current = usePaywallGuard();
+    // eslint-disable-next-line react-hooks/immutability -- test-only hook runner, not a real component
+    resultRef.current = usePaywallGuard();
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
-  if (!ref.current) throw new Error("Hook must produce a result after render");
-  return ref.current;
+  if (!resultRef.current)
+    throw new Error("Hook must produce a result after render");
+  return resultRef.current;
 }
 
 // ---------------------------------------------------------------------------

@@ -13,7 +13,9 @@ describe("subscriptionManager", () => {
   }));
   const mockInsert = mock(() => ({ values: mockValues }));
   const mockUpdate = mock(() => ({ set: mockSet }));
-  const mockSelectFrom = mock(() => ({ where: mock(() => Promise.resolve([])) }));
+  const mockSelectFrom = mock(() => ({
+    where: mock(() => Promise.resolve([])),
+  }));
   const mockSelect = mock(() => ({ from: mockSelectFrom }));
 
   const mockDb = {
@@ -27,7 +29,9 @@ describe("subscriptionManager", () => {
   beforeEach(() => {
     mock.restore();
     manager = createSubscriptionManager({
-      db: mockDb as unknown as Parameters<typeof createSubscriptionManager>[0]["db"],
+      db: mockDb as unknown as Parameters<
+        typeof createSubscriptionManager
+      >[0]["db"],
     });
   });
 

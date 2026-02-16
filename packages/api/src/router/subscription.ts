@@ -1,10 +1,7 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 
-import {
-  restorePurchasesSchema,
-  verifyPurchaseSchema,
-} from "@acme/validators";
+import { restorePurchasesSchema, verifyPurchaseSchema } from "@acme/validators";
 
 import type { SubscriptionStateName } from "../services/subscriptionManager";
 import { createCreditService } from "../services/creditService";
@@ -195,8 +192,7 @@ export const subscriptionRouter = {
 
         await subManager.upsertSubscription(ctx.session.user.id, {
           appleTransactionId: decoded.transactionId as string,
-          appleOriginalTransactionId:
-            decoded.originalTransactionId as string,
+          appleOriginalTransactionId: decoded.originalTransactionId as string,
           productId: decoded.productId as string,
           status: "subscribed",
           startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),

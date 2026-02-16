@@ -1,5 +1,4 @@
 import type { db as DbInstance } from "@acme/db/client";
-
 import { and, eq, lt, sql } from "@acme/db";
 import { credits } from "@acme/db/schema";
 
@@ -48,9 +47,7 @@ export function createCreditService({ db }: { db: typeof DbInstance }) {
         .where(eq(credits.userId, userId));
     },
 
-    async getCreditBalance(
-      userId: string,
-    ): Promise<{
+    async getCreditBalance(userId: string): Promise<{
       totalGranted: number;
       totalConsumed: number;
       remaining: number;

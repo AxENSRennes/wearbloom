@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ThemedText, cn } from "@acme/ui";
+import { cn, ThemedText } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
 

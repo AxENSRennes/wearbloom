@@ -1,5 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
+import { createAppleClient, createVerifier } from "./appleIap";
+
 // Mock the Apple library before any imports
 mock.module("@apple/app-store-server-library", () => ({
   AppStoreServerAPIClient: mock(
@@ -27,8 +29,6 @@ mock.module("@apple/app-store-server-library", () => ({
 mock.module("node:fs", () => ({
   readFileSync: mock((..._args: unknown[]) => Buffer.from("mock-cert-data")),
 }));
-
-import { createAppleClient, createVerifier } from "./appleIap";
 
 describe("appleIap", () => {
   const validConfig = {

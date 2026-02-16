@@ -1,12 +1,12 @@
+import type { ExpoPurchaseError, Purchase } from "expo-iap";
 import { useCallback, useEffect, useState } from "react";
 import {
-  useIAP,
   getAvailablePurchases as fetchPurchasesFromStore,
+  useIAP,
 } from "expo-iap";
-import type { Purchase, ExpoPurchaseError } from "expo-iap";
 import { useMutation } from "@tanstack/react-query";
 
-import { trpc, queryClient } from "~/utils/api";
+import { queryClient, trpc } from "~/utils/api";
 
 const SUBSCRIPTION_SKU = "com.wearbloom.weekly";
 
@@ -28,8 +28,9 @@ export function useStoreKit({ userId }: { userId: string }) {
   });
 
   const [isReady, setIsReady] = useState(false);
-  const [purchaseError, setPurchaseError] =
-    useState<ExpoPurchaseError | null>(null);
+  const [purchaseError, setPurchaseError] = useState<ExpoPurchaseError | null>(
+    null,
+  );
 
   const verifyMutation = useMutation(
     trpc.subscription.verifyPurchase.mutationOptions({

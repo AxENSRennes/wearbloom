@@ -1,5 +1,5 @@
-import { describe, expect, mock, test } from "bun:test";
 import React, { createElement } from "react";
+import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -168,9 +168,9 @@ describe("SignInScreen credit grant behavior", () => {
     // Make the grantCredits.mutateAsync reject
     const grantCreditsMutation = useMutationCalls[0];
     assertDefined(grantCreditsMutation, "grantCreditsMutation should exist");
-    (grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>).mockImplementation(
-      () => Promise.reject(new Error("grant failed")),
-    );
+    (
+      grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>
+    ).mockImplementation(() => Promise.reject(new Error("grant failed")));
 
     // Invoke onSuccess (simulating successful sign-in, but credit grant will fail)
     // This should NOT throw — the catch block is silent
