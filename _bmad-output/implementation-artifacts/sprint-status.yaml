@@ -62,7 +62,7 @@ development_status:
   # Epic 3: AI Virtual Try-On Experience
   epic-3: in-progress
   3-1-garment-detail-bottom-sheet: done
-  3-2-ai-try-on-render-pipeline: review
+  3-2-ai-try-on-render-pipeline: done
   3-3-render-result-and-loading-experience: backlog
   3-4-render-retry-quality-feedback-and-credit-policy: backlog
   3-5-garment-category-validation: backlog

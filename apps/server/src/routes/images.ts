@@ -64,7 +64,8 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
         return;
       }
 
-      return streamImage(res, imageStorage, render.resultPath, "image/png");
+      const mimeType = render.resultPath ? inferMimeType(render.resultPath) : "image/png";
+      return streamImage(res, imageStorage, render.resultPath, mimeType);
     }
 
     // Extract imageId from URL: /api/images/:imageId
@@ -144,6 +145,12 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
 
     return streamImage(res, imageStorage, filePath, mimeType);
   };
+}
+
+function inferMimeType(filePath: string): string {
+  if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) return "image/jpeg";
+  if (filePath.endsWith(".png")) return "image/png";
+  return "image/png"; // default fallback
 }
 
 function streamImage(

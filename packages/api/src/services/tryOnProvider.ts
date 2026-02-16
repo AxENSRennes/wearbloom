@@ -1,3 +1,7 @@
+import { FalFashnProvider } from "./providers/falFashn";
+import { FalNanoBananaProvider } from "./providers/falNanoBanana";
+import { GoogleVTOProvider } from "./providers/googleVTO";
+
 export type GarmentCategory =
   | "tops"
   | "bottoms"
@@ -35,6 +39,7 @@ export interface TryOnProviderConfig {
   nanoBananaModelId: string;
   googleCloudProject: string;
   googleCloudRegion: string;
+  googleAccessToken: string;
   renderTimeoutMs: number;
 }
 
@@ -43,27 +48,12 @@ export function createTryOnProvider(
   config: TryOnProviderConfig,
 ): TryOnProvider {
   switch (providerName) {
-    case "fal_fashn": {
-      const { FalFashnProvider } = require("./providers/falFashn") as {
-        FalFashnProvider: new (config: TryOnProviderConfig) => TryOnProvider;
-      };
+    case "fal_fashn":
       return new FalFashnProvider(config);
-    }
-    case "fal_nano_banana": {
-      const { FalNanoBananaProvider } =
-        require("./providers/falNanoBanana") as {
-          FalNanoBananaProvider: new (
-            config: TryOnProviderConfig,
-          ) => TryOnProvider;
-        };
+    case "fal_nano_banana":
       return new FalNanoBananaProvider(config);
-    }
-    case "google_vto": {
-      const { GoogleVTOProvider } = require("./providers/googleVTO") as {
-        GoogleVTOProvider: new (config: TryOnProviderConfig) => TryOnProvider;
-      };
+    case "google_vto":
       return new GoogleVTOProvider(config);
-    }
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }

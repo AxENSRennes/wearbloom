@@ -16,6 +16,7 @@ const serverSchema = z.object({
   FAL_NANO_BANANA_MODEL_ID: z.string().default(""),
   GOOGLE_CLOUD_PROJECT: z.string().default(""),
   GOOGLE_CLOUD_REGION: z.string().default("us-central1"),
+  GOOGLE_ACCESS_TOKEN: z.string().default(""),
   RENDER_TIMEOUT_MS: z.coerce.number().default(30000),
 });
 

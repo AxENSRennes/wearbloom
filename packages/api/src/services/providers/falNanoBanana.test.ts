@@ -38,6 +38,7 @@ const baseConfig: TryOnProviderConfig = {
   nanoBananaModelId: "fal-ai/nano-banana/tryon/v1",
   googleCloudProject: "",
   googleCloudRegion: "us-central1",
+  googleAccessToken: "",
   renderTimeoutMs: 30000,
 };
 

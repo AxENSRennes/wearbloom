@@ -38,6 +38,7 @@ const baseConfig: TryOnProviderConfig = {
   nanoBananaModelId: "",
   googleCloudProject: "",
   googleCloudRegion: "us-central1",
+  googleAccessToken: "",
   renderTimeoutMs: 30000,
 };
 

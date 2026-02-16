@@ -155,7 +155,15 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
     }
 
     // Parse payload
-    const payload = JSON.parse(rawBody) as FalWebhookPayload;
+    let payload: FalWebhookPayload;
+    try {
+      payload = JSON.parse(rawBody) as FalWebhookPayload;
+    } catch {
+      deps.logger.warn({ requestId }, "Failed to parse webhook body as JSON");
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
 
     // Find render record by jobId
     const renderResults = await deps.db

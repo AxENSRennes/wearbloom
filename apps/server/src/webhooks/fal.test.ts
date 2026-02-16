@@ -284,6 +284,20 @@ describe("fal webhook handler", () => {
     expect(db.update).toHaveBeenCalled();
   });
 
+  test("malformed JSON body → returns 400", async () => {
+    const db = createMockDb();
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const req = createMockRequest("not-json{{{");
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(400);
+    expect(JSON.parse(res._body)).toEqual({ error: "Invalid JSON body" });
+  });
+
   test("idempotent — already completed render → no-op, returns 200", async () => {
     const db = createMockDb({
       id: "render-abc",

@@ -237,6 +237,95 @@ describe("tryon.requestRender", () => {
       caller.tryon.requestRender({ garmentId: "nonexistent" }),
     ).rejects.toThrow(/GARMENT_NOT_FOUND/);
   });
+
+  test("retries once on 5xx provider error then succeeds", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("render-retry") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const tryOnProvider = createMockTryOnProvider();
+    let callCount = 0;
+    tryOnProvider.submitRender = mock(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.reject(new Error("502 Bad Gateway"));
+      }
+      return Promise.resolve({ jobId: "fal-job-retry" });
+    });
+
+    const { caller } = await createAuthenticatedCaller(
+      createMockImageStorage(),
+      tryOnProvider,
+    );
+    const result = await caller.tryon.requestRender({ garmentId: "garment-1" });
+
+    expect(result.renderId).toBe("render-retry");
+    expect(callCount).toBe(2);
+  });
+
+  test("does NOT retry on 422 validation error", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("render-422") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    let callCount = 0;
+    const tryOnProvider = createMockTryOnProvider();
+    tryOnProvider.submitRender = mock(() => {
+      callCount++;
+      return Promise.reject(new Error("422 Unprocessable Entity"));
+    });
+
+    const { caller } = await createAuthenticatedCaller(
+      createMockImageStorage(),
+      tryOnProvider,
+    );
+
+    await expect(
+      caller.tryon.requestRender({ garmentId: "garment-1" }),
+    ).rejects.toThrow(/RENDER_FAILED/);
+
+    expect(callCount).toBe(1);
+  });
 });
 
 describe("tryon.getRenderStatus", () => {

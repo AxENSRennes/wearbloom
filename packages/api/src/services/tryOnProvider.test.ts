@@ -9,6 +9,7 @@ describe("createTryOnProvider", () => {
     nanoBananaModelId: "test-model-id",
     googleCloudProject: "test-project",
     googleCloudRegion: "us-central1",
+    googleAccessToken: "",
     renderTimeoutMs: 30000,
   };
 

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -9,6 +10,8 @@ import { Button, ThemedText } from "@acme/ui";
 import { trpc } from "~/utils/api";
 import { getBaseUrl } from "~/utils/base-url";
 
+const MAX_POLLS = 15;
+
 const STATUS_MESSAGES: Record<string, string> = {
   pending: "Creating your look...",
   processing: "Almost there...",
@@ -18,6 +21,7 @@ const STATUS_MESSAGES: Record<string, string> = {
 export default function RenderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const pollCount = useRef(0);
 
   const { data, isLoading } = useQuery({
     ...trpc.tryon.getRenderStatus.queryOptions({ renderId: id ?? "" }),
@@ -25,6 +29,8 @@ export default function RenderScreen() {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (status === "completed" || status === "failed") return false;
+      if (pollCount.current >= MAX_POLLS) return false;
+      pollCount.current++;
       return 2000;
     },
   });

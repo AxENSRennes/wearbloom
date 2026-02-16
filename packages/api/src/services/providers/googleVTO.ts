@@ -22,6 +22,7 @@ export class GoogleVTOProvider implements TryOnProvider {
 
   private readonly googleCloudProject: string;
   private readonly googleCloudRegion: string;
+  private readonly googleAccessToken: string;
   private readonly fetchFn: GoogleVTOFetcher;
   private readonly resultStore = new Map<string, TryOnResult>();
 
@@ -31,6 +32,7 @@ export class GoogleVTOProvider implements TryOnProvider {
   ) {
     this.googleCloudProject = config.googleCloudProject;
     this.googleCloudRegion = config.googleCloudRegion;
+    this.googleAccessToken = config.googleAccessToken;
     this.fetchFn = fetchFn ?? globalThis.fetch.bind(globalThis);
   }
 
@@ -64,7 +66,12 @@ export class GoogleVTOProvider implements TryOnProvider {
 
     const response = await this.fetchFn(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.googleAccessToken
+          ? { Authorization: `Bearer ${this.googleAccessToken}` }
+          : {}),
+      },
       body: JSON.stringify(requestBody),
     });
 
@@ -94,6 +101,11 @@ export class GoogleVTOProvider implements TryOnProvider {
       imageData,
       contentType: prediction.mimeType ?? "image/png",
     });
+
+    // Auto-cleanup after 5 minutes to prevent memory leaks
+    setTimeout(() => {
+      this.resultStore.delete(jobId);
+    }, 5 * 60 * 1000);
 
     return { jobId };
   }

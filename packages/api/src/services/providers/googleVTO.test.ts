@@ -10,6 +10,7 @@ const baseConfig: TryOnProviderConfig = {
   nanoBananaModelId: "",
   googleCloudProject: "test-project",
   googleCloudRegion: "us-central1",
+  googleAccessToken: "test-token",
   renderTimeoutMs: 30000,
 };
 
@@ -63,9 +64,43 @@ describe("GoogleVTOProvider", () => {
       "https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/locations/us-central1/publishers/google/models/virtual-try-on-001:predict",
       expect.objectContaining({
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer test-token",
+        },
       }),
     );
+  });
+
+  test("submitRender includes Authorization header when googleAccessToken is set", async () => {
+    const personImage = Buffer.from("person-image");
+    const garmentImage = Buffer.from("garment-image");
+
+    await provider.submitRender(personImage, garmentImage);
+
+    const callArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    const headers = callArgs[1].headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer test-token");
+  });
+
+  test("submitRender omits Authorization header when googleAccessToken is empty", async () => {
+    const noTokenConfig = { ...baseConfig, googleAccessToken: "" };
+    const noTokenProvider = new GoogleVTOProvider(noTokenConfig, mockFetch);
+
+    const personImage = Buffer.from("person-image");
+    const garmentImage = Buffer.from("garment-image");
+
+    await noTokenProvider.submitRender(personImage, garmentImage);
+
+    const callArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    const headers = callArgs[1].headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
   });
 
   test("submitRender returns a synthetic jobId", async () => {

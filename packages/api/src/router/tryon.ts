@@ -7,6 +7,17 @@ import { bodyPhotos, garments, tryOnRenders } from "@acme/db/schema";
 
 import { protectedProcedure } from "../trpc";
 
+function is5xxError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return (
+    /\b5\d{2}\b/.test(msg) ||
+    /Internal Server Error/i.test(msg) ||
+    /Bad Gateway/i.test(msg) ||
+    /Service Unavailable/i.test(msg)
+  );
+}
+
 export const tryonRouter = {
   requestRender: protectedProcedure
     .input(z.object({ garmentId: z.string() }))
@@ -86,31 +97,48 @@ export const tryonRouter = {
         garment.cutoutPath ?? garment.imagePath,
       );
 
-      // Call provider
-      try {
-        const { jobId } = await ctx.tryOnProvider.submitRender(
-          personImagePath,
-          garmentImagePath,
-          { category: garment.category },
-        );
+      // Call provider (retry once for 5xx errors)
+      const maxAttempts = 2;
 
-        await ctx.db
-          .update(tryOnRenders)
-          .set({ jobId, status: "processing" })
-          .where(eq(tryOnRenders.id, renderRecord.id));
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const { jobId } = await ctx.tryOnProvider.submitRender(
+            personImagePath,
+            garmentImagePath,
+            { category: garment.category },
+          );
 
-        return { renderId: renderRecord.id };
-      } catch (error) {
-        await ctx.db
-          .update(tryOnRenders)
-          .set({ status: "failed", errorCode: "RENDER_FAILED" })
-          .where(eq(tryOnRenders.id, renderRecord.id));
+          await ctx.db
+            .update(tryOnRenders)
+            .set({ jobId, status: "processing" })
+            .where(eq(tryOnRenders.id, renderRecord.id));
 
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "RENDER_FAILED",
-        });
+          return { renderId: renderRecord.id };
+        } catch (error) {
+          // Only retry on 5xx errors, and only on first attempt
+          if (attempt < maxAttempts && is5xxError(error)) {
+            continue;
+          }
+
+          // Non-retryable error or second attempt failed — mark as failed
+          await ctx.db
+            .update(tryOnRenders)
+            .set({ status: "failed", errorCode: "RENDER_FAILED" })
+            .where(eq(tryOnRenders.id, renderRecord.id));
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "RENDER_FAILED",
+          });
+        }
       }
+
+      // Should never reach here, but satisfy TypeScript
+      /* istanbul ignore next */
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "RENDER_FAILED",
+      });
     }),
 
   getRenderStatus: protectedProcedure
@@ -141,7 +169,7 @@ export const tryonRouter = {
       }
 
       // Timeout check
-      const renderTimeoutMs = 30000;
+      const renderTimeoutMs = ctx.renderTimeoutMs ?? 30000;
       if (
         (render.status === "pending" || render.status === "processing") &&
         render.createdAt &&

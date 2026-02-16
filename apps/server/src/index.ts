@@ -53,6 +53,7 @@ try {
     nanoBananaModelId: env.FAL_NANO_BANANA_MODEL_ID,
     googleCloudProject: env.GOOGLE_CLOUD_PROJECT,
     googleCloudRegion: env.GOOGLE_CLOUD_REGION,
+    googleAccessToken: env.GOOGLE_ACCESS_TOKEN,
     renderTimeoutMs: env.RENDER_TIMEOUT_MS,
   });
   logger.info(
@@ -80,6 +81,7 @@ const trpcHandler = createHTTPHandler({
       imageStorage,
       backgroundRemoval,
       tryOnProvider,
+      renderTimeoutMs: env.RENDER_TIMEOUT_MS,
     }),
 });
 

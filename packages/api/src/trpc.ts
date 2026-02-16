@@ -72,6 +72,7 @@ export const createTRPCContext = async (opts: {
   imageStorage?: ImageStorage;
   backgroundRemoval?: BackgroundRemoval;
   tryOnProvider?: TryOnProviderContext;
+  renderTimeoutMs?: number;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -82,6 +83,7 @@ export const createTRPCContext = async (opts: {
     imageStorage: opts.imageStorage,
     backgroundRemoval: opts.backgroundRemoval,
     tryOnProvider: opts.tryOnProvider,
+    renderTimeoutMs: opts.renderTimeoutMs,
   };
 };
 

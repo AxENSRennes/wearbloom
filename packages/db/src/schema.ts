@@ -143,9 +143,9 @@ export const tryOnRenders = pgTable("try_on_renders", (t) => ({
   jobId: t.text(),
   resultPath: t.text(),
   errorCode: t.text(),
-  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  createdAt: t.timestamp().defaultNow().notNull(),
   updatedAt: t
-    .timestamp({ withTimezone: true })
+    .timestamp()
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
