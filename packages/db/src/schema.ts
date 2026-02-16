@@ -1,6 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { sql } from "drizzle-orm";
-import { check, pgEnum, pgTable } from "drizzle-orm/pg-core";
+import { check, index, pgEnum, pgTable } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -62,29 +62,37 @@ export const subscriptionStatus = pgEnum("subscription_status", [
   "grace_period",
 ]);
 
-export const subscriptions = pgTable("subscriptions", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" })
-    .unique(),
-  appleTransactionId: t.text(),
-  appleOriginalTransactionId: t.text(),
-  productId: t.text(),
-  status: subscriptionStatus().notNull().default("trial"),
-  startedAt: t.timestamp({ withTimezone: true }),
-  expiresAt: t.timestamp({ withTimezone: true }),
-  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-  updatedAt: t
-    .timestamp({ withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdateFn(() => new Date()),
-}));
+export const subscriptions = pgTable(
+  "subscriptions",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    appleTransactionId: t.text(),
+    appleOriginalTransactionId: t.text(),
+    productId: t.text(),
+    status: subscriptionStatus().notNull().default("trial"),
+    startedAt: t.timestamp({ withTimezone: true }),
+    expiresAt: t.timestamp({ withTimezone: true }),
+    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: t
+      .timestamp({ withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  }),
+  (table) => [
+    index("subscriptions_apple_orig_txn_idx").on(
+      table.appleOriginalTransactionId,
+    ),
+  ],
+);
 
 export const credits = pgTable(
   "credits",

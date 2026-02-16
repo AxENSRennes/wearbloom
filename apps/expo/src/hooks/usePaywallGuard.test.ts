@@ -84,7 +84,7 @@ describe("usePaywallGuard", () => {
     const { guardRender } = runHook();
     expect(guardRender("garment-42")).toBe(false);
     expect(routerMock.push).toHaveBeenCalledWith({
-      pathname: "/(public)/paywall",
+      pathname: "/(auth)/paywall",
       params: { garmentId: "garment-42" },
     });
   });

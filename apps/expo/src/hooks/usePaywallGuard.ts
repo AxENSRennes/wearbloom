@@ -12,7 +12,7 @@ export function usePaywallGuard() {
       if (canRender || isSubscriber) return true;
 
       router.push({
-        pathname: "/(public)/paywall",
+        pathname: "/(auth)/paywall",
         params: { garmentId },
       });
       return false;

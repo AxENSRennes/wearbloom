@@ -143,7 +143,6 @@ describe("subscription.getSubscriptionStatus", () => {
   });
 
   test("returns subscriber status when user has active subscription", async () => {
-    // Insert an active subscription directly in DB
     const { db } = await import("@acme/db/client");
     const { subscriptions } = await import("@acme/db/schema");
     await db.insert(subscriptions).values({
@@ -163,31 +162,32 @@ describe("subscription.getSubscriptionStatus", () => {
     expect(status.state).toBe("subscribed");
     expect(status.canRender).toBe(true);
   });
-});
 
-describe("subscription.getStatus", () => {
-  beforeEach(async () => {
+  test("returns no_subscription with subscription fields for user without subscription", async () => {
     const { db } = await import("@acme/db/client");
     const { eq } = await import("@acme/db");
     const { subscriptions } = await import("@acme/db/schema");
     await db
       .delete(subscriptions)
       .where(eq(subscriptions.userId, TEST_USER_ID));
-  });
 
-  test("returns no_subscription for user without subscription", async () => {
     const caller = await createAuthenticatedCaller();
-    const result = await caller.subscription.getStatus();
+    const result = await caller.subscription.getSubscriptionStatus();
 
-    expect(result.state).toBe("no_subscription");
+    expect(result.state).toBe("free_no_credits");
     expect(result.isSubscriber).toBe(false);
     expect(result.rendersAllowed).toBe(false);
     expect(result.isUnlimited).toBe(false);
+    expect(result.hadSubscription).toBe(false);
   });
 
-  test("returns trial status for user with trial subscription", async () => {
+  test("returns trial status with full fields for trial subscription", async () => {
     const { db } = await import("@acme/db/client");
+    const { eq } = await import("@acme/db");
     const { subscriptions } = await import("@acme/db/schema");
+    await db
+      .delete(subscriptions)
+      .where(eq(subscriptions.userId, TEST_USER_ID));
     await db.insert(subscriptions).values({
       userId: TEST_USER_ID,
       status: "trial",
@@ -199,18 +199,23 @@ describe("subscription.getStatus", () => {
     });
 
     const caller = await createAuthenticatedCaller();
-    const result = await caller.subscription.getStatus();
+    const result = await caller.subscription.getSubscriptionStatus();
 
     expect(result.state).toBe("trial");
     expect(result.isSubscriber).toBe(true);
     expect(result.rendersAllowed).toBe(true);
     expect(result.isUnlimited).toBe(true);
     expect(result.expiresAt).toBeDefined();
+    expect(result.hadSubscription).toBe(true);
   });
 
-  test("returns expired for user with expired subscription", async () => {
+  test("returns expired with full fields for expired subscription", async () => {
     const { db } = await import("@acme/db/client");
+    const { eq } = await import("@acme/db");
     const { subscriptions } = await import("@acme/db/schema");
+    await db
+      .delete(subscriptions)
+      .where(eq(subscriptions.userId, TEST_USER_ID));
     await db.insert(subscriptions).values({
       userId: TEST_USER_ID,
       status: "subscribed",
@@ -222,11 +227,12 @@ describe("subscription.getStatus", () => {
     });
 
     const caller = await createAuthenticatedCaller();
-    const result = await caller.subscription.getStatus();
+    const result = await caller.subscription.getSubscriptionStatus();
 
     expect(result.state).toBe("expired");
     expect(result.isSubscriber).toBe(false);
     expect(result.rendersAllowed).toBe(false);
+    expect(result.hadSubscription).toBe(true);
   });
 });
 

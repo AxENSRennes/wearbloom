@@ -4,7 +4,7 @@ import { trpc } from "~/utils/api";
 
 export function useSubscription() {
   const { data, isLoading, refetch } = useQuery(
-    trpc.subscription.getStatus.queryOptions(),
+    trpc.subscription.getSubscriptionStatus.queryOptions(),
   );
 
   return {

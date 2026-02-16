@@ -1,10 +1,18 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
-import { z } from "zod/v4";
 
+import {
+  restorePurchasesSchema,
+  verifyPurchaseSchema,
+} from "@acme/validators";
+
+import type { SubscriptionStateName } from "../services/subscriptionManager";
 import { createCreditService } from "../services/creditService";
 import { createSubscriptionManager } from "../services/subscriptionManager";
 import { protectedProcedure } from "../trpc";
+
+/** Fallback expiry when Apple transaction has no expiresDate (7 days). */
+const DEFAULT_EXPIRY_MS = 7 * 86_400_000;
 
 export const subscriptionRouter = {
   getCredits: protectedProcedure.query(async ({ ctx }) => {
@@ -36,7 +44,7 @@ export const subscriptionRouter = {
     const isSubscriber = subState.isSubscriber;
     const canRender = isSubscriber || balance.remaining > 0;
 
-    let state: string;
+    let state: SubscriptionStateName | "free_with_credits" | "free_no_credits";
     if (isSubscriber) {
       state = subState.state;
     } else if (balance.remaining > 0) {
@@ -45,44 +53,25 @@ export const subscriptionRouter = {
       state = "free_no_credits";
     }
 
+    const hadSubscription = subscription !== undefined;
+
     return {
       isSubscriber,
       creditsRemaining: balance.remaining,
       state,
       canRender,
-    };
-  }),
-
-  // === Story 4.2: IAP procedures ===
-
-  getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const subManager = createSubscriptionManager({ db: ctx.db });
-    const subscription = await subManager.getSubscription(ctx.session.user.id);
-    const subState = subManager.computeSubscriptionState(
-      subscription
-        ? { status: subscription.status, expiresAt: subscription.expiresAt }
-        : null,
-    );
-
-    // AC#8: Detect if user previously subscribed (for resubscribe messaging)
-    // User is considered a previous subscriber if a subscription record exists
-    // This enables resubscribe CTA instead of "Start Free Trial" for lapsed users
-    const hadSubscription = subscription !== undefined;
-
-    return {
-      ...subState,
+      rendersAllowed: subState.rendersAllowed,
+      isUnlimited: subState.isUnlimited,
       expiresAt: subscription?.expiresAt ?? null,
       productId: subscription?.productId ?? null,
       hadSubscription,
     };
   }),
 
+  // === Story 4.2: IAP procedures ===
+
   verifyPurchase: protectedProcedure
-    .input(
-      z.object({
-        signedTransactionInfo: z.string(),
-      }),
-    )
+    .input(verifyPurchaseSchema)
     .mutation(async ({ ctx, input }) => {
       if (!ctx.appleIap) {
         throw new TRPCError({
@@ -154,7 +143,7 @@ export const subscriptionRouter = {
           startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),
           expiresAt: expiresDate
             ? new Date(expiresDate)
-            : new Date(Date.now() + 7 * 86400000),
+            : new Date(Date.now() + DEFAULT_EXPIRY_MS),
         },
       );
 
@@ -166,11 +155,7 @@ export const subscriptionRouter = {
     }),
 
   restorePurchases: protectedProcedure
-    .input(
-      z.object({
-        signedTransactions: z.array(z.string()).max(50),
-      }),
-    )
+    .input(restorePurchasesSchema)
     .mutation(async ({ ctx, input }) => {
       if (input.signedTransactions.length === 0) {
         return { restored: 0 };
@@ -200,7 +185,8 @@ export const subscriptionRouter = {
         // Validate appAccountToken matches authenticated user
         // Skip transactions without appAccountToken to prevent cross-user subscription theft
         const appAccountToken = decoded.appAccountToken as string | undefined;
-        if (!appAccountToken || appAccountToken !== ctx.session.user.id) continue;
+        if (!appAccountToken || appAccountToken !== ctx.session.user.id)
+          continue;
 
         const expiresDate = decoded.expiresDate as number | undefined;
         if (!expiresDate || expiresDate < Date.now()) continue; // skip expired

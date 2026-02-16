@@ -1,6 +1,7 @@
-import type { InferSelectModel } from "drizzle-orm";
-import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+
+import type { InferSelectModel } from "@acme/db";
+import { eq } from "@acme/db";
 
 import { subscriptions } from "@acme/db/schema";
 
@@ -9,8 +10,12 @@ import type { db as dbType } from "@acme/db/client";
 type Subscription = InferSelectModel<typeof subscriptions>;
 type SubscriptionStatusValue = "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
 
+export type SubscriptionStateName =
+  | "no_subscription"
+  | SubscriptionStatusValue;
+
 export interface SubscriptionState {
-  state: string;
+  state: SubscriptionStateName;
   isSubscriber: boolean;
   rendersAllowed: boolean;
   isUnlimited: boolean;

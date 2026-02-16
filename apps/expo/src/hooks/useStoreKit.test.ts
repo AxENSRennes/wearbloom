@@ -86,7 +86,7 @@ function createTrpcProxy(): unknown {
         return () => ({});
       }
       if (prop === "queryKey") {
-        // queryKey is called as a function: trpc.subscription.getStatus.queryKey()
+        // queryKey is called as a function: trpc.subscription.getSubscriptionStatus.queryKey()
         return () => ["mock-query-key"];
       }
       return createTrpcProxy();

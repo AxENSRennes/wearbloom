@@ -34,10 +34,6 @@ export function useStoreKit({ userId }: { userId: string }) {
   const verifyMutation = useMutation(
     trpc.subscription.verifyPurchase.mutationOptions({
       onSuccess: () => {
-        // Invalidate subscription queries after successful purchase
-        void queryClient.invalidateQueries({
-          queryKey: trpc.subscription.getStatus.queryKey(),
-        });
         void queryClient.invalidateQueries({
           queryKey: trpc.subscription.getSubscriptionStatus.queryKey(),
         });
@@ -98,9 +94,8 @@ export function useStoreKit({ userId }: { userId: string }) {
         .filter((t): t is string => t != null),
     });
 
-    // Invalidate queries
     void queryClient.invalidateQueries({
-      queryKey: trpc.subscription.getStatus.queryKey(),
+      queryKey: trpc.subscription.getSubscriptionStatus.queryKey(),
     });
 
     return result;

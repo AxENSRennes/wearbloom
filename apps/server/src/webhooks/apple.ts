@@ -24,6 +24,9 @@ interface WebhookLogger {
 
 type SubscriptionManager = ReturnType<typeof createSubscriptionManager>;
 
+/** Fallback expiry when Apple transaction has no expiresDate (7 days). */
+const DEFAULT_EXPIRY_MS = 7 * 86_400_000;
+
 interface WebhookResult {
   status: number;
   body: Record<string, unknown>;
@@ -144,7 +147,7 @@ export function createAppleWebhookHandler({
             startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),
             expiresAt: expiresDate
               ? new Date(expiresDate)
-              : new Date(Date.now() + 7 * 86400000),
+              : new Date(Date.now() + DEFAULT_EXPIRY_MS),
           });
 
           logger.info(
@@ -165,7 +168,7 @@ export function createAppleWebhookHandler({
             startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),
             expiresAt: expiresDate
               ? new Date(expiresDate)
-              : new Date(Date.now() + 7 * 86400000),
+              : new Date(Date.now() + DEFAULT_EXPIRY_MS),
           });
 
           logger.info(
