@@ -6,24 +6,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button, ThemedText } from "@acme/ui";
 
+import type { CategoryFilter, GarmentCategory } from "~/constants/categories";
 import type { WardrobeItem } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
 import { GarmentCard } from "~/components/garment/GarmentCard";
 import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
+import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
-
-/**
- * Garment categories — LOCAL COPY.
- * Source of truth: packages/db/src/schema.ts → GARMENT_CATEGORIES
- * Duplicated here because @acme/db is a server-only package (Drizzle/postgres deps)
- * and cannot be imported in Expo client code.
- * If categories change in schema.ts, update this array AND VALID_CATEGORIES in
- * packages/api/src/router/garment.ts.
- */
-const GARMENT_CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"] as const;
-const ALL_CATEGORIES = ["all", ...GARMENT_CATEGORIES] as const;
 
 const GUTTER = 2;
 const NUM_COLUMNS = 2;
@@ -33,13 +24,18 @@ const ITEM_HEIGHT = Math.round(COLUMN_WIDTH * 1.2);
 const CATEGORY_PILLS_HEIGHT = 60;
 
 export default function WardrobeScreen() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
   const queryClient = useQueryClient();
 
   const { data: garments, isLoading, isFetching, isError, error } = useQuery(
     trpc.garment.list.queryOptions(
-      selectedCategory === "all" ? undefined : { category: selectedCategory as (typeof GARMENT_CATEGORIES)[number] },
+      selectedCategory === "all" ? undefined : { category: selectedCategory as GarmentCategory },
     ),
+  );
+
+  const handleCategorySelect = useCallback(
+    (category: string) => setSelectedCategory(category as CategoryFilter),
+    [],
   );
 
   const handleRefresh = useCallback(() => {
@@ -51,10 +47,7 @@ export default function WardrobeScreen() {
       ...g,
       isStock: false as const,
     }));
-    const stock: WardrobeItem[] = [
-      ...getStockGarmentsByCategory(selectedCategory),
-    ];
-    return [...personal, ...stock];
+    return [...personal, ...getStockGarmentsByCategory(selectedCategory)];
   }, [garments, selectedCategory]);
 
   const renderGarment = useCallback(
@@ -106,7 +99,7 @@ export default function WardrobeScreen() {
         <CategoryPills
           categories={ALL_CATEGORIES}
           selected={selectedCategory}
-          onSelect={setSelectedCategory}
+          onSelect={handleCategorySelect}
         />
       </View>
 

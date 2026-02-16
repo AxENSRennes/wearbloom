@@ -1,4 +1,4 @@
-type GarmentCategory = "tops" | "bottoms" | "dresses" | "shoes" | "outerwear";
+import type { CategoryFilter, GarmentCategory } from "./categories";
 
 export interface StockGarment {
   readonly id: string;
@@ -19,7 +19,7 @@ export const STOCK_GARMENTS: readonly StockGarment[] = [
 ];
 
 export function getStockGarmentsByCategory(
-  category?: string,
+  category?: CategoryFilter,
 ): readonly StockGarment[] {
   if (!category || category === "all") return STOCK_GARMENTS;
   return STOCK_GARMENTS.filter((g) => g.category === category);

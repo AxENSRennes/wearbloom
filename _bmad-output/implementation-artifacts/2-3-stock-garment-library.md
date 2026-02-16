@@ -1,6 +1,6 @@
 # Story 2.3: Stock Garment Library
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -531,6 +531,7 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-16: Story 2.3 implemented — Stock Garment Library (client-side pre-bundled assets, WardrobeItem union type, merged grid display)
+- 2026-02-16: Code review — 8 issues resolved (0H/5M/3L), status done
 
 ### File List
 
@@ -543,6 +544,7 @@ Claude Opus 4.6
 - `apps/expo/assets/stock/garments/stock-dresses-1.png` — Stock garment placeholder image
 - `apps/expo/assets/stock/garments/stock-dresses-2.png` — Stock garment placeholder image
 - `apps/expo/assets/stock/garments/stock-outerwear-1.png` — Stock garment placeholder image
+- `apps/expo/src/constants/categories.ts` — Shared client-side GarmentCategory type + GARMENT_CATEGORIES constant (code review fix M2/L3)
 - `apps/expo/src/constants/stockGarments.ts` — Stock garment data module (types + constants + helper)
 - `apps/expo/src/constants/stockGarments.test.ts` — Stock garments unit tests (12 tests)
 - `apps/expo/src/types/wardrobe.ts` — Unified WardrobeItem type + type guard
