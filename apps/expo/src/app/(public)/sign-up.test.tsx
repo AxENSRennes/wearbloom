@@ -120,4 +120,13 @@ describe("SignUpScreen (onboarding context)", () => {
     const html = render(createElement(SignUpScreen));
     expect(html).toContain("AppleAuthenticationButton");
   });
+
+  test("passes onboarding completion callback to Apple Sign-In hook", async () => {
+    const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
+    // useAppleSignIn should receive onSuccess with markOnboardingComplete for onboarding context
+    const hookCallIndex = source.indexOf("useAppleSignIn(");
+    const hookSection = source.substring(hookCallIndex, hookCallIndex + 300);
+    expect(hookSection).toContain("markOnboardingComplete");
+    expect(hookSection).toContain("onSuccess");
+  });
 });

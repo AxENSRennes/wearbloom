@@ -1,6 +1,6 @@
 # Story 5.3: Account Creation After First Render
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -35,12 +35,8 @@ So that I can save my wardrobe and get additional free renders.
   - [x] 2.5 When `from=onboarding`: on successful account creation, call `markOnboardingComplete()` before navigating to `/(auth)/(tabs)`
   - [x] 2.6 Write tests for sign-up screen in both contexts: normal and onboarding
 
-- [x] Task 3: Create `useOnboardingSignUp` hook for account creation + onboarding finalization (AC: #2, #3)
-  - [x] 3.1 Create `apps/expo/src/hooks/useOnboardingSignUp.ts` — wraps existing email sign-up mutation with post-signup logic
-  - [x] 3.2 On success: call `markOnboardingComplete()`, then `router.replace("/(auth)/(tabs)")`
-  - [x] 3.3 Create `useOnboardingAppleSignIn` variant — wraps `useAppleSignIn` logic with same post-signup steps
-  - [x] 3.4 Both hooks: detect onboarding context and add onboarding-specific success handling (or accept a callback parameter)
-  - [x] 3.5 Write tests for both hooks
+- [ ] ~~Task 3: Create `useOnboardingSignUp` hook for account creation + onboarding finalization (AC: #2, #3)~~
+  - [ ] ~~3.1-3.5: Hooks deleted during code review — dead code, logic inlined in sign-up.tsx instead~~
 
 - [x] Task 4: Update `(auth)/_layout.tsx` to reject anonymous sessions (AC: #4)
   - [x] 4.1 After session check, also check `session.user.isAnonymous` — if anonymous, redirect to `/(onboarding)` (or `/(public)/sign-in` if onboarding is completed)
@@ -333,8 +329,30 @@ All of these are gated by future stories. This story ensures the account creatio
 - [Source: better-auth docs — Anonymous Plugin] — onLinkAccount callback, auto-deletion, ID token flow requirement
 - [Source: better-auth v1.4.0-beta.9 source] — Confirmed: after hook fires on /sign-up/*, /sign-in/*, /callback/*; auto-deletes anonymous user unless disableDeleteAnonymousUser is set
 
+## Senior Developer Review (AI)
+
+**Reviewed by:** Axel (AI-assisted) on 2026-02-16
+**Outcome:** Changes Requested → Auto-Fixed
+
+### Issues Found & Fixed
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | CRITICAL | Apple Sign-In from onboarding did not call `markOnboardingComplete()` — user looped back to onboarding on next launch | Modified `useAppleSignIn` to accept optional `onSuccess` callback; sign-up screen passes onboarding-aware callback |
+| 2 | CRITICAL | Task 2.5 incomplete for Apple Sign-In path | Fixed via #1 |
+| 3 | HIGH | `useOnboardingSignUp.ts` (71 lines) was dead code — never imported | Deleted both hook file and test file |
+| 7 | MEDIUM | Raw error messages from `authClient.signUp.email` exposed to users | Added user-friendly error mapping in sign-up.tsx |
+
+### Issues Noted (Not Fixed)
+| # | Severity | Issue | Reason |
+|---|----------|-------|--------|
+| 4 | MEDIUM | No behavior tests for `markOnboardingComplete()` integration | Global `useMutation` mock prevents callback execution in tests; requires mock architecture refactor |
+| 5 | MEDIUM | Source code scanning tests instead of behavior tests | Pragmatic given mock constraints; tests serve verification purpose |
+| 8 | LOW | `useOnboardingAppleSignIn` had double-navigation race condition | Resolved by deleting dead code (issue #3) |
+| 9 | LOW | Benefit text uses generic "more free try-ons" without count | Acceptable — Story 4.1 forward dependency |
+
 ## Change Log
 
+- **2026-02-16**: Code review fixes — Fixed critical Apple Sign-In onboarding bug (markOnboardingComplete not called), deleted dead useOnboardingSignUp hooks, improved error message handling, fixed File List documentation.
 - **2026-02-16**: Story 5.3 implementation complete — Account creation after first render with onboarding context, anonymous session guard, account linking verification, forward-dependency TODOs, and accessibility polish. 102 tests pass (0 regressions).
 
 ## Dev Agent Record
@@ -354,7 +372,7 @@ Claude Opus 4.6
 
 - **Task 1**: Removed premature `markOnboardingComplete()` call from `(onboarding)/index.tsx`. Now navigates to sign-up with `?from=onboarding` query param. 3 tests.
 - **Task 2**: Enhanced sign-up screen with onboarding-aware context: contextual headline ("Create Free Account"), benefit messaging, "Skip for now" ghost button, and `markOnboardingComplete()` in email sign-up `onSuccess`. 18 tests (11 normal + 7 onboarding context).
-- **Task 3**: Created `useOnboardingSignUp` (email) and `useOnboardingAppleSignIn` hooks wrapping existing auth mutations with onboarding finalization logic. 4 tests.
+- **Task 3**: ~~Created hooks~~ → Deleted during code review. Logic was correctly inlined in sign-up.tsx (Task 2); hooks were dead code never imported by any component.
 - **Task 4**: Added `isAnonymous` check to `(auth)/_layout.tsx` — anonymous sessions redirect to sign-in. 4 tests.
 - **Task 5**: Verified account linking flow end-to-end: ID token flow preserved (not redirect OAuth), `onLinkAccount` configured, auto-deletion confirmed, session token replacement via expoClient. 5 structural verification tests.
 - **Task 6**: Added TODO markers for Story-3.2 (renders migration), Story-4.1 (credits), Story-1.5 (body photo), Epic-2 (wardrobe) in auth package and sign-up/hook success handlers.
@@ -368,11 +386,9 @@ Claude Opus 4.6
 - `apps/expo/src/app/(auth)/_layout.tsx` — Added `isAnonymous` check to redirect anonymous users
 - `packages/auth/src/index.ts` — Added TODO(Story-4.1) for credits granting in onLinkAccount, standardized existing TODO format
 - `apps/expo/test/setup.ts` — Added `useLocalSearchParams` mock and `__searchParams` ref to expo-router mock
+- `apps/expo/src/app/(public)/sign-up.test.tsx` — Expanded from 9 to 19 tests covering both contexts + Apple Sign-In onboarding verification
 
 **Created:**
-- `apps/expo/src/hooks/useOnboardingSignUp.ts` — Hooks wrapping email sign-up and Apple sign-in with onboarding finalization
-- `apps/expo/src/hooks/useOnboardingSignUp.test.ts` — Tests for onboarding sign-up hooks
 - `apps/expo/src/hooks/useAppleSignIn.test.ts` — Verification tests for account linking flow
 - `apps/expo/src/app/(onboarding)/index.test.tsx` — Tests for onboarding screen
 - `apps/expo/src/app/(auth)/_layout.test.tsx` — Tests for auth layout anonymous guard
-- `apps/expo/src/app/(public)/sign-up.test.tsx` — Updated: expanded from 9 to 18 tests covering both contexts

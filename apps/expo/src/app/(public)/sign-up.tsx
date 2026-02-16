@@ -48,14 +48,39 @@ export default function SignUpScreen() {
       router.replace("/(auth)/(tabs)");
     },
     onError: (error: Error) => {
-      showToast({
-        message: error.message || "Sign up failed",
-        variant: "error",
-      });
+      const msg = error.message;
+      let userMessage = "Sign up failed. Please try again.";
+      if (
+        msg.includes("already") ||
+        msg.includes("exists") ||
+        msg.includes("UNIQUE")
+      ) {
+        userMessage = "An account with this email already exists";
+      } else if (
+        msg.includes("network") ||
+        msg.includes("connection") ||
+        msg.includes("fetch")
+      ) {
+        userMessage = "Connection lost. Try again.";
+      }
+      showToast({ message: userMessage, variant: "error" });
     },
   });
 
-  const appleSignIn = useAppleSignIn();
+  const appleSignIn = useAppleSignIn(
+    isFromOnboarding
+      ? {
+          onSuccess: async () => {
+            await markOnboardingComplete();
+            showToast({
+              message: "Welcome! Your wardrobe is ready.",
+              variant: "success",
+            });
+            router.replace("/(auth)/(tabs)");
+          },
+        }
+      : undefined,
+  );
 
   const isLoading = emailSignUp.isPending || appleSignIn.isPending;
 
