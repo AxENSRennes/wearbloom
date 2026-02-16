@@ -147,9 +147,21 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const body = await readBody(req);
-      const { signedPayload } = JSON.parse(body) as {
-        signedPayload: string;
-      };
+      const parsed: unknown = JSON.parse(body);
+      const signedPayload =
+        typeof parsed === "object" &&
+        parsed !== null &&
+        "signedPayload" in parsed
+          ? (parsed as Record<string, unknown>).signedPayload
+          : undefined;
+
+      if (typeof signedPayload !== "string" || signedPayload.length === 0) {
+        logger.warn("Apple webhook: missing or invalid signedPayload");
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "MISSING_SIGNED_PAYLOAD" }));
+        return;
+      }
+
       const result = await appleWebhookHandler.handleNotification(
         signedPayload,
       );

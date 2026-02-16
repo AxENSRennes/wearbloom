@@ -21,26 +21,6 @@ export const subscriptionRouter = {
     return creditService.getCreditBalance(ctx.session.user.id);
   }),
 
-  consumeCredit: protectedProcedure.mutation(async ({ ctx }) => {
-    const creditService = createCreditService({ db: ctx.db });
-    const result = await creditService.consumeCredit(ctx.session.user.id);
-
-    if (!result.success) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "INSUFFICIENT_CREDITS",
-      });
-    }
-
-    return { remaining: result.remaining };
-  }),
-
-  refundCredit: protectedProcedure.mutation(async ({ ctx }) => {
-    const creditService = createCreditService({ db: ctx.db });
-    await creditService.refundCredit(ctx.session.user.id);
-    return { success: true };
-  }),
-
   getSubscriptionStatus: protectedProcedure.query(async ({ ctx }) => {
     const creditService = createCreditService({ db: ctx.db });
     const subManager = createSubscriptionManager({ db: ctx.db });
@@ -137,9 +117,19 @@ export const subscriptionRouter = {
       }
 
       const subManager = createSubscriptionManager({ db: ctx.db });
-      const transactionId = decoded.transactionId as string;
-      const originalTransactionId = decoded.originalTransactionId as string;
-      const productId = decoded.productId as string;
+      const transactionId = decoded.transactionId as string | undefined;
+      const originalTransactionId = decoded.originalTransactionId as
+        | string
+        | undefined;
+      const productId = decoded.productId as string | undefined;
+
+      if (!transactionId || !originalTransactionId || !productId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_TRANSACTION_DATA",
+        });
+      }
+
       const expiresDate = decoded.expiresDate as number | undefined;
       const purchaseDate = decoded.purchaseDate as number | undefined;
 
@@ -208,8 +198,9 @@ export const subscriptionRouter = {
         if (!decoded) continue;
 
         // Validate appAccountToken matches authenticated user
+        // Skip transactions without appAccountToken to prevent cross-user subscription theft
         const appAccountToken = decoded.appAccountToken as string | undefined;
-        if (appAccountToken && appAccountToken !== ctx.session.user.id) continue;
+        if (!appAccountToken || appAccountToken !== ctx.session.user.id) continue;
 
         const expiresDate = decoded.expiresDate as number | undefined;
         if (!expiresDate || expiresDate < Date.now()) continue; // skip expired

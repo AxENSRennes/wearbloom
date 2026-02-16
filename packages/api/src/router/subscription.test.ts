@@ -119,45 +119,6 @@ describe("subscription.grantInitialCredits", () => {
   });
 });
 
-describe("subscription.consumeCredit", () => {
-  test("consumes one credit and returns remaining", async () => {
-    const caller = await createAuthenticatedCaller();
-
-    await caller.subscription.grantInitialCredits();
-    const result = await caller.subscription.consumeCredit();
-
-    expect(result.remaining).toBe(2);
-  });
-
-  test("throws INSUFFICIENT_CREDITS when no credits remaining", async () => {
-    const caller = await createAuthenticatedCaller();
-
-    // Consume all 3 credits
-    await caller.subscription.grantInitialCredits();
-    await caller.subscription.consumeCredit();
-    await caller.subscription.consumeCredit();
-    await caller.subscription.consumeCredit();
-
-    // Fourth call should fail
-    expect(caller.subscription.consumeCredit()).rejects.toThrow(
-      "INSUFFICIENT_CREDITS",
-    );
-  });
-});
-
-describe("subscription.refundCredit", () => {
-  test("refunds one credit after consumption", async () => {
-    const caller = await createAuthenticatedCaller();
-
-    await caller.subscription.grantInitialCredits();
-    await caller.subscription.consumeCredit();
-    await caller.subscription.refundCredit();
-
-    const balance = await caller.subscription.getCredits();
-    expect(balance.remaining).toBe(3);
-  });
-});
-
 describe("subscription.getSubscriptionStatus", () => {
   test("returns free_with_credits when user has credits", async () => {
     const caller = await createAuthenticatedCaller();
@@ -372,6 +333,54 @@ describe("subscription.restorePurchases", () => {
 
     const result = await caller.subscription.restorePurchases({
       signedTransactions: [],
+    });
+
+    expect(result.restored).toBe(0);
+  });
+
+  test("skips transactions with missing appAccountToken", async () => {
+    const appleIap = createMockAppleIap({
+      verifier: {
+        verifyAndDecodeTransaction: mock(() =>
+          Promise.resolve({
+            originalTransactionId: "orig-txn-no-token",
+            transactionId: "txn-no-token",
+            productId: "com.wearbloom.weekly",
+            expiresDate: Date.now() + 7 * 86400000,
+            purchaseDate: Date.now(),
+            // no appAccountToken — must be skipped to prevent cross-user theft
+          }) as Promise<Record<string, unknown>>,
+        ),
+      },
+    });
+    const caller = await createAuthenticatedCaller(appleIap);
+
+    const result = await caller.subscription.restorePurchases({
+      signedTransactions: ["signed-txn-no-token"],
+    });
+
+    expect(result.restored).toBe(0);
+  });
+
+  test("skips transactions with mismatched appAccountToken", async () => {
+    const appleIap = createMockAppleIap({
+      verifier: {
+        verifyAndDecodeTransaction: mock(() =>
+          Promise.resolve({
+            originalTransactionId: "orig-txn-other",
+            transactionId: "txn-other",
+            productId: "com.wearbloom.weekly",
+            expiresDate: Date.now() + 7 * 86400000,
+            purchaseDate: Date.now(),
+            appAccountToken: "different-user-id",
+          }) as Promise<Record<string, unknown>>,
+        ),
+      },
+    });
+    const caller = await createAuthenticatedCaller(appleIap);
+
+    const result = await caller.subscription.restorePurchases({
+      signedTransactions: ["signed-txn-other-user"],
     });
 
     expect(result.restored).toBe(0);

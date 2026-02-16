@@ -107,9 +107,19 @@ export function createAppleWebhookHandler({
       const userId = appAccountToken;
       const expiresDate = transaction.expiresDate as number | undefined;
       const purchaseDate = transaction.purchaseDate as number | undefined;
-      const originalTransactionId = transaction.originalTransactionId as string;
-      const transactionId = transaction.transactionId as string;
-      const productId = transaction.productId as string;
+      const originalTransactionId = transaction.originalTransactionId as
+        | string
+        | undefined;
+      const transactionId = transaction.transactionId as string | undefined;
+      const productId = transaction.productId as string | undefined;
+
+      if (!originalTransactionId || !transactionId || !productId) {
+        logger.warn(
+          { notificationType, originalTransactionId, transactionId, productId },
+          "Apple webhook: missing required transaction fields",
+        );
+        return { status: 200, body: { received: true, skipped: true } };
+      }
 
       // Handle App Store Server Notifications V2 event types
       // https://developer.apple.com/documentation/appstoreservernotifications/notificationtype

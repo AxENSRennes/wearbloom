@@ -62,17 +62,15 @@ export function useStoreKit({ userId }: { userId: string }) {
   }, [connected, isReady, fetchProducts]);
 
   async function handlePurchaseComplete(purchase: Purchase) {
-    try {
-      // Server validates the transaction via JWS token
-      await verifyMutation.mutateAsync({
-        signedTransactionInfo: purchase.purchaseToken ?? "",
-      });
-      // Finish transaction with Apple after server confirms
-      await finishTransaction({ purchase, isConsumable: false });
-    } catch {
-      // Purchase verification failed — transaction stays pending
-      // Apple will present it again on next app launch
-    }
+    // Server validates the transaction via JWS token.
+    // If this rejects, the mutation enters error state (verifyError)
+    // and finishTransaction is skipped — the unfinished transaction
+    // stays pending so Apple will present it again on next app launch.
+    await verifyMutation.mutateAsync({
+      signedTransactionInfo: purchase.purchaseToken ?? "",
+    });
+    // Finish transaction with Apple only after server confirms
+    await finishTransaction({ purchase, isConsumable: false });
   }
 
   const purchase = useCallback(async () => {
