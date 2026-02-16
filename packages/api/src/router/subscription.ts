@@ -84,10 +84,16 @@ export const subscriptionRouter = {
         : null,
     );
 
+    // AC#8: Detect if user previously subscribed (for resubscribe messaging)
+    // User is considered a previous subscriber if a subscription record exists
+    // This enables resubscribe CTA instead of "Start Free Trial" for lapsed users
+    const hadSubscription = subscription !== undefined;
+
     return {
       ...subState,
       expiresAt: subscription?.expiresAt ?? null,
       productId: subscription?.productId ?? null,
+      hadSubscription,
     };
   }),
 

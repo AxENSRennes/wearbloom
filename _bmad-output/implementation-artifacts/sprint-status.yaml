@@ -73,7 +73,7 @@ development_status:
   4-1-credit-system-and-free-trial-renders: done
   4-2-apple-iap-subscription-integration: done
   4-3-paywall-screen: done
-  4-4-subscription-lifecycle-and-apple-webhooks: backlog
+  4-4-subscription-lifecycle-and-apple-webhooks: review
   epic-4-retrospective: optional
 
   # Epic 5: Onboarding & First-Time Experience

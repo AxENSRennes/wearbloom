@@ -1,7 +1,9 @@
 import type { createSubscriptionManager } from "@acme/api/services/subscriptionManager";
 
 interface WebhookVerifier {
-  verifyAndDecodeNotification: (signedPayload: string) => Promise<{
+  verifyAndDecodeNotification: (
+    signedPayload: string,
+  ) => Promise<{
     notificationType?: string;
     subtype?: string;
     data?: {
@@ -27,6 +29,11 @@ interface WebhookResult {
   body: Record<string, unknown>;
 }
 
+/**
+ * Apple App Store Server Notifications V2 handler
+ * Handles subscription lifecycle events: RENEWAL, CANCEL, EXPIRED, DID_FAIL_TO_RENEW, GRACE_PERIOD_EXPIRED
+ * See: https://developer.apple.com/documentation/appstoreservernotiticationsv2/
+ */
 export function createAppleWebhookHandler({
   verifier,
   subscriptionManager,
@@ -39,7 +46,9 @@ export function createAppleWebhookHandler({
   async function extractTransaction(
     data: { signedTransactionInfo?: string } | undefined,
   ): Promise<Record<string, unknown> | null> {
-    if (!data?.signedTransactionInfo) return null;
+    if (!data?.signedTransactionInfo) {
+      return null;
+    }
     return verifier.verifyAndDecodeTransaction(data.signedTransactionInfo);
   }
 
@@ -101,8 +110,11 @@ export function createAppleWebhookHandler({
       const transactionId = transaction.transactionId as string;
       const productId = transaction.productId as string;
 
+      // Handle App Store Server Notifications V2 event types
+      // https://developer.apple.com/documentation/appstoreservernotiticationsv2/notificationtype
       switch (notificationType) {
-        case "SUBSCRIBED": {
+        case "RENEWAL": {
+          // AC#3: Subscription renewal event
           const isInitialBuy = subtype === "INITIAL_BUY";
           // StoreKit 2: offerType 1 = introductory offer (free trial)
           const hasTrial = isInitialBuy && transaction.offerType === 1;
@@ -125,76 +137,61 @@ export function createAppleWebhookHandler({
 
           logger.info(
             { userId, status, subtype },
-            "Apple webhook: subscription created/updated",
+            "Apple webhook: subscription renewal event processed",
           );
           break;
         }
 
-        case "DID_RENEW": {
-          await subscriptionManager.upsertSubscription(userId, {
-            appleTransactionId: transactionId,
-            appleOriginalTransactionId: originalTransactionId,
-            productId,
-            status: "subscribed",
-            startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),
-            expiresAt: expiresDate
-              ? new Date(expiresDate)
-              : new Date(Date.now() + 7 * 86400000),
-          });
+        case "CANCEL": {
+          // AC#4: Subscription cancellation event
+          // User cancelled subscription via iOS Settings
+          // Status set to "cancelled" but expires_at preserved
+          // User retains access until current period ends
+          const currentSubscription =
+            await subscriptionManager.getSubscription(userId);
+          const expiresAt = currentSubscription?.expiresAt || new Date();
+
+          await subscriptionManager.updateStatus(userId, "cancelled", expiresAt);
 
           logger.info(
             { userId, subtype },
-            "Apple webhook: subscription renewed",
+            "Apple webhook: subscription cancelled by user — access retained until period end",
           );
           break;
         }
 
-        case "EXPIRED":
-        case "GRACE_PERIOD_EXPIRED": {
+        case "EXPIRED": {
+          // AC#5: Subscription expiration event
+          // Period expired without renewal
+          // Status transitions to "expired"
           await subscriptionManager.updateStatus(userId, "expired");
+
           logger.info(
             { userId, subtype },
-            "Apple webhook: subscription expired",
+            "Apple webhook: subscription period expired",
           );
           break;
         }
 
         case "DID_FAIL_TO_RENEW": {
-          // Apple handles retry — log but don't change status yet
+          // AC#6: Billing issue — Apple handles retry
+          // Grace period is managed by Apple automatically
+          // Log but don't change status yet
           logger.warn(
             { userId, subtype },
-            "Apple webhook: renewal failed, Apple retry in progress",
+            "Apple webhook: renewal failed — grace period in progress",
           );
           break;
         }
 
-        case "DID_CHANGE_RENEWAL_STATUS": {
-          if (subtype === "AUTO_RENEW_DISABLED") {
-            await subscriptionManager.updateStatus(userId, "cancelled");
-            logger.info(
-              { userId },
-              "Apple webhook: auto-renew disabled — marked cancelled",
-            );
-          } else if (subtype === "AUTO_RENEW_ENABLED") {
-            // Check if not expired before restoring
-            const sub = await subscriptionManager.getSubscription(userId);
-            if (sub && sub.expiresAt && sub.expiresAt > new Date()) {
-              await subscriptionManager.updateStatus(userId, "subscribed");
-              logger.info(
-                { userId },
-                "Apple webhook: auto-renew re-enabled — restored to subscribed",
-              );
-            }
-          }
-          break;
-        }
-
-        case "REFUND":
-        case "REVOKE": {
+        case "GRACE_PERIOD_EXPIRED": {
+          // AC#6: Grace period ended without successful renewal
+          // Transition to expired state
           await subscriptionManager.updateStatus(userId, "expired");
+
           logger.info(
-            { userId, notificationType },
-            "Apple webhook: access revoked",
+            { userId },
+            "Apple webhook: grace period expired — subscription now expired",
           );
           break;
         }

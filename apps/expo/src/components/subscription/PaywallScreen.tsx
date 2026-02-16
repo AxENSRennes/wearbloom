@@ -65,10 +65,15 @@ export function PaywallScreen({
     verifyError,
   } = useStoreKit({ userId });
 
-  const { refetch: subscriptionRefetch } = useSubscription();
+  const { refetch: subscriptionRefetch, state: subscriptionState, hadSubscription } =
+    useSubscription();
 
   const [viewState, setViewState] = useState<ViewState>("ready");
   const wasPurchasingRef = useRef(false);
+
+  // AC#8: Determine if showing resubscribe or free trial messaging
+  const isExpiredSubscriber =
+    subscriptionState === "free_no_credits" && hadSubscription;
 
   // Watch for purchase errors (decline / error)
   useEffect(() => {
@@ -118,9 +123,13 @@ export function PaywallScreen({
       | undefined
   )?.find((offer) => offer.paymentMode === "free-trial");
   const trialDays = trialOffer?.period?.value;
-  const ctaLabel = trialDays
-    ? `Start Your ${String(trialDays)}-Day Free Trial`
-    : "Subscribe Now";
+
+  // AC#8: Resubscribe messaging for lapsed subscribers
+  const ctaLabel = isExpiredSubscriber
+    ? "Resubscribe for Unlimited Try-Ons"
+    : trialDays
+      ? `Start Your ${String(trialDays)}-Day Free Trial`
+      : "Subscribe Now";
 
   const handlePurchase = useCallback(() => {
     setViewState("ready");
@@ -269,7 +278,9 @@ export function PaywallScreen({
 
         {/* Price disclosure */}
         <ThemedText variant="caption" className="mt-3 text-center text-text-secondary">
-          Then {String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.
+          {isExpiredSubscriber
+            ? `${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`
+            : `Then ${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`}
         </ThemedText>
 
         {/* Restore purchases */}

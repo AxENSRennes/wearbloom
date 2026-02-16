@@ -14,6 +14,7 @@ export function useSubscription() {
     isUnlimited: data?.isUnlimited ?? false,
     expiresAt: data?.expiresAt ?? null,
     productId: data?.productId ?? null,
+    hadSubscription: data?.hadSubscription ?? false,
     isLoading,
     refetch,
   };
