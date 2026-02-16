@@ -203,6 +203,13 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
       const image = payload.payload.images[0];
 
       try {
+        // Validate image URL domain to prevent SSRF
+        const imageUrl = new URL(image.url);
+        if (imageUrl.protocol !== "https:" || !imageUrl.hostname.endsWith(".fal.media")) {
+          deps.logger.warn({ url: image.url, renderId: render.id }, "Blocked image URL — domain not allowed");
+          throw new Error("Image URL domain not allowed");
+        }
+
         // Download the result image
         const imageResponse = await fetch(image.url);
         const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());

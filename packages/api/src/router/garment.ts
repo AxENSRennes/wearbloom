@@ -6,6 +6,7 @@ import { and, desc, eq } from "@acme/db";
 import { GARMENT_CATEGORIES, garments } from "@acme/db/schema";
 
 import { protectedProcedure, uploadProcedure } from "../trpc";
+import { validateImageBytes } from "../validateImageBytes";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
@@ -70,6 +71,7 @@ export const garmentRouter = {
 
       const userId = ctx.session.user.id;
       const buffer = Buffer.from(await file.arrayBuffer());
+      validateImageBytes(buffer, file.type);
 
       const widthStr = formData.get("width");
       const heightStr = formData.get("height");

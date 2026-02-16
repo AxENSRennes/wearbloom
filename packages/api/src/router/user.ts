@@ -6,6 +6,7 @@ import { eq } from "@acme/db";
 import { bodyPhotos, users } from "@acme/db/schema";
 
 import { protectedProcedure, uploadProcedure } from "../trpc";
+import { validateImageBytes } from "../validateImageBytes";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -56,6 +57,7 @@ export const userRouter = {
 
       const userId = ctx.session.user.id;
       const buffer = Buffer.from(await file.arrayBuffer());
+      validateImageBytes(buffer, file.type);
 
       // Delete existing body photo if any (upsert pattern)
       const existing = await ctx.db

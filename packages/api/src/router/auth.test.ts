@@ -34,7 +34,7 @@ describe("auth.getSession", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.getSession();
 
-    expect(result).toEqual(mockSession);
+    expect(result).toEqual({ user: mockSession.user });
     expect(result?.user.id).toBe("user-456");
     expect(result?.user.email).toBe("auth@example.com");
   });

@@ -389,4 +389,146 @@ describe("fal webhook handler", () => {
     expect(res._statusCode).toBe(200);
     expect(imageStorage.saveRenderResult).not.toHaveBeenCalled();
   });
+
+  test("SSRF protection — blocks non-fal.media image URLs", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://evil.com/steal.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(imageStorage.saveRenderResult).not.toHaveBeenCalled();
+    // Render should be marked as failed
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed", errorCode: "RENDER_FAILED" }),
+    );
+  });
+
+  test("SSRF protection — blocks HTTP URLs (requires HTTPS)", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "http://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(imageStorage.saveRenderResult).not.toHaveBeenCalled();
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed", errorCode: "RENDER_FAILED" }),
+    );
+  });
+
+  test("SSRF protection — blocks localhost URLs", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://localhost/internal",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(imageStorage.saveRenderResult).not.toHaveBeenCalled();
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed", errorCode: "RENDER_FAILED" }),
+    );
+  });
+
+  test("SSRF protection — allows valid fal.media subdomain URLs", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(imageStorage.saveRenderResult).toHaveBeenCalled();
+  });
 });
