@@ -1,7 +1,7 @@
 import type http from "node:http";
 
 import { eq } from "@acme/db";
-import { bodyPhotos } from "@acme/db/schema";
+import { bodyPhotos, garments } from "@acme/db/schema";
 
 import { nodeHeadersToHeaders } from "../utils/headers";
 
@@ -43,8 +43,8 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
       return;
     }
 
-    // Look up image
-    const result = await db
+    // Look up body photo first
+    const bodyPhotoResult = await db
       .select({
         id: bodyPhotos.id,
         userId: bodyPhotos.userId,
@@ -55,27 +55,69 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
       .where(eq(bodyPhotos.id, imageId))
       .limit(1);
 
-    const photo = result[0];
-    if (!photo) {
+    const photo = bodyPhotoResult[0];
+    if (photo) {
+      // Ownership check
+      if (photo.userId !== session.user.id) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Forbidden" }));
+        return;
+      }
+
+      // Stream the body photo
+      return streamImage(res, imageStorage, photo.filePath, photo.mimeType);
+    }
+
+    // Fallback: look up garment
+    const garmentResult = await db
+      .select({
+        id: garments.id,
+        userId: garments.userId,
+        imagePath: garments.imagePath,
+        cutoutPath: garments.cutoutPath,
+        bgRemovalStatus: garments.bgRemovalStatus,
+        mimeType: garments.mimeType,
+      })
+      .from(garments)
+      .where(eq(garments.id, imageId))
+      .limit(1);
+
+    const garment = garmentResult[0];
+    if (!garment) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Not found" }));
       return;
     }
 
     // Ownership check
-    if (photo.userId !== session.user.id) {
+    if (garment.userId !== session.user.id) {
       res.writeHead(403, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Forbidden" }));
       return;
     }
 
-    // Stream the file
-    const stream = imageStorage.streamFile(photo.filePath);
-    res.writeHead(200, {
-      "Content-Type": photo.mimeType || "image/jpeg",
-      "Cache-Control": "private, max-age=3600",
-    });
+    // Serve cutout if available, otherwise original
+    const useCutout = garment.bgRemovalStatus === "completed" && garment.cutoutPath;
+    const filePath = useCutout ? garment.cutoutPath : garment.imagePath;
+    const mimeType = useCutout ? "image/png" : garment.mimeType;
 
+    return streamImage(res, imageStorage, filePath, mimeType);
+  };
+}
+
+function streamImage(
+  res: http.ServerResponse,
+  imageStorage: ImageHandlerImageStorage,
+  filePath: string,
+  mimeType: string | null,
+) {
+  const stream = imageStorage.streamFile(filePath);
+  res.writeHead(200, {
+    "Content-Type": mimeType ?? "image/jpeg",
+    "Cache-Control": "private, max-age=3600",
+  });
+
+  return (async () => {
     const reader = stream.getReader();
     let done = false;
     while (!done) {
@@ -87,5 +129,5 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
       }
     }
     res.end();
-  };
+  })();
 }

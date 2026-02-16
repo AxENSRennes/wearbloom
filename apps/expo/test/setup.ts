@@ -426,3 +426,81 @@ mock.module("@trpc/tanstack-react-query", () => ({
 mock.module("superjson", () => ({
   default: { serialize: (v: unknown) => v, deserialize: (v: unknown) => v },
 }));
+
+// ---------------------------------------------------------------------------
+// react-native-reanimated — mock animation hooks for press/skeleton animations
+// ---------------------------------------------------------------------------
+mock.module("react-native-reanimated", () => {
+  const AnimatedView = mockComponent("ReanimatedView");
+  return {
+    default: {
+      View: AnimatedView,
+      createAnimatedComponent: (comp: unknown) => comp,
+    },
+    View: AnimatedView,
+    useSharedValue: (initial: number) => ({ value: initial }),
+    useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
+    withSpring: (toValue: number) => toValue,
+    withTiming: (toValue: number) => toValue,
+    withRepeat: (animation: unknown) => animation,
+    withSequence: (...animations: unknown[]) => animations[0],
+    useReducedMotion: () => false,
+    Easing: {
+      linear: 0,
+      ease: 1,
+      inOut: () => 0,
+    },
+    createAnimatedComponent: (comp: unknown) => comp,
+  };
+});
+
+// ---------------------------------------------------------------------------
+// @legendapp/list — mock LegendList as a basic list renderer
+// ---------------------------------------------------------------------------
+mock.module("@legendapp/list", () => ({
+  LegendList: React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      const {
+        data,
+        renderItem,
+        ListEmptyComponent,
+        ListHeaderComponent,
+        refreshing: _refreshing,
+        onRefresh: _onRefresh,
+        ...rest
+      } = props as {
+        data?: unknown[];
+        renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
+        ListEmptyComponent?: React.ComponentType | React.ReactElement;
+        ListHeaderComponent?: React.ComponentType | React.ReactElement;
+        refreshing?: boolean;
+        onRefresh?: () => void;
+        [key: string]: unknown;
+      };
+
+      const hasItems = Array.isArray(data) && data.length > 0;
+      const items = hasItems && renderItem
+        ? data.map((item, index) => renderItem({ item, index }))
+        : null;
+
+      const empty = !hasItems && ListEmptyComponent
+        ? typeof ListEmptyComponent === "function"
+          ? React.createElement(ListEmptyComponent as React.ComponentType)
+          : ListEmptyComponent
+        : null;
+
+      const header = ListHeaderComponent
+        ? typeof ListHeaderComponent === "function"
+          ? React.createElement(ListHeaderComponent as React.ComponentType)
+          : ListHeaderComponent
+        : null;
+
+      return React.createElement(
+        "mock-LegendList",
+        { ...rest, ref },
+        header,
+        items ?? empty,
+      );
+    },
+  ),
+}));
