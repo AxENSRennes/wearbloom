@@ -142,7 +142,7 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
     // Serve cutout if available, otherwise original
     const useCutout = garment.bgRemovalStatus === "completed" && garment.cutoutPath;
     const filePath = (useCutout ? garment.cutoutPath : garment.imagePath) ?? garment.imagePath;
-    const mimeType = useCutout ? "image/png" : (garment.mimeType ?? "image/jpeg");
+    const mimeType = useCutout ? "image/png" : garment.mimeType;
 
     return streamImage(res, imageStorage, filePath, mimeType);
   };

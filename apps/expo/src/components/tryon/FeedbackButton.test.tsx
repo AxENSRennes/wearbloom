@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import { afterEach, beforeEach, describe, expect, jest, mock, spyOn, test } from "bun:test";
 import type { Root } from "react-dom/client";
 import { act } from "react";
@@ -164,7 +165,11 @@ describe("FeedbackButton", () => {
 function getReactProps(el: Element): Record<string, unknown> {
   const propsKey = Object.keys(el).find((k) => k.startsWith("__reactProps"));
   if (!propsKey) throw new Error("No React props found on element");
-  return (el as unknown as Record<string, Record<string, unknown>>)[propsKey];
+  const props = (el as unknown as Record<string, Record<string, unknown>>)[
+    propsKey
+  ];
+  if (!props) throw new Error("React props key exists but value is undefined");
+  return props;
 }
 
 /**

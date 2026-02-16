@@ -27,7 +27,7 @@ function stubUseQuery(overrides: {
     isError: overrides.isError ?? false,
     error: overrides.error ?? null,
     refetch: mock(() => Promise.resolve()),
-  } as ReturnType<typeof reactQuery.useQuery>);
+  } as unknown as ReturnType<typeof reactQuery.useQuery>);
   return spy;
 }
 
@@ -346,7 +346,7 @@ describe("RenderScreen", () => {
     renderToStaticMarkup(<RenderScreen />);
 
     expect(querySpy).toHaveBeenCalled();
-    const queryOpts = querySpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    const queryOpts = querySpy.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
     const refetchInterval = queryOpts.refetchInterval as (query: {
       state: { data?: { status?: string } };
     }) => number | false;
@@ -502,7 +502,7 @@ describe("RenderScreen", () => {
     let submitFeedbackOnSuccess: ((result: { success: boolean; creditRefunded: boolean }) => void) | undefined;
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIndex = 0;
-    mutationSpy.mockImplementation((opts: Record<string, unknown>) => {
+    mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
       // Second useMutation call is submitFeedback
       if (callIndex === 2 && typeof opts.onSuccess === "function") {
@@ -516,7 +516,7 @@ describe("RenderScreen", () => {
         error: null,
         data: null,
       } as unknown as ReturnType<typeof reactQuery.useMutation>;
-    });
+    }) as unknown as typeof reactQuery.useMutation);
 
     stubUseQuery({
       data: {
@@ -548,7 +548,7 @@ describe("RenderScreen", () => {
     let submitFeedbackOnSuccess: ((result: { success: boolean; creditRefunded: boolean }) => void) | undefined;
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIndex = 0;
-    mutationSpy.mockImplementation((opts: Record<string, unknown>) => {
+    mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
       if (callIndex === 2 && typeof opts.onSuccess === "function") {
         submitFeedbackOnSuccess = opts.onSuccess as typeof submitFeedbackOnSuccess;
@@ -561,7 +561,7 @@ describe("RenderScreen", () => {
         error: null,
         data: null,
       } as unknown as ReturnType<typeof reactQuery.useMutation>;
-    });
+    }) as unknown as typeof reactQuery.useMutation);
 
     stubUseQuery({
       data: {
@@ -592,7 +592,7 @@ describe("RenderScreen", () => {
     let submitFeedbackMutate: ReturnType<typeof mock> | undefined;
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIndex = 0;
-    mutationSpy.mockImplementation((_opts: Record<string, unknown>) => {
+    mutationSpy.mockImplementation(((_opts: Record<string, unknown>) => {
       callIndex++;
       const mutateFn = callIndex === 2 ? feedbackMutateMock : mock(() => {});
       if (callIndex === 2) submitFeedbackMutate = feedbackMutateMock;
@@ -604,7 +604,7 @@ describe("RenderScreen", () => {
         error: null,
         data: null,
       } as unknown as ReturnType<typeof reactQuery.useMutation>;
-    });
+    }) as unknown as typeof reactQuery.useMutation);
 
     stubUseQuery({
       data: {

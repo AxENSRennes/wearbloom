@@ -23,7 +23,7 @@ function stubUseQuery(overrides: {
     isError: overrides.isError ?? false,
     error: null,
     refetch: mock(() => Promise.resolve()),
-  } as ReturnType<typeof reactQuery.useQuery>);
+  } as unknown as ReturnType<typeof reactQuery.useQuery>);
   return spy;
 }
 
@@ -44,11 +44,10 @@ function renderHookSSR(): Record<string, unknown> {
   }
 
   const html = renderToStaticMarkup(React.createElement(Wrapper));
-  const jsonMatch = html.match(
-    /<script[^>]*data-testid="hook-output"[^>]*>(.*?)<\/script>/,
-  );
+  const jsonMatch =
+    /<script[^>]*data-testid="hook-output"[^>]*>(.*?)<\/script>/.exec(html);
   if (!jsonMatch?.[1]) throw new Error("Could not extract hook output");
-  return JSON.parse(jsonMatch[1]) as Record<string, unknown>;
+  return JSON.parse(jsonMatch[1]) as unknown as Record<string, unknown>;
 }
 
 describe("useTryOnRender", () => {
@@ -80,13 +79,13 @@ describe("useTryOnRender", () => {
       isError: false,
       error: null,
       refetch: mock(() => Promise.resolve()),
-    } as ReturnType<typeof reactQuery.useQuery>);
+    } as unknown as ReturnType<typeof reactQuery.useQuery>);
 
     renderHookSSR();
 
     // Extract the refetchInterval function passed to useQuery
     expect(querySpy).toHaveBeenCalled();
-    const queryOpts = querySpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    const queryOpts = querySpy.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
     const refetchInterval = queryOpts.refetchInterval as (query: {
       state: { data?: { status?: string } };
     }) => number | false;
@@ -200,11 +199,11 @@ describe("useTryOnRender", () => {
       isError: false,
       error: null,
       refetch: mock(() => Promise.resolve()),
-    } as ReturnType<typeof reactQuery.useQuery>);
+    } as unknown as ReturnType<typeof reactQuery.useQuery>);
 
     renderHookSSR();
 
-    const queryOpts = querySpy.mock.calls[0]?.[0] as Record<string, unknown>;
+    const queryOpts = querySpy.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
     const refetchInterval = queryOpts.refetchInterval as (query: {
       state: { data?: { status?: string } };
     }) => number | false;

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as reactQuery from "@tanstack/react-query";
 import * as NetInfo from "@react-native-community/netinfo";
@@ -52,7 +53,7 @@ function stubUseQuery(overrides: {
 }) {
   const spy = spyOn(reactQuery, "useQuery");
   let callCount = 0;
-  spy.mockImplementation(() => {
+  spy.mockImplementation((() => {
     callCount++;
     // First call: tryon.getSupportedCategories
     if (callCount === 1) {
@@ -64,7 +65,7 @@ function stubUseQuery(overrides: {
         isError: false,
         error: null,
         refetch: mock(() => Promise.resolve()),
-      } as ReturnType<typeof reactQuery.useQuery>;
+      };
     }
     // Second call: garment.list
     return {
@@ -75,8 +76,8 @@ function stubUseQuery(overrides: {
       isError: overrides.isError ?? false,
       error: overrides.error ?? null,
       refetch: mock(() => Promise.resolve()),
-    } as ReturnType<typeof reactQuery.useQuery>;
-  });
+    };
+  }) as unknown as typeof reactQuery.useQuery);
   return spy;
 }
 
@@ -536,7 +537,45 @@ describe("WardrobeScreen", () => {
   });
 
   test("INVALID_CATEGORY error shows specific toast message", () => {
+    // The onError handler lives inside handleTryOn (a useCallback), which
+    // calls requestRenderMutation.mutate(vars, { onError }). SSR cannot
+    // trigger event handlers, so we:
+    // 1. Mock useMutation to return a mutate that auto-invokes onError
+    // 2. Spy on React.useCallback to capture handleTryOn
+    // 3. Call handleTryOn manually to exercise the error→toast path
+
+    const useCallbackSpy = spyOn(React, "useCallback");
+    // Pass through useCallback (safe in SSR — no re-renders)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    useCallbackSpy.mockImplementation((<T extends (...args: any[]) => any>(fn: T) => fn) as typeof React.useCallback);
+
     const mutationSpy = spyOn(reactQuery, "useMutation");
+    let callIdx = 0;
+    mutationSpy.mockImplementation((() => {
+      callIdx++;
+      return {
+        mutate:
+          callIdx === 2
+            ? // requestRenderMutation: auto-invoke onError with INVALID_CATEGORY
+              (
+                _vars: unknown,
+                opts?: { onError?: (err: { message: string }) => void },
+              ) => {
+                opts?.onError?.({ message: "INVALID_CATEGORY" });
+              }
+            : mock(),
+        mutateAsync: mock(),
+        isPending: false,
+        isError: false,
+        isSuccess: false,
+        isIdle: true,
+        error: null,
+        data: undefined,
+        reset: mock(),
+        status: "idle",
+      };
+    }) as unknown as typeof reactQuery.useMutation);
+
     stubUseQuery({
       data: [mockGarment1],
       isLoading: false,
@@ -547,15 +586,24 @@ describe("WardrobeScreen", () => {
 
     renderToStaticMarkup(<WardrobeScreen />);
 
-    // Find the requestRender mutation (second useMutation call — first is delete)
-    const calls = mutationSpy.mock.calls;
-    const renderMutationCall = calls[1];
-    expect(renderMutationCall).toBeDefined();
-    const mutationOpts = (renderMutationCall as unknown[])[0] as Record<string, unknown>;
-    const onError = mutationOpts.onError as (error: { message: string }) => void;
-    expect(onError).toBeDefined();
+    // Find handleTryOn among captured useCallback calls.
+    // Component order: handleDeleteConfirm(0), handleCategorySelect(1),
+    // handleRefresh(0), handleSheetDismiss(0), handleTryOn(1).
+    // handleTryOn is the SECOND useCallback with length === 1.
+    const callbacksWithOneParam = useCallbackSpy.mock.calls.filter(
+      (call) => typeof call[0] === "function" && call[0].length === 1,
+    );
+    const handleTryOn = callbacksWithOneParam[1]?.[0] as
+      | ((garmentId: string) => void)
+      | undefined;
+    expect(handleTryOn).toBeDefined();
 
-    onError({ message: "INVALID_CATEGORY" });
+    // Clear accumulated showToast calls from prior tests (mock.module mocks
+    // are irreversible, so call history persists across tests)
+    (showToast as ReturnType<typeof mock>).mockClear();
+
+    // Invoke handleTryOn — our mock mutate auto-calls onError with INVALID_CATEGORY
+    handleTryOn!("garment-1");
 
     expect(showToast).toHaveBeenCalledWith({
       message: "Try-on not available for this category.",

@@ -12,12 +12,12 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 // Define globals normally provided by Metro/React Native bundler
 // @ts-expect-error -- __DEV__ is a global set by Metro bundler
 globalThis.__DEV__ = true;
-// @ts-expect-error -- EXPO_OS is inlined by babel-preset-expo
 globalThis.process.env.EXPO_OS = "ios";
 // @ts-expect-error -- expo global is set by expo-modules-core native runtime
 globalThis.expo = {
   EventEmitter: class MockEventEmitter {
     addListener() { return { remove: () => {} }; }
+    removeListener() {}
     removeAllListeners() {}
     emit() {}
     listenerCount() { return 0; }
@@ -25,7 +25,7 @@ globalThis.expo = {
   modules: {},
   uuidv4: () => "mock-uuid",
   uuidv5: () => "mock-uuid",
-  getViewConfig: () => ({}),
+  getViewConfig: () => ({ validAttributes: {}, directEventTypes: {} }),
 };
 
 const React = await import("react");
@@ -532,20 +532,24 @@ void mock.module("react-native-gesture-handler", () => {
 // ---------------------------------------------------------------------------
 void mock.module("@gorhom/bottom-sheet", () => {
   const BottomSheet = React.forwardRef(
-    ({ children, onChange, backdropComponent, handleComponent, ...props }: Record<string, unknown>, ref: unknown) => {
+    (allProps: Record<string, unknown>, ref: React.Ref<unknown>) => {
+      const { children, onChange, backdropComponent, handleComponent, ...props } = allProps;
+      const onChangeFn = onChange as ((index: number) => void) | undefined;
+      const backdropFn = backdropComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
+      const handleFn = handleComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
       React.useImperativeHandle(ref, () => ({
-        snapToIndex: mock((index: number) => onChange?.(index)),
-        close: mock(() => onChange?.(-1)),
+        snapToIndex: mock((index: number) => onChangeFn?.(index)),
+        close: mock(() => onChangeFn?.(-1)),
         expand: mock(() => {}),
         collapse: mock(() => {}),
       }));
-      const backdrop = backdropComponent
-        ? backdropComponent({ animatedIndex: { value: 0 }, animatedPosition: { value: 0 } })
+      const backdrop = backdropFn
+        ? backdropFn({ animatedIndex: { value: 0 }, animatedPosition: { value: 0 } })
         : null;
-      const handle = handleComponent
-        ? handleComponent({})
+      const handle = handleFn
+        ? handleFn({})
         : null;
-      return React.createElement("mock-BottomSheet", props, backdrop, handle, children);
+      return React.createElement("mock-BottomSheet", props, backdrop, handle, children as React.ReactNode);
     },
   );
   BottomSheet.displayName = "BottomSheet";
