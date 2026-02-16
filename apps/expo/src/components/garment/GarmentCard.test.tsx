@@ -155,4 +155,51 @@ describe("GarmentCard", () => {
     const html = renderToStaticMarkup(element);
     expect(html).toContain("mock-Pressable");
   });
+
+  // -----------------------------------------------------------------------
+  // onLongPress tests (Story 2.4)
+  // -----------------------------------------------------------------------
+  test("onLongPress prop is accepted and component renders without error", () => {
+    const onLongPress = mock(() => {});
+    const html = renderToStaticMarkup(
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        onLongPress={onLongPress}
+        columnWidth={194}
+      />,
+    );
+
+    expect(html).toContain("mock-Pressable");
+  });
+
+  test("no crash when onLongPress is undefined (stock garment scenario)", () => {
+    const html = renderToStaticMarkup(
+      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+    );
+
+    expect(html).toContain("mock-Pressable");
+  });
+
+  test("accessibility hint includes long-press action when onLongPress is provided", () => {
+    const html = renderToStaticMarkup(
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        onLongPress={() => {}}
+        columnWidth={194}
+      />,
+    );
+
+    expect(html).toContain("Long press to delete");
+  });
+
+  test("accessibility hint is default when onLongPress is not provided", () => {
+    const html = renderToStaticMarkup(
+      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+    );
+
+    expect(html).toContain('accessibilityHint="Double tap to view details"');
+    expect(html).not.toContain("Long press to delete");
+  });
 });

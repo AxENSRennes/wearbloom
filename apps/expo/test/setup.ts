@@ -183,6 +183,18 @@ mock.module("expo-constants", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-haptics — mock haptic feedback
+// ---------------------------------------------------------------------------
+mock.module("expo-haptics", () => ({
+  impactAsync: mock(() => Promise.resolve()),
+  ImpactFeedbackStyle: {
+    Light: "Light",
+    Medium: "Medium",
+    Heavy: "Heavy",
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // expo-image-picker — mock camera and gallery pickers
 // ---------------------------------------------------------------------------
 mock.module("expo-image-picker", () => ({

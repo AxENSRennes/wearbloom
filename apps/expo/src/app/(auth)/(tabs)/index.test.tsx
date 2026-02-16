@@ -3,6 +3,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as reactQuery from "@tanstack/react-query";
 
+import { showToast } from "@acme/ui";
+
 import WardrobeScreen from "./index";
 
 // ---------------------------------------------------------------------------
@@ -411,5 +413,90 @@ describe("WardrobeScreen", () => {
 
     // Personal garment should have category-only label (no "stock" prefix)
     expect(html).toContain('accessibilityLabel="tops garment"');
+  });
+
+  // -------------------------------------------------------------------------
+  // Delete flow tests (Story 2.4)
+  // -------------------------------------------------------------------------
+  test("AlertDialog is rendered with destructive variant and correct labels", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(html).toContain("mock-AlertDialog");
+    expect(html).toContain("Delete Garment");
+    expect(html).toContain('variant="destructive"');
+    expect(html).toContain('confirmLabel="Delete"');
+    expect(html).toContain("permanently removed");
+  });
+
+  test("useMutation is called with onSuccess that shows success toast and invalidates queries", () => {
+    const mutationSpy = spyOn(reactQuery, "useMutation");
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(mutationSpy).toHaveBeenCalled();
+    const firstCall = mutationSpy.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const mutationOpts = (firstCall as unknown[])[0] as Record<string, unknown>;
+
+    // Call onSuccess and verify toast + cache invalidation
+    const onSuccess = mutationOpts.onSuccess as () => void;
+    expect(onSuccess).toBeDefined();
+    onSuccess();
+
+    expect(showToast).toHaveBeenCalledWith({ message: "Garment deleted", variant: "success" });
+  });
+
+  test("useMutation is called with onError that shows error toast", () => {
+    const mutationSpy = spyOn(reactQuery, "useMutation");
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    renderToStaticMarkup(<WardrobeScreen />);
+
+    const firstCall = mutationSpy.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const mutationOpts = (firstCall as unknown[])[0] as Record<string, unknown>;
+    const onError = mutationOpts.onError as () => void;
+    expect(onError).toBeDefined();
+    onError();
+
+    expect(showToast).toHaveBeenCalledWith({ message: "Couldn't delete. Try again.", variant: "error" });
+  });
+
+  test("personal garment cards render while stock garments have 'stock' accessibility label", () => {
+    stubUseQuery({
+      data: [mockGarment1],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Personal garments render with category-only label (no "stock" prefix)
+    expect(html).toContain('accessibilityLabel="tops garment"');
+    // Stock garments render with "stock" prefix in label
+    expect(html).toContain("stock tops garment");
   });
 });

@@ -195,6 +195,51 @@ export const garmentRouter = {
       return results;
     }),
 
+  delete: protectedProcedure
+    .input(z.object({ garmentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // 1. Verify garment exists and belongs to user
+      const results = await ctx.db
+        .select({ id: garments.id })
+        .from(garments)
+        .where(and(eq(garments.id, input.garmentId), eq(garments.userId, userId)))
+        .limit(1);
+
+      const garment = results[0];
+      if (!garment) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "GARMENT_NOT_FOUND" });
+      }
+
+      if (!ctx.imageStorage) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "IMAGE_STORAGE_NOT_CONFIGURED",
+        });
+      }
+
+      try {
+        // 2. Delete filesystem first (prevent orphaned files)
+        await ctx.imageStorage.deleteGarmentFiles(userId, input.garmentId);
+
+        // 3. Delete DB record
+        await ctx.db
+          .delete(garments)
+          .where(
+            and(eq(garments.id, input.garmentId), eq(garments.userId, userId)),
+          );
+
+        return { success: true as const };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "GARMENT_DELETION_FAILED",
+          cause: error,
+        });
+      }
+    }),
+
   getGarment: protectedProcedure
     .input(z.object({ garmentId: z.string() }))
     .query(async ({ ctx, input }) => {

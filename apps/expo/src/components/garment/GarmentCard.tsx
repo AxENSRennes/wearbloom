@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Pressable } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -5,6 +6,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 
 import type { WardrobeItem } from "~/types/wardrobe";
@@ -15,14 +17,22 @@ import { getBaseUrl } from "~/utils/base-url";
 interface GarmentCardProps {
   garment: WardrobeItem;
   onPress: () => void;
+  onLongPress?: () => void;
   columnWidth: number;
 }
 
 const PLACEHOLDER_BLURHASH = "L6PZfSi_.AyE_3t7t7R**0o#DgR4";
 
-export function GarmentCard({ garment, onPress, columnWidth }: GarmentCardProps) {
+export function GarmentCard({ garment, onPress, onLongPress, columnWidth }: GarmentCardProps) {
   const scale = useSharedValue(1);
   const reducedMotion = useReducedMotion();
+
+  const handleLongPress = useCallback(() => {
+    if (onLongPress) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onLongPress();
+    }
+  }, [onLongPress]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -57,12 +67,17 @@ export function GarmentCard({ garment, onPress, columnWidth }: GarmentCardProps)
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={handleLongPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       accessible={true}
       accessibilityLabel={label}
       accessibilityRole="button"
-      accessibilityHint="Double tap to view details"
+      accessibilityHint={
+        onLongPress
+          ? "Double tap to view details. Long press to delete."
+          : "Double tap to view details"
+      }
     >
       <Animated.View style={animatedStyle}>
         <Image

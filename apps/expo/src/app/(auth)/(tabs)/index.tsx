@@ -2,12 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LegendList } from "@legendapp/list";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Button, ThemedText } from "@acme/ui";
+import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
 import type { CategoryFilter, GarmentCategory } from "~/constants/categories";
-import type { WardrobeItem } from "~/types/wardrobe";
+import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
+import { isStockGarment } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
@@ -25,7 +26,28 @@ const CATEGORY_PILLS_HEIGHT = 60;
 
 export default function WardrobeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
+  const [garmentToDelete, setGarmentToDelete] = useState<PersonalGarment | null>(null);
   const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation(
+    trpc.garment.delete.mutationOptions({
+      onSuccess: () => {
+        setGarmentToDelete(null);
+        void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
+        showToast({ message: "Garment deleted", variant: "success" });
+      },
+      onError: () => {
+        setGarmentToDelete(null);
+        showToast({ message: "Couldn't delete. Try again.", variant: "error" });
+      },
+    }),
+  );
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (garmentToDelete) {
+      deleteMutation.mutate({ garmentId: garmentToDelete.id });
+    }
+  }, [garmentToDelete, deleteMutation]);
 
   const { data: garments, isLoading, isFetching, isError, error } = useQuery(
     trpc.garment.list.queryOptions(
@@ -57,6 +79,11 @@ export default function WardrobeScreen() {
         onPress={() => {
           // Story 3.1 will implement garment detail bottom sheet
         }}
+        onLongPress={
+          !isStockGarment(item)
+            ? () => setGarmentToDelete(item as PersonalGarment)
+            : undefined
+        }
         columnWidth={COLUMN_WIDTH}
       />
     ),
@@ -93,35 +120,47 @@ export default function WardrobeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Sticky CategoryPills header */}
-      <View className="absolute top-0 right-0 left-0 z-10 bg-white/90 px-4 py-2">
-        <CategoryPills
-          categories={ALL_CATEGORIES}
-          selected={selectedCategory}
-          onSelect={handleCategorySelect}
-        />
-      </View>
-
-      {isLoading ? (
-        <View style={{ paddingTop: CATEGORY_PILLS_HEIGHT }}>
-          <SkeletonGrid columnWidth={COLUMN_WIDTH} />
+    <>
+      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+        {/* Sticky CategoryPills header */}
+        <View className="absolute top-0 right-0 left-0 z-10 bg-white/90 px-4 py-2">
+          <CategoryPills
+            categories={ALL_CATEGORIES}
+            selected={selectedCategory}
+            onSelect={handleCategorySelect}
+          />
         </View>
-      ) : (
-        <LegendList
-          data={wardrobeItems}
-          renderItem={renderGarment}
-          keyExtractor={keyExtractor}
-          numColumns={NUM_COLUMNS}
-          estimatedItemSize={ITEM_HEIGHT}
-          recycleItems
-          refreshing={isFetching}
-          onRefresh={handleRefresh}
-          contentContainerStyle={{ paddingTop: CATEGORY_PILLS_HEIGHT }}
-          columnWrapperStyle={{ gap: GUTTER }}
-          ListEmptyComponent={emptyComponent}
-        />
-      )}
-    </SafeAreaView>
+
+        {isLoading ? (
+          <View style={{ paddingTop: CATEGORY_PILLS_HEIGHT }}>
+            <SkeletonGrid columnWidth={COLUMN_WIDTH} />
+          </View>
+        ) : (
+          <LegendList
+            data={wardrobeItems}
+            renderItem={renderGarment}
+            keyExtractor={keyExtractor}
+            numColumns={NUM_COLUMNS}
+            estimatedItemSize={ITEM_HEIGHT}
+            recycleItems
+            refreshing={isFetching}
+            onRefresh={handleRefresh}
+            contentContainerStyle={{ paddingTop: CATEGORY_PILLS_HEIGHT }}
+            columnWrapperStyle={{ gap: GUTTER }}
+            ListEmptyComponent={emptyComponent}
+          />
+        )}
+      </SafeAreaView>
+      <AlertDialog
+        isOpen={garmentToDelete !== null}
+        onClose={() => setGarmentToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Garment"
+        message="This garment will be permanently removed from your wardrobe."
+        confirmLabel="Delete"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+      />
+    </>
   );
 }

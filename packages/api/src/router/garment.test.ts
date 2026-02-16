@@ -462,3 +462,124 @@ describe("garment.getGarment", () => {
   });
 });
 
+function mockDbDelete() {
+  const chain: Record<string, unknown> = {};
+  chain.where = mock(() => chain);
+  chain.then = mock((...args: unknown[]) => {
+    const resolve = args[0] as (val: unknown) => void;
+    return resolve(undefined);
+  });
+  return chain;
+}
+
+describe("garment.delete", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+  let deleteSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+    deleteSpy?.mockRestore();
+  });
+
+  test("successful deletion returns { success: true } and calls deleteGarmentFiles + DB delete", async () => {
+    const { db } = await import("@acme/db/client");
+    const existingGarment = { id: "garment-abc" };
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([existingGarment]) as never,
+    );
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+    const result = await caller.garment.delete({ garmentId: "garment-abc" });
+
+    expect(result).toEqual({ success: true });
+    expect(imageStorage.deleteGarmentFiles).toHaveBeenCalled();
+    expect(deleteSpy).toHaveBeenCalled();
+  });
+
+  test("calls deleteGarmentFiles with correct (userId, garmentId) args", async () => {
+    const { db } = await import("@acme/db/client");
+    const existingGarment = { id: "garment-xyz" };
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([existingGarment]) as never,
+    );
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+    await caller.garment.delete({ garmentId: "garment-xyz" });
+
+    expect(imageStorage.deleteGarmentFiles).toHaveBeenCalledWith("user-123", "garment-xyz");
+  });
+
+  test("throws NOT_FOUND for non-existent garment", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.garment.delete({ garmentId: "nonexistent" }),
+    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+    expect(imageStorage.deleteGarmentFiles).not.toHaveBeenCalled();
+  });
+
+  test("throws NOT_FOUND for garment owned by another user", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller, imageStorage } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.garment.delete({ garmentId: "garment-other-user" }),
+    ).rejects.toThrow(/GARMENT_NOT_FOUND/);
+    expect(imageStorage.deleteGarmentFiles).not.toHaveBeenCalled();
+  });
+
+  test("throws UNAUTHORIZED for unauthenticated request", async () => {
+    const { appRouter } = await import("../root");
+    const auth = createMockAuth(null);
+    const ctx = await createTRPCContext({
+      headers: new Headers(),
+      auth,
+      imageStorage: createMockImageStorage(),
+    });
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.garment.delete({ garmentId: "garment-abc" }),
+    ).rejects.toThrow(/UNAUTHORIZED/);
+  });
+
+  test("throws INTERNAL_SERVER_ERROR when deleteGarmentFiles fails", async () => {
+    const { db } = await import("@acme/db/client");
+    const existingGarment = { id: "garment-abc" };
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([existingGarment]) as never,
+    );
+    deleteSpy = spyOn(db as never, "delete").mockReturnValue(
+      mockDbDelete() as never,
+    );
+
+    const imageStorage = createMockImageStorage();
+    imageStorage.deleteGarmentFiles = mock(() =>
+      Promise.reject(new Error("Filesystem error")),
+    );
+
+    const { caller } = await createAuthenticatedCaller(imageStorage);
+
+    await expect(
+      caller.garment.delete({ garmentId: "garment-abc" }),
+    ).rejects.toThrow(/GARMENT_DELETION_FAILED/);
+    // Verify DB delete was NOT called after FS failure
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+});
+
