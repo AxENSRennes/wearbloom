@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ export default function WardrobeScreen() {
   const [selectedGarment, setSelectedGarment] = useState<WardrobeItem | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { isConnected } = useNetworkStatus();
   const isManualRefresh = useRef(false);
 
@@ -94,12 +96,27 @@ export default function WardrobeScreen() {
     setSelectedGarment(null);
   }, []);
 
+  const requestRenderMutation = useMutation(
+    trpc.tryon.requestRender.mutationOptions({
+      onSuccess: (data) => {
+        bottomSheetRef.current?.close();
+        router.push(`/render/${data.renderId}` as never);
+      },
+      onError: (error) => {
+        if (error.message === "RENDER_FAILED") {
+          showToast({ message: "Render failed. Try again.", variant: "error" });
+        } else {
+          showToast({ message: "Something went wrong.", variant: "error" });
+        }
+      },
+    }),
+  );
+
   const handleTryOn = useCallback(
-    (_garmentId: string) => {
-      showToast({ message: "Try-on coming in Story 3.2", variant: "info" });
-      bottomSheetRef.current?.close();
+    (garmentId: string) => {
+      requestRenderMutation.mutate({ garmentId });
     },
-    [],
+    [requestRenderMutation],
   );
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {

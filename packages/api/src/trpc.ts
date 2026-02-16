@@ -38,10 +38,32 @@ export interface ImageStorage {
     garmentId: string,
   ): Promise<string>;
   deleteGarmentFiles(userId: string, garmentId: string): Promise<void>;
+  saveRenderResult(
+    userId: string,
+    renderId: string,
+    imageData: Buffer,
+    mimeType: string,
+  ): Promise<string>;
 }
 
 export interface BackgroundRemoval {
   removeBackground(imageBuffer: Buffer): Promise<Buffer | null>;
+}
+
+export interface TryOnProviderContext {
+  submitRender(
+    personImage: string | Buffer,
+    garmentImage: string | Buffer,
+    options?: { category?: string; mode?: string },
+  ): Promise<{ jobId: string }>;
+  getResult(
+    jobId: string,
+  ): Promise<{
+    imageUrl: string;
+    imageData?: Buffer;
+    contentType: string;
+  } | null>;
+  readonly name: string;
 }
 
 export const createTRPCContext = async (opts: {
@@ -49,6 +71,7 @@ export const createTRPCContext = async (opts: {
   auth: AuthInstance;
   imageStorage?: ImageStorage;
   backgroundRemoval?: BackgroundRemoval;
+  tryOnProvider?: TryOnProviderContext;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
   return {
@@ -58,6 +81,7 @@ export const createTRPCContext = async (opts: {
     headers: opts.headers,
     imageStorage: opts.imageStorage,
     backgroundRemoval: opts.backgroundRemoval,
+    tryOnProvider: opts.tryOnProvider,
   };
 };
 

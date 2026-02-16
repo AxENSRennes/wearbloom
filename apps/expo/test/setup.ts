@@ -282,6 +282,7 @@ mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
+  useLocalSearchParams: () => ({ id: "mock-render-id" }),
   Redirect: mockComponent("Redirect"),
   Slot: mockComponent("Slot"),
   Stack: Object.assign(mockComponent("Stack"), {

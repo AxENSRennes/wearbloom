@@ -140,6 +140,31 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       }
     },
 
+    async saveRenderResult(
+      userId: string,
+      renderId: string,
+      imageData: Buffer,
+      mimeType: string,
+    ): Promise<string> {
+      const ext = MIME_EXT[mimeType] ?? ".png";
+      const relativePath = join(
+        userId,
+        "renders",
+        `${renderId}_result${ext}`,
+      );
+      const absolutePath = join(basePath, relativePath);
+
+      await mkdir(dirname(absolutePath), { recursive: true });
+      await writeFile(absolutePath, imageData);
+
+      logger?.info(
+        { userId, renderId, filePath: relativePath },
+        "Render result saved to disk",
+      );
+
+      return relativePath;
+    },
+
     streamFile(filePath: string): ReadableStream {
       const absolutePath = join(basePath, filePath);
       const nodeStream = createReadStream(absolutePath);

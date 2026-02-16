@@ -9,9 +9,12 @@ import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
 import { db } from "@acme/db/client";
 
+import type { TryOnProvider } from "@acme/api/services/tryOnProvider";
+
 import { env } from "./env";
 import { createImageHandler } from "./routes/images";
 import { nodeHeadersToHeaders } from "./utils/headers";
+import { createFalWebhookHandler } from "./webhooks/fal";
 
 const logger = pino({ name: "wearbloom-server" });
 
@@ -38,7 +41,35 @@ const backgroundRemoval = env.REPLICATE_API_TOKEN
     })
   : undefined;
 
+// Initialize TryOnProvider
+let tryOnProvider: TryOnProvider | undefined;
+try {
+  const { createTryOnProvider } = await import(
+    "@acme/api/services/tryOnProvider"
+  );
+  tryOnProvider = createTryOnProvider(env.ACTIVE_TRYON_PROVIDER, {
+    falKey: env.FAL_KEY,
+    webhookUrl: env.FAL_WEBHOOK_URL,
+    nanoBananaModelId: env.FAL_NANO_BANANA_MODEL_ID,
+    googleCloudProject: env.GOOGLE_CLOUD_PROJECT,
+    googleCloudRegion: env.GOOGLE_CLOUD_REGION,
+    renderTimeoutMs: env.RENDER_TIMEOUT_MS,
+  });
+  logger.info(
+    { provider: env.ACTIVE_TRYON_PROVIDER },
+    "TryOnProvider initialized",
+  );
+} catch (err) {
+  logger.warn({ err }, "TryOnProvider initialization failed — try-on features disabled");
+}
+
 const imageHandler = createImageHandler({ db, auth, imageStorage });
+
+const falWebhookHandler = createFalWebhookHandler({
+  db,
+  imageStorage,
+  logger,
+});
 
 const trpcHandler = createHTTPHandler({
   router: appRouter,
@@ -48,6 +79,7 @@ const trpcHandler = createHTTPHandler({
       auth,
       imageStorage,
       backgroundRemoval,
+      tryOnProvider,
     }),
 });
 
@@ -60,6 +92,11 @@ const server = http.createServer((req, res) => {
 
   if (req.url?.startsWith("/api/auth")) {
     authHandler(req, res);
+    return;
+  }
+
+  if (req.url?.startsWith("/api/webhooks/fal") && req.method === "POST") {
+    falWebhookHandler(req, res);
     return;
   }
 

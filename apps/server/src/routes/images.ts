@@ -1,7 +1,7 @@
 import type http from "node:http";
 
 import { eq } from "@acme/db";
-import { bodyPhotos, garments } from "@acme/db/schema";
+import { bodyPhotos, garments, tryOnRenders } from "@acme/db/schema";
 
 import { nodeHeadersToHeaders } from "../utils/headers";
 
@@ -26,6 +26,47 @@ interface ImageHandlerDeps {
 
 export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps) {
   return async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    // Handle render result images: /api/images/render/:renderId
+    const renderMatch = req.url?.match(/\/api\/images\/render\/([^/?]+)/);
+    if (renderMatch?.[1]) {
+      const renderId = renderMatch[1];
+
+      // Authenticate
+      const headers = nodeHeadersToHeaders(req.headers);
+      const session = await auth.api.getSession({ headers });
+      if (!session) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
+
+      const renderResult = await db
+        .select({
+          id: tryOnRenders.id,
+          userId: tryOnRenders.userId,
+          resultPath: tryOnRenders.resultPath,
+          status: tryOnRenders.status,
+        })
+        .from(tryOnRenders)
+        .where(eq(tryOnRenders.id, renderId))
+        .limit(1);
+
+      const render = renderResult[0];
+      if (!render || render.status !== "completed" || !render.resultPath) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Not found" }));
+        return;
+      }
+
+      if (render.userId !== session.user.id) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Forbidden" }));
+        return;
+      }
+
+      return streamImage(res, imageStorage, render.resultPath, "image/png");
+    }
+
     // Extract imageId from URL: /api/images/:imageId
     const imageId = req.url?.split("/api/images/")[1]?.split("?")[0];
     if (!imageId) {

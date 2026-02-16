@@ -38,6 +38,9 @@ function createMockImageStorage() {
       Promise.resolve("user-123/garments/garment-abc_cutout.png"),
     ),
     deleteGarmentFiles: mock(() => Promise.resolve()),
+    saveRenderResult: mock(() =>
+      Promise.resolve("user-123/renders/render-abc_result.png"),
+    ),
   };
 }
 

@@ -109,6 +109,48 @@ export const garments = pgTable("garments", (t) => ({
   updatedAt: t.timestamp().defaultNow().notNull(),
 }));
 
+export const RENDER_STATUSES = [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+] as const;
+
+export const TRYON_PROVIDERS = [
+  "fal_fashn",
+  "fal_nano_banana",
+  "google_vto",
+] as const;
+
+export const renderStatus = pgEnum("render_status", RENDER_STATUSES);
+export const tryOnProviderEnum = pgEnum("try_on_provider", TRYON_PROVIDERS);
+
+export const tryOnRenders = pgTable("try_on_renders", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  garmentId: t
+    .text()
+    .notNull()
+    .references(() => garments.id, { onDelete: "cascade" }),
+  provider: tryOnProviderEnum().notNull(),
+  status: renderStatus().notNull().default("pending"),
+  jobId: t.text(),
+  resultPath: t.text(),
+  errorCode: t.text(),
+  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  updatedAt: t
+    .timestamp({ withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+}));
+
 export const verifications = pgTable("verifications", (t) => ({
   id: t.text().primaryKey(),
   identifier: t.text().notNull(),

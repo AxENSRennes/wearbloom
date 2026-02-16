@@ -3,9 +3,14 @@ import { describe, expect, test } from "bun:test";
 import {
   BG_REMOVAL_STATUSES,
   GARMENT_CATEGORIES,
+  RENDER_STATUSES,
+  TRYON_PROVIDERS,
   bgRemovalStatusEnum,
   garmentCategory,
   garments,
+  renderStatus,
+  tryOnProviderEnum,
+  tryOnRenders,
 } from "./schema";
 
 describe("garments schema", () => {
@@ -63,5 +68,66 @@ describe("garments schema", () => {
 
   test("BG_REMOVAL_STATUSES has correct values", () => {
     expect(BG_REMOVAL_STATUSES).toEqual(["pending", "completed", "failed", "skipped"]);
+  });
+});
+
+describe("tryOnRenders schema", () => {
+  test("RENDER_STATUSES contains all expected values", () => {
+    expect(RENDER_STATUSES).toEqual([
+      "pending",
+      "processing",
+      "completed",
+      "failed",
+    ]);
+  });
+
+  test("TRYON_PROVIDERS contains all expected values", () => {
+    expect(TRYON_PROVIDERS).toEqual([
+      "fal_fashn",
+      "fal_nano_banana",
+      "google_vto",
+    ]);
+  });
+
+  test("renderStatus pgEnum is defined", () => {
+    expect(renderStatus).toBeDefined();
+    expect(renderStatus.enumName).toBe("render_status");
+    expect(renderStatus.enumValues).toEqual([
+      "pending",
+      "processing",
+      "completed",
+      "failed",
+    ]);
+  });
+
+  test("tryOnProviderEnum pgEnum is defined", () => {
+    expect(tryOnProviderEnum).toBeDefined();
+    expect(tryOnProviderEnum.enumName).toBe("try_on_provider");
+    expect(tryOnProviderEnum.enumValues).toEqual([
+      "fal_fashn",
+      "fal_nano_banana",
+      "google_vto",
+    ]);
+  });
+
+  test("tryOnRenders table is defined with expected columns", () => {
+    expect(tryOnRenders).toBeDefined();
+
+    const columnNames = Object.keys(tryOnRenders);
+    const expected = [
+      "id",
+      "userId",
+      "garmentId",
+      "provider",
+      "status",
+      "jobId",
+      "resultPath",
+      "errorCode",
+      "createdAt",
+      "updatedAt",
+    ];
+    for (const col of expected) {
+      expect(columnNames).toContain(col);
+    }
   });
 });
