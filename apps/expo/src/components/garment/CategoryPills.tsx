@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { type LayoutChangeEvent, Pressable, ScrollView, Text } from "react-native";
 
 import { cn } from "@acme/ui";
 
@@ -9,7 +9,10 @@ interface CategoryPillsProps {
   onSelect: (category: string) => void;
 }
 
-const PILL_WIDTH_ESTIMATE = 90;
+interface PillLayout {
+  x: number;
+  width: number;
+}
 
 export function CategoryPills({
   categories,
@@ -17,16 +20,31 @@ export function CategoryPills({
   onSelect,
 }: CategoryPillsProps) {
   const scrollRef = useRef<ScrollView>(null);
+  const pillLayouts = useRef<Map<number, PillLayout>>(new Map());
+  const [scrollViewWidth, setScrollViewWidth] = useState(0);
 
   const handleSelect = useCallback(
     (category: string, index: number) => {
       onSelect(category);
-      scrollRef.current?.scrollTo({
-        x: Math.max(0, index * PILL_WIDTH_ESTIMATE - 40),
-        animated: true,
-      });
+      const layout = pillLayouts.current.get(index);
+      if (layout && scrollViewWidth > 0) {
+        // Center the pill in the scroll view
+        const targetX = layout.x - scrollViewWidth / 2 + layout.width / 2;
+        scrollRef.current?.scrollTo({
+          x: Math.max(0, targetX),
+          animated: true,
+        });
+      }
     },
-    [onSelect],
+    [onSelect, scrollViewWidth],
+  );
+
+  const handlePillLayout = useCallback(
+    (index: number, event: LayoutChangeEvent) => {
+      const { x, width } = event.nativeEvent.layout;
+      pillLayouts.current.set(index, { x, width });
+    },
+    [],
   );
 
   return (
@@ -35,6 +53,7 @@ export function CategoryPills({
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="gap-2 px-4"
+      onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
     >
       {categories.map((category, index) => {
         const isActive = category === selected;
@@ -42,6 +61,7 @@ export function CategoryPills({
           <Pressable
             key={category}
             onPress={() => handleSelect(category, index)}
+            onLayout={(e) => handlePillLayout(index, e)}
             accessibilityRole="button"
             accessibilityLabel={category}
             accessibilityState={{ selected: isActive }}

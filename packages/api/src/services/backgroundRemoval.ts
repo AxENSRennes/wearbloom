@@ -36,6 +36,7 @@ export function createBackgroundRemoval({
      * (acceptable for MVP). In production, consider a persistent job queue.
      */
     async removeBackground(imageBuffer: Buffer): Promise<Buffer | null> {
+      const start = Date.now();
       const controller = new AbortController();
       const timeout = setTimeout(
         () => controller.abort(),
@@ -78,16 +79,16 @@ export function createBackgroundRemoval({
           }
 
           const arrayBuffer = await response.arrayBuffer();
-          logger?.info("Background removal completed successfully");
+          logger?.info({ durationMs: Date.now() - start }, "Background removal completed successfully");
           return Buffer.from(arrayBuffer);
         } finally {
           clearTimeout(fetchTimeout);
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
-          logger?.error("Background removal timed out");
+          logger?.error({ durationMs: Date.now() - start }, "Background removal timed out");
         } else {
-          logger?.error({ err }, "Background removal failed");
+          logger?.error({ err, durationMs: Date.now() - start }, "Background removal failed");
         }
         return null;
       } finally {

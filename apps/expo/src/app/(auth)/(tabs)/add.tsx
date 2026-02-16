@@ -29,7 +29,7 @@ const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"] as const
 // State machine
 // ---------------------------------------------------------------------------
 
-type AddState =
+export type AddState =
   | { step: "idle" }
   | {
       step: "previewing";
@@ -46,7 +46,7 @@ type AddState =
     }
   | { step: "success"; garmentId: string };
 
-type AddAction =
+export type AddAction =
   | { type: "PHOTO_SELECTED"; uri: string; width: number; height: number }
   | { type: "UPLOAD_START"; category: string }
   | { type: "UPLOAD_SUCCESS"; garmentId: string }
@@ -54,7 +54,7 @@ type AddAction =
   | { type: "RETAKE" }
   | { type: "ADD_ANOTHER" };
 
-function reducer(_state: AddState, action: AddAction): AddState {
+export function addGarmentReducer(_state: AddState, action: AddAction): AddState {
   switch (action.type) {
     case "PHOTO_SELECTED":
       return {
@@ -94,7 +94,7 @@ function reducer(_state: AddState, action: AddAction): AddState {
 // ---------------------------------------------------------------------------
 
 export default function AddGarmentScreen() {
-  const [state, dispatch] = useReducer(reducer, { step: "idle" } as AddState);
+  const [state, dispatch] = useReducer(addGarmentReducer, { step: "idle" } as AddState);
   const [selectedCategory, setSelectedCategory] = useState("tops");
   const [showActionSheet, setShowActionSheet] = useState(false);
   const router = useRouter();
@@ -109,12 +109,21 @@ export default function AddGarmentScreen() {
         });
         showToast({ message: "Garment saved!", variant: "success" });
       },
-      onError: () => {
+      onError: (error) => {
         dispatch({ type: "UPLOAD_ERROR" });
-        showToast({
-          message: "Upload failed. Please try again.",
-          variant: "error",
-        });
+
+        // Map known business error codes to user-friendly messages
+        const errorMessages: Record<string, string> = {
+          MISSING_PHOTO: "No photo selected. Please try again.",
+          MISSING_CATEGORY: "Please select a category.",
+          INVALID_CATEGORY: "Invalid category selected.",
+          INVALID_IMAGE_TYPE: "Only JPEG and PNG images are supported.",
+          IMAGE_TOO_LARGE: "Image is too large. Maximum size is 10MB.",
+        };
+
+        const message =
+          errorMessages[error.message] ?? "Upload failed. Please try again.";
+        showToast({ message, variant: "error" });
       },
     }),
   );

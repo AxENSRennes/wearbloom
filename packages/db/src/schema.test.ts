@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { garmentCategory, garments } from "./schema";
+import { GARMENT_CATEGORIES, garmentCategory, garments } from "./schema";
 
 describe("garments schema", () => {
   test("garments table export exists", () => {
@@ -40,5 +40,9 @@ describe("garments schema", () => {
       "shoes",
       "outerwear",
     ]);
+  });
+
+  test("GARMENT_CATEGORIES has correct values", () => {
+    expect(GARMENT_CATEGORIES).toEqual(["tops", "bottoms", "dresses", "shoes", "outerwear"]);
   });
 });
