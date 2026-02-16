@@ -4,6 +4,6 @@
     "jsx": "react-native",
     "rootDir": "."
   },
-  "include": ["src", "nativewind-env.d.ts"],
-  "exclude": ["node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "test"]
+  "include": ["src", "test", "nativewind-env.d.ts"],
+  "exclude": ["node_modules"]
 }

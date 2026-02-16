@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, Text, View } from "react-native";
 
 import { wearbloomTheme } from "./gluestack-config";
@@ -29,7 +30,7 @@ export function showToast(config: ToastConfig) {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastEntry | null>(null);
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const translateY = useMemo(() => new Animated.Value(-100), []);
   const nextId = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
