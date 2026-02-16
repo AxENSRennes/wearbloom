@@ -77,9 +77,7 @@ let onErrorCb: ((error: Error) => void) | undefined;
 let mutationFnCapture: (() => Promise<unknown>) | undefined;
 
 mock.module("@tanstack/react-query", () => ({
-  QueryClient: class MockQueryClient {
-    constructor() {}
-  },
+  QueryClient: class MockQueryClient {},
   QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
   useMutation: (opts?: {
@@ -147,17 +145,28 @@ mock.module("~/utils/api", () => ({
 const { useAppleSignIn } = await import("./useAppleSignIn");
 
 // ---------------------------------------------------------------------------
+// Assertion helper for type-safe undefined checks
+// ---------------------------------------------------------------------------
+function assertDefined<T>(
+  val: T | undefined,
+  msg = "Expected value to be defined",
+): asserts val is T {
+  if (val === undefined) throw new Error(msg);
+}
+
+// ---------------------------------------------------------------------------
 // Minimal hook runner
 // ---------------------------------------------------------------------------
 function runHook(
   options?: Parameters<typeof useAppleSignIn>[0],
 ): ReturnType<typeof useAppleSignIn> {
-  let result!: ReturnType<typeof useAppleSignIn>;
+  let result: ReturnType<typeof useAppleSignIn> | undefined;
   function TestComponent() {
     result = useAppleSignIn(options);
     return null;
   }
   renderToStaticMarkup(React.createElement(TestComponent));
+  assertDefined(result, "Hook must produce a result after render");
   return result;
 }
 
@@ -198,9 +207,9 @@ describe("useAppleSignIn", () => {
 
   test("mutationFn calls Apple signInAsync with correct scopes", async () => {
     runHook();
-    expect(mutationFnCapture).toBeDefined();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(signInAsyncMock).toHaveBeenCalledWith({
       requestedScopes: [0, 1], // FULL_NAME=0, EMAIL=1
@@ -209,8 +218,9 @@ describe("useAppleSignIn", () => {
 
   test("mutationFn calls authClient.signIn.social with identity token", async () => {
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(socialSignInMock).toHaveBeenCalledWith({
       provider: "apple",
@@ -221,8 +231,9 @@ describe("useAppleSignIn", () => {
   test("mutationFn throws when identityToken is null", async () => {
     appleSignInResult.identityToken = null;
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await expect(mutationFnCapture!()).rejects.toThrow(
+    await expect(mutationFnCapture()).rejects.toThrow(
       "No identity token received from Apple",
     );
   });
@@ -235,8 +246,9 @@ describe("useAppleSignIn", () => {
       }),
     );
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await expect(mutationFnCapture!()).rejects.toThrow("Auth server error");
+    await expect(mutationFnCapture()).rejects.toThrow("Auth server error");
   });
 
   test("mutationFn captures full name on first sign-in", async () => {
@@ -245,8 +257,9 @@ describe("useAppleSignIn", () => {
       familyName: "Doe",
     };
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(updateUserMock).toHaveBeenCalledWith({ name: "Jane Doe" });
   });
@@ -254,8 +267,9 @@ describe("useAppleSignIn", () => {
   test("mutationFn skips name update when fullName is null", async () => {
     appleSignInResult.fullName = null;
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(updateUserMock).not.toHaveBeenCalled();
   });
@@ -263,8 +277,9 @@ describe("useAppleSignIn", () => {
   test("mutationFn skips name update when both names are empty", async () => {
     appleSignInResult.fullName = { givenName: null, familyName: null };
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(updateUserMock).not.toHaveBeenCalled();
   });
@@ -272,8 +287,9 @@ describe("useAppleSignIn", () => {
   test("mutationFn handles only givenName present", async () => {
     appleSignInResult.fullName = { givenName: "Jane", familyName: null };
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
-    await mutationFnCapture!();
+    await mutationFnCapture();
 
     expect(updateUserMock).toHaveBeenCalledWith({ name: "Jane" });
   });
@@ -284,16 +300,17 @@ describe("useAppleSignIn", () => {
     });
     appleSignInResult.fullName = { givenName: "Jane", familyName: "Doe" };
     runHook();
+    assertDefined(mutationFnCapture, "mutationFnCapture should be set");
 
     // Should not reject — name update failure is non-critical
-    await expect(mutationFnCapture!()).resolves.toBeDefined();
+    await expect(mutationFnCapture()).resolves.toBeDefined();
   });
 
   test("onSuccess grants credits and navigates to auth tabs", async () => {
     runHook();
-    expect(onSuccessCb).toBeDefined();
+    assertDefined(onSuccessCb, "onSuccessCb should be set");
 
-    await onSuccessCb!();
+    await onSuccessCb();
 
     expect(grantCreditsMutateAsync).toHaveBeenCalled();
     expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
@@ -302,9 +319,9 @@ describe("useAppleSignIn", () => {
   test("onSuccess calls custom onSuccess callback instead of default navigation", async () => {
     const customOnSuccess = mock(() => Promise.resolve());
     runHook({ onSuccess: customOnSuccess });
-    expect(onSuccessCb).toBeDefined();
+    assertDefined(onSuccessCb, "onSuccessCb should be set");
 
-    await onSuccessCb!();
+    await onSuccessCb();
 
     expect(grantCreditsMutateAsync).toHaveBeenCalled();
     expect(customOnSuccess).toHaveBeenCalled();
@@ -316,17 +333,18 @@ describe("useAppleSignIn", () => {
       Promise.reject(new Error("Already granted")),
     );
     runHook();
+    assertDefined(onSuccessCb, "onSuccessCb should be set");
 
-    await onSuccessCb!();
+    await onSuccessCb();
 
     expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
   });
 
   test("onError shows toast for non-cancel errors", () => {
     runHook();
-    expect(onErrorCb).toBeDefined();
+    assertDefined(onErrorCb, "onErrorCb should be set");
 
-    onErrorCb!(new Error("Network timeout"));
+    onErrorCb(new Error("Network timeout"));
 
     expect(showToastMock).toHaveBeenCalledWith({
       message: "Network timeout",
@@ -336,16 +354,18 @@ describe("useAppleSignIn", () => {
 
   test("onError silently ignores user cancellation", () => {
     runHook();
+    assertDefined(onErrorCb, "onErrorCb should be set");
 
-    onErrorCb!(new Error("The operation was canceled"));
+    onErrorCb(new Error("The operation was canceled"));
 
     expect(showToastMock).not.toHaveBeenCalled();
   });
 
   test("onError silently ignores ERR_REQUEST_CANCELED", () => {
     runHook();
+    assertDefined(onErrorCb, "onErrorCb should be set");
 
-    onErrorCb!(new Error("ERR_REQUEST_CANCELED"));
+    onErrorCb(new Error("ERR_REQUEST_CANCELED"));
 
     expect(showToastMock).not.toHaveBeenCalled();
   });

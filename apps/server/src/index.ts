@@ -138,7 +138,8 @@ const cleanupService = createAnonymousCleanupService({ db, logger });
 let lastCleanupTime = 0;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
+  void (async () => {
   if (req.url === "/health") {
     // Throttled fire-and-forget cleanup on health check
     const now = Date.now();
@@ -206,6 +207,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   trpcHandler(req, res);
+  })();
 });
 
 server.listen(env.PORT);
