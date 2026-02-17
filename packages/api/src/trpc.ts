@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod/v4";
 
+import type { TRYON_PROVIDERS } from "@acme/db/schema";
 import { db } from "@acme/db/client";
 
 import { RateLimiter } from "./rateLimit";
@@ -88,7 +89,7 @@ export interface TryOnProviderContext {
     imageData?: Buffer;
     contentType: string;
   } | null>;
-  readonly name: string;
+  readonly name: (typeof TRYON_PROVIDERS)[number];
   readonly supportedCategories: readonly string[];
 }
 

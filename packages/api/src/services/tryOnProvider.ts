@@ -1,3 +1,5 @@
+import type { TRYON_PROVIDERS } from "@acme/db/schema";
+
 import { FalFashnProvider } from "./providers/falFashn";
 import { FalNanoBananaProvider } from "./providers/falNanoBanana";
 import { GoogleVTOProvider } from "./providers/googleVTO";
@@ -29,7 +31,7 @@ export interface TryOnProvider {
     options?: RenderOptions,
   ): Promise<{ jobId: string }>;
   getResult(jobId: string): Promise<TryOnResult | null>;
-  readonly name: string;
+  readonly name: (typeof TRYON_PROVIDERS)[number];
   readonly supportedCategories: GarmentCategory[];
 }
 
@@ -44,7 +46,7 @@ export interface TryOnProviderConfig {
 }
 
 export function createTryOnProvider(
-  providerName: string,
+  providerName: (typeof TRYON_PROVIDERS)[number],
   config: TryOnProviderConfig,
 ): TryOnProvider {
   switch (providerName) {
@@ -55,6 +57,6 @@ export function createTryOnProvider(
     case "google_vto":
       return new GoogleVTOProvider(config);
     default:
-      throw new Error(`Unknown provider: ${providerName}`);
+      throw new Error(`Unknown provider: ${providerName as string}`);
   }
 }

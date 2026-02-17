@@ -120,7 +120,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/img-123",
+      url: "/api/images/a1b2c3d4e5f6g7h8i9j0kl1",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -163,7 +163,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/img-999",
+      url: "/api/images/b2c3d4e5f6g7h8i9j0kl1m2",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -178,7 +178,7 @@ describe("createImageHandler", () => {
   test("returns 403 when user does not own the body photo", async () => {
     const auth = createMockAuth(mockSession);
     const photo = {
-      id: "img-other",
+      id: "c3d4e5f6g7h8i9j0kl1m2n3",
       userId: "other-user",
       filePath: "other/body/avatar.jpg",
       mimeType: "image/jpeg",
@@ -192,7 +192,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/img-other",
+      url: "/api/images/c3d4e5f6g7h8i9j0kl1m2n3",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -207,7 +207,7 @@ describe("createImageHandler", () => {
   test("returns 200 and streams body photo when authorized", async () => {
     const auth = createMockAuth(mockSession);
     const photo = {
-      id: "img-owned",
+      id: "d4e5f6g7h8i9j0kl1m2n3o4",
       userId: "user-123",
       filePath: "user-123/body/avatar.jpg",
       mimeType: "image/jpeg",
@@ -221,7 +221,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/img-owned",
+      url: "/api/images/d4e5f6g7h8i9j0kl1m2n3o4",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -243,9 +243,9 @@ describe("createImageHandler", () => {
   test("serves garment original image when body photo not found", async () => {
     const auth = createMockAuth(mockSession);
     const garment = {
-      id: "garment-1",
+      id: "e5f6g7h8i9j0kl1m2n3o4p5",
       userId: "user-123",
-      imagePath: "user-123/garments/garment-1/original.jpg",
+      imagePath: "user-123/garments/e5f6g7h8i9j0kl1m2n3o4p5/original.jpg",
       cutoutPath: null,
       bgRemovalStatus: "pending",
       mimeType: "image/jpeg",
@@ -259,7 +259,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/garment-1",
+      url: "/api/images/e5f6g7h8i9j0kl1m2n3o4p5",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -272,17 +272,17 @@ describe("createImageHandler", () => {
       "X-Content-Type-Options": "nosniff",
     });
     expect(imageStorage.streamFile).toHaveBeenCalledWith(
-      "user-123/garments/garment-1/original.jpg",
+      "user-123/garments/e5f6g7h8i9j0kl1m2n3o4p5/original.jpg",
     );
   });
 
   test("serves garment cutout image when bgRemovalStatus is completed", async () => {
     const auth = createMockAuth(mockSession);
     const garment = {
-      id: "garment-2",
+      id: "f6g7h8i9j0kl1m2n3o4p5q6",
       userId: "user-123",
-      imagePath: "user-123/garments/garment-2/original.jpg",
-      cutoutPath: "user-123/garments/garment-2/cutout.png",
+      imagePath: "user-123/garments/f6g7h8i9j0kl1m2n3o4p5q6/original.jpg",
+      cutoutPath: "user-123/garments/f6g7h8i9j0kl1m2n3o4p5q6/cutout.png",
       bgRemovalStatus: "completed",
       mimeType: "image/jpeg",
     };
@@ -295,7 +295,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/garment-2",
+      url: "/api/images/f6g7h8i9j0kl1m2n3o4p5q6",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -308,16 +308,16 @@ describe("createImageHandler", () => {
       "X-Content-Type-Options": "nosniff",
     });
     expect(imageStorage.streamFile).toHaveBeenCalledWith(
-      "user-123/garments/garment-2/cutout.png",
+      "user-123/garments/f6g7h8i9j0kl1m2n3o4p5q6/cutout.png",
     );
   });
 
   test("returns 403 when user does not own the garment", async () => {
     const auth = createMockAuth(mockSession);
     const garment = {
-      id: "garment-other",
+      id: "g7h8i9j0kl1m2n3o4p5q6r7",
       userId: "other-user",
-      imagePath: "other-user/garments/garment-other/original.jpg",
+      imagePath: "other-user/garments/g7h8i9j0kl1m2n3o4p5q6r7/original.jpg",
       cutoutPath: null,
       bgRemovalStatus: "pending",
       mimeType: "image/jpeg",
@@ -331,7 +331,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/garment-other",
+      url: "/api/images/g7h8i9j0kl1m2n3o4p5q6r7",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -346,9 +346,9 @@ describe("createImageHandler", () => {
   test("falls back to original image when cutoutPath is null even with completed status", async () => {
     const auth = createMockAuth(mockSession);
     const garment = {
-      id: "garment-3",
+      id: "h8i9j0kl1m2n3o4p5q6r7s8",
       userId: "user-123",
-      imagePath: "user-123/garments/garment-3/original.jpg",
+      imagePath: "user-123/garments/h8i9j0kl1m2n3o4p5q6r7s8/original.jpg",
       cutoutPath: null,
       bgRemovalStatus: "completed",
       mimeType: "image/jpeg",
@@ -362,7 +362,7 @@ describe("createImageHandler", () => {
     });
 
     const req = {
-      url: "/api/images/garment-3",
+      url: "/api/images/h8i9j0kl1m2n3o4p5q6r7s8",
       headers: {},
     } as http.IncomingMessage;
     const res = createMockRes();
@@ -370,7 +370,7 @@ describe("createImageHandler", () => {
     await handler(req, res);
 
     expect(imageStorage.streamFile).toHaveBeenCalledWith(
-      "user-123/garments/garment-3/original.jpg",
+      "user-123/garments/h8i9j0kl1m2n3o4p5q6r7s8/original.jpg",
     );
   });
 });

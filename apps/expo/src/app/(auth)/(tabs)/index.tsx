@@ -127,7 +127,10 @@ export default function WardrobeScreen() {
         {
           onSuccess: (data) => {
             bottomSheetRef.current?.close();
-            router.push(`/render/${data.renderId}` as never);
+            router.push({
+              pathname: "/render/[id]",
+              params: { id: data.renderId },
+            });
           },
           onError: (err) => {
             if (err.message === "INVALID_CATEGORY") {

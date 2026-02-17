@@ -85,8 +85,11 @@ export function StepSeeTheMagic({
   const isRendering = !renderMutation.data && !renderMutation.isError;
   const resultUri = renderMutation.data?.resultUri ?? null;
 
-  // Trigger on mount
+  // Trigger on mount (ref guard prevents double-fire in StrictMode)
+  const hasFired = useRef(false);
   useEffect(() => {
+    if (hasFired.current) return;
+    hasFired.current = true;
     startTimeRef.current = Date.now();
     renderMutation.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps

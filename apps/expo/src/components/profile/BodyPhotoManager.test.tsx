@@ -1,12 +1,12 @@
 import * as rq from "@tanstack/react-query";
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
 import { BodyPhotoManager } from "./BodyPhotoManager";
 
 describe("BodyPhotoManager", () => {
   afterEach(() => {
-    // Restore any spies between tests
+    mock.restore();
   });
 
   test("renders placeholder when no body photo exists", () => {

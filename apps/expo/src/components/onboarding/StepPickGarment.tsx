@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
-import { Button, showToast, ThemedText } from "@acme/ui";
+import { Button, cn, showToast, ThemedText } from "@acme/ui";
 
 import type { GarmentCategory, StockGarment } from "~/constants/stockAssets";
 import { STOCK_GARMENTS } from "~/constants/stockAssets";
@@ -60,7 +60,10 @@ function GarmentCard({
     >
       <Animated.View
         style={animatedStyle}
-        className={`overflow-hidden rounded-xl ${isSelected ? "border-2 border-[#1A1A1A]" : ""}`}
+        className={cn(
+          "overflow-hidden rounded-xl",
+          isSelected && "border-2 border-accent",
+        )}
       >
         <View style={{ aspectRatio: 1 / 1.2 }}>
           <Image
@@ -99,7 +102,7 @@ export function StepPickGarment({
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       quality: 0.8,
     });

@@ -1,13 +1,16 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { createId } from "@paralleldrive/cuid2";
 import { TRPCError } from "@trpc/server";
+import pino from "pino";
 import { z } from "zod/v4";
 
-import { and, desc, eq } from "@acme/db";
+import { and, desc, eq, lt } from "@acme/db";
 import { GARMENT_CATEGORIES, garments } from "@acme/db/schema";
 
 import { protectedProcedure, uploadProcedure } from "../trpc";
 import { validateImageBytes } from "../validateImageBytes";
+
+const logger = pino({ name: "garment-router" });
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const VALID_MIME_TYPES = ["image/jpeg", "image/png"];
@@ -152,9 +155,11 @@ export const garmentRouter = {
                 .update(garments)
                 .set({ bgRemovalStatus: "failed" })
                 .where(eq(garments.id, garmentId));
-            } catch {
-              // DB update failed — bgRemovalStatus stuck at "pending"
-              // Will be visible as a permanently pending garment
+            } catch (cleanupErr) {
+              logger.error(
+                { garmentId, err: cleanupErr },
+                "DB update failed — bgRemovalStatus stuck at pending",
+              );
             }
           }
         })();
@@ -272,4 +277,19 @@ export const garmentRouter = {
 
       return garment;
     }),
+
+  cleanupStuckGarments: protectedProcedure.mutation(async ({ ctx }) => {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const result = await ctx.db
+      .update(garments)
+      .set({ bgRemovalStatus: "failed" })
+      .where(
+        and(
+          eq(garments.bgRemovalStatus, "pending"),
+          lt(garments.createdAt, fiveMinutesAgo),
+        ),
+      )
+      .returning({ id: garments.id });
+    return { cleaned: result.length };
+  }),
 } satisfies TRPCRouterRecord;

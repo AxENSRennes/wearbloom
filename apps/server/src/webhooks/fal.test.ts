@@ -151,6 +151,7 @@ beforeEach(() => {
     // Image download
     return Promise.resolve({
       ok: true,
+      headers: new Headers({ "content-length": "10" }),
       arrayBuffer: () => Promise.resolve(Buffer.from("image-data")),
     } as unknown as Response);
   }) as unknown as typeof globalThis.fetch;
@@ -197,8 +198,8 @@ describe("fal webhook handler", () => {
   test("invalid signature → returns 401", async () => {
     // Override sodium mock for this test
     const sodium = (await import("libsodium-wrappers")).default;
-    const origVerify = sodium.crypto_sign_verify_detached;
-    sodium.crypto_sign_verify_detached = mock(() => false) as typeof origVerify;
+    const original = sodium.crypto_sign_verify_detached;
+    sodium.crypto_sign_verify_detached = mock(() => false);
 
     const db = createMockDb();
     const imageStorage = createMockImageStorage();
@@ -215,8 +216,7 @@ describe("fal webhook handler", () => {
 
     expect(res._statusCode).toBe(401);
 
-    // Restore
-    sodium.crypto_sign_verify_detached = origVerify;
+    sodium.crypto_sign_verify_detached = original;
   });
 
   test("expired timestamp (>5 min) → returns 401", async () => {

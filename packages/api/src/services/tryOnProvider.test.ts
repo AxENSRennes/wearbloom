@@ -29,8 +29,9 @@ describe("createTryOnProvider", () => {
   });
 
   test("throws for unknown provider", () => {
-    expect(() => createTryOnProvider("unknown", baseConfig)).toThrow(
-      "Unknown provider: unknown",
-    );
+    expect(() =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createTryOnProvider("unknown" as any, baseConfig),
+    ).toThrow("Unknown provider: unknown");
   });
 });
