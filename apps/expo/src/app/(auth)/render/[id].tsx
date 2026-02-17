@@ -22,7 +22,7 @@ import { Button, showToast, ThemedText } from "@acme/ui";
 import { FeedbackButton } from "~/components/tryon/FeedbackButton";
 import { RenderLoadingAnimation } from "~/components/tryon/RenderLoadingAnimation";
 import { trpc } from "~/utils/api";
-import { getAuthHeaders } from "~/utils/authHeaders";
+import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
 
 const MAX_POLLS = 15;
@@ -175,7 +175,10 @@ export default function RenderScreen() {
   }));
 
   // Auth headers for image loading
-  const imageHeaders = getAuthHeaders();
+  const imageHeaders = (() => {
+    const cookies = authClient.getCookie();
+    return cookies ? { Cookie: cookies } : undefined;
+  })();
 
   // --- LOADING STATE ---
   if (status === "pending" || status === "processing") {

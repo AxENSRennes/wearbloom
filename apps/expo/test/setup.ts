@@ -1,5 +1,5 @@
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { plugin } from "bun";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { mock } from "bun:test";
 
 // Register DOM globals (document, window, HTMLElement, etc.) for behavioral tests
@@ -52,11 +52,35 @@ globalThis.expo = {
 const React = await import("react");
 
 // ---------------------------------------------------------------------------
+// Helper: mock both the bare specifier AND the resolved file:// path.
+// Works around Bun bug #10428 where pnpm symlinks cause mock.module()
+// to miss the resolved path that transitive imports actually use.
+// ---------------------------------------------------------------------------
+function mockModuleWithResolve(
+  specifier: string,
+  factory: () => Record<string, unknown>,
+) {
+  void mock.module(specifier, factory);
+  try {
+    const resolved = import.meta.resolve(specifier);
+    if (resolved !== specifier) {
+      // Mock both the file:// URL and the bare filesystem path
+      void mock.module(resolved, factory);
+      if (resolved.startsWith("file://")) {
+        void mock.module(resolved.slice(7), factory);
+      }
+    }
+  } catch {
+    // Resolution failed — bare specifier mock still in place
+  }
+}
+
+// ---------------------------------------------------------------------------
 // react-native-mmkv — in-memory Map simulating MMKV
 // ---------------------------------------------------------------------------
 const mmkvStore = new Map<string, string>();
 
-void mock.module("react-native-mmkv", () => ({
+mockModuleWithResolve("react-native-mmkv", () => ({
   createMMKV: mock(() => ({
     getString: mock((key: string) => mmkvStore.get(key) ?? undefined),
     set: mock((key: string, value: string) => {
@@ -78,7 +102,7 @@ void mock.module("react-native-mmkv", () => ({
 // ---------------------------------------------------------------------------
 const store = new Map<string, string>();
 
-void mock.module("expo-secure-store", () => ({
+mockModuleWithResolve("expo-secure-store", () => ({
   getItem: (key: string) => store.get(key) ?? null,
   setItem: (key: string, value: string) => {
     store.set(key, value);
@@ -107,7 +131,7 @@ function mockComponent(name: string) {
   return comp;
 }
 
-void mock.module("react-native", () => ({
+mockModuleWithResolve("react-native", () => ({
   View: mockComponent("View"),
   Text: mockComponent("Text"),
   TextInput: mockComponent("TextInput"),
@@ -159,17 +183,8 @@ void mock.module("react-native", () => ({
   LayoutAnimation: {
     configureNext: mock(() => {}),
     create: (_duration: number, _type: unknown, _prop: unknown) => ({}),
-    Types: {
-      easeInEaseOut: "easeInEaseOut",
-      linear: "linear",
-      spring: "spring",
-    },
-    Properties: {
-      opacity: "opacity",
-      scaleX: "scaleX",
-      scaleY: "scaleY",
-      scaleXY: "scaleXY",
-    },
+    Types: { easeInEaseOut: "easeInEaseOut", linear: "linear", spring: "spring" },
+    Properties: { opacity: "opacity", scaleX: "scaleX", scaleY: "scaleY", scaleXY: "scaleXY" },
   },
   StyleSheet: {
     create: <T extends Record<string, unknown>>(styles: T): T => styles,
@@ -215,7 +230,7 @@ void mock.module("react-native", () => ({
   processColor: (color: unknown) => color,
 }));
 
-void mock.module("react-native-safe-area-context", () => ({
+mockModuleWithResolve("react-native-safe-area-context", () => ({
   SafeAreaView: mockComponent("SafeAreaView"),
   SafeAreaProvider: mockComponent("SafeAreaProvider"),
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -224,7 +239,7 @@ void mock.module("react-native-safe-area-context", () => ({
 // ---------------------------------------------------------------------------
 // Gluestack UI — mock core and utils (required by @acme/ui)
 // ---------------------------------------------------------------------------
-void mock.module("@gluestack-ui/core", () => ({
+mockModuleWithResolve("@gluestack-ui/core", () => ({
   createButton: () => {
     const Comp = React.forwardRef(
       (props: Record<string, unknown>, ref: unknown) => {
@@ -246,7 +261,7 @@ void mock.module("@gluestack-ui/core", () => ({
   },
 }));
 
-void mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
+mockModuleWithResolve("@gluestack-ui/utils/nativewind-utils", () => ({
   tva:
     (config: Record<string, unknown>) => (props: Record<string, unknown>) => {
       const base = (config.base as string | undefined) ?? "";
@@ -260,7 +275,8 @@ void mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
       if (variants) {
         for (const [key, map] of Object.entries(variants)) {
           const val =
-            (props[key] as string | undefined) ?? defaultVariants?.[key];
+            (props[key] as string | undefined) ??
+            defaultVariants?.[key];
           if (val && map[val]) cls += " " + map[val];
         }
       }
@@ -274,7 +290,7 @@ void mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
 // ---------------------------------------------------------------------------
 // expo-constants — mock Constants for base URL resolution
 // ---------------------------------------------------------------------------
-void mock.module("expo-constants", () => ({
+mockModuleWithResolve("expo-constants", () => ({
   default: {
     expoConfig: {
       hostUri: "localhost:3000",
@@ -285,7 +301,7 @@ void mock.module("expo-constants", () => ({
 // ---------------------------------------------------------------------------
 // expo-haptics — mock haptic feedback
 // ---------------------------------------------------------------------------
-void mock.module("expo-haptics", () => ({
+mockModuleWithResolve("expo-haptics", () => ({
   impactAsync: mock(() => Promise.resolve()),
   notificationAsync: mock(() => Promise.resolve()),
   ImpactFeedbackStyle: {
@@ -303,7 +319,7 @@ void mock.module("expo-haptics", () => ({
 // ---------------------------------------------------------------------------
 // expo-image-picker — mock camera and gallery pickers
 // ---------------------------------------------------------------------------
-void mock.module("expo-image-picker", () => ({
+mockModuleWithResolve("expo-image-picker", () => ({
   launchCameraAsync: mock(() =>
     Promise.resolve({
       canceled: false,
@@ -341,7 +357,7 @@ void mock.module("expo-image-picker", () => ({
 // ---------------------------------------------------------------------------
 // expo-image-manipulator — mock image manipulation
 // ---------------------------------------------------------------------------
-void mock.module("expo-image-manipulator", () => ({
+mockModuleWithResolve("expo-image-manipulator", () => ({
   manipulateAsync: mock(() =>
     Promise.resolve({
       uri: "file:///mock/compressed.jpg",
@@ -362,11 +378,9 @@ const routerMock = {
   canGoBack: () => true,
 };
 
-const searchParamsRef: { current: Record<string, string> } = {
-  current: { id: "mock-render-id" },
-};
+const searchParamsRef: { current: Record<string, string> } = { current: { id: "mock-render-id" } };
 
-void mock.module("expo-router", () => ({
+mockModuleWithResolve("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
@@ -384,14 +398,14 @@ void mock.module("expo-router", () => ({
 // ---------------------------------------------------------------------------
 // expo-image — mock Image component for auth-gated image loading
 // ---------------------------------------------------------------------------
-void mock.module("expo-image", () => ({
+mockModuleWithResolve("expo-image", () => ({
   Image: mockComponent("ExpoImage"),
 }));
 
 // ---------------------------------------------------------------------------
 // lucide-react-native — mock icons as simple components
 // ---------------------------------------------------------------------------
-void mock.module("lucide-react-native", () => ({
+mockModuleWithResolve("lucide-react-native", () => ({
   Camera: mockComponent("Icon-Camera"),
   Home: mockComponent("Icon-Home"),
   ImageIcon: mockComponent("Icon-ImageIcon"),
@@ -424,18 +438,18 @@ const mockAuthClient = {
   getCookie: () => null,
 };
 
-void mock.module("better-auth/react", () => ({
+mockModuleWithResolve("better-auth/react", () => ({
   createAuthClient: () => mockAuthClient,
 }));
 
-void mock.module("@better-auth/expo/client", () => ({
+mockModuleWithResolve("@better-auth/expo/client", () => ({
   expoClient: () => ({ id: "expoClient" }),
 }));
 
 // ---------------------------------------------------------------------------
 // expo-apple-authentication — mock Apple Sign-In SDK
 // ---------------------------------------------------------------------------
-void mock.module("expo-apple-authentication", () => ({
+mockModuleWithResolve("expo-apple-authentication", () => ({
   signInAsync: mock(() =>
     Promise.resolve({
       identityToken: "mock-apple-id-token",
@@ -452,7 +466,7 @@ void mock.module("expo-apple-authentication", () => ({
 // ---------------------------------------------------------------------------
 // @tanstack/react-query — mock useMutation for auth screens
 // ---------------------------------------------------------------------------
-void mock.module("@tanstack/react-query", () => ({
+mockModuleWithResolve("@tanstack/react-query", () => ({
   QueryClient: class MockQueryClient {
     _defaultOptions: Record<string, unknown>;
     constructor(opts?: { defaultOptions?: Record<string, unknown> }) {
@@ -488,17 +502,17 @@ void mock.module("@tanstack/react-query", () => ({
 // ---------------------------------------------------------------------------
 // Expo SDK modules — fonts, splash screen, status bar
 // ---------------------------------------------------------------------------
-void mock.module("@expo-google-fonts/dm-serif-display", () => ({
+mockModuleWithResolve("@expo-google-fonts/dm-serif-display", () => ({
   useFonts: () => [true, null],
   DMSerifDisplay_400Regular: "DMSerifDisplay_400Regular",
 }));
 
-void mock.module("expo-splash-screen", () => ({
+mockModuleWithResolve("expo-splash-screen", () => ({
   preventAutoHideAsync: () => Promise.resolve(),
   hideAsync: () => Promise.resolve(),
 }));
 
-void mock.module("expo-status-bar", () => ({
+mockModuleWithResolve("expo-status-bar", () => ({
   StatusBar: ({ style: _style, ...rest }: Record<string, unknown>) =>
     React.createElement("mock-StatusBar", rest),
 }));
@@ -509,10 +523,9 @@ void mock.module("expo-status-bar", () => ({
 const MockButton = Object.assign(mockComponent("Button"), {
   Text: mockComponent("ButtonText"),
 });
-void mock.module("@acme/ui", () => ({
+mockModuleWithResolve("@acme/ui", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
-  tva: (config: Record<string, unknown>) => () =>
-    (config.base as string | undefined) ?? "",
+  tva: (config: Record<string, unknown>) => () => (config.base as string | undefined) ?? "",
   withStyleContext: () => (comp: unknown) => comp,
   useStyleContext: () => ({}),
   Button: MockButton,
@@ -542,7 +555,7 @@ void mock.module("@acme/ui", () => ({
 // ---------------------------------------------------------------------------
 // expo-iap — mock IAP module (native module not available in test)
 // ---------------------------------------------------------------------------
-void mock.module("expo-iap", () => ({
+mockModuleWithResolve("expo-iap", () => ({
   useIAP: () => ({
     connected: false,
     subscriptions: [],
@@ -569,7 +582,7 @@ void mock.module("expo-iap", () => ({
 // ---------------------------------------------------------------------------
 // tRPC and superjson — imported transitively via ~/utils/api
 // ---------------------------------------------------------------------------
-void mock.module("@trpc/client", () => ({
+mockModuleWithResolve("@trpc/client", () => ({
   createTRPCClient: () => ({}),
   httpBatchLink: () => ({}),
   loggerLink: () => ({}),
@@ -580,8 +593,7 @@ function createMockTRPCProxy(): unknown {
   const handler: ProxyHandler<Record<string, unknown>> = {
     get(_target, prop) {
       if (prop === "queryOptions") return () => ({ queryKey: ["mock"] });
-      if (prop === "mutationOptions")
-        return (opts?: Record<string, unknown>) => ({ ...opts });
+      if (prop === "mutationOptions") return (opts?: Record<string, unknown>) => ({ ...opts });
       if (prop === "queryKey") return () => ["mock"];
       if (typeof prop === "string") return new Proxy({}, handler);
       return undefined;
@@ -590,30 +602,21 @@ function createMockTRPCProxy(): unknown {
   return new Proxy({}, handler);
 }
 
-void mock.module("@trpc/tanstack-react-query", () => ({
+mockModuleWithResolve("@trpc/tanstack-react-query", () => ({
   createTRPCOptionsProxy: () => createMockTRPCProxy(),
 }));
 
-void mock.module("superjson", () => ({
+mockModuleWithResolve("superjson", () => ({
   default: { serialize: (v: unknown) => v, deserialize: (v: unknown) => v },
 }));
 
 // ---------------------------------------------------------------------------
 // react-native-gesture-handler — mock GestureHandlerRootView and gestures
 // ---------------------------------------------------------------------------
-void mock.module("react-native-gesture-handler", () => {
+mockModuleWithResolve("react-native-gesture-handler", () => {
   function createChainableGesture() {
     const gesture: Record<string, unknown> = {};
-    const methods = [
-      "onBegin",
-      "onUpdate",
-      "onEnd",
-      "onStart",
-      "onFinalize",
-      "minDistance",
-      "activeOffsetY",
-      "failOffsetX",
-    ];
+    const methods = ["onBegin", "onUpdate", "onEnd", "onStart", "onFinalize", "minDistance", "activeOffsetY", "failOffsetX"];
     for (const method of methods) {
       gesture[method] = () => gesture;
     }
@@ -626,7 +629,7 @@ void mock.module("react-native-gesture-handler", () => {
       Pan: () => createChainableGesture(),
       Tap: () => createChainableGesture(),
     },
-    GestureDetector: mockComponent("GestureDetector"),
+      GestureDetector: mockComponent("GestureDetector"),
     Swipeable: mockComponent("Swipeable"),
     DrawerLayout: mockComponent("DrawerLayout"),
     State: {},
@@ -643,23 +646,13 @@ void mock.module("react-native-gesture-handler", () => {
 // ---------------------------------------------------------------------------
 // @gorhom/bottom-sheet — mock BottomSheet component with ref methods
 // ---------------------------------------------------------------------------
-void mock.module("@gorhom/bottom-sheet", () => {
+mockModuleWithResolve("@gorhom/bottom-sheet", () => {
   const BottomSheet = React.forwardRef(
     (allProps: Record<string, unknown>, ref: React.Ref<unknown>) => {
-      const {
-        children,
-        onChange,
-        backdropComponent,
-        handleComponent,
-        ...props
-      } = allProps;
+      const { children, onChange, backdropComponent, handleComponent, ...props } = allProps;
       const onChangeFn = onChange as ((index: number) => void) | undefined;
-      const backdropFn = backdropComponent as
-        | ((props: Record<string, unknown>) => React.ReactNode)
-        | undefined;
-      const handleFn = handleComponent as
-        | ((props: Record<string, unknown>) => React.ReactNode)
-        | undefined;
+      const backdropFn = backdropComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
+      const handleFn = handleComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
       React.useImperativeHandle(ref, () => ({
         snapToIndex: mock((index: number) => onChangeFn?.(index)),
         close: mock(() => onChangeFn?.(-1)),
@@ -667,19 +660,12 @@ void mock.module("@gorhom/bottom-sheet", () => {
         collapse: mock(() => {}),
       }));
       const backdrop = backdropFn
-        ? backdropFn({
-            animatedIndex: { value: 0 },
-            animatedPosition: { value: 0 },
-          })
+        ? backdropFn({ animatedIndex: { value: 0 }, animatedPosition: { value: 0 } })
         : null;
-      const handle = handleFn ? handleFn({}) : null;
-      return React.createElement(
-        "mock-BottomSheet",
-        props,
-        backdrop,
-        handle,
-        children as React.ReactNode,
-      );
+      const handle = handleFn
+        ? handleFn({})
+        : null;
+      return React.createElement("mock-BottomSheet", props, backdrop, handle, children as React.ReactNode);
     },
   );
   BottomSheet.displayName = "BottomSheet";
@@ -688,25 +674,13 @@ void mock.module("@gorhom/bottom-sheet", () => {
     __esModule: true,
     default: BottomSheet,
     BottomSheetView: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement(
-        "mock-BottomSheetView",
-        props,
-        children as React.ReactNode,
-      ),
+      React.createElement("mock-BottomSheetView", props, children as React.ReactNode),
     BottomSheetBackdrop: (props: Record<string, unknown>) =>
       React.createElement("mock-BottomSheetBackdrop", props),
     BottomSheetScrollView: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement(
-        "mock-BottomSheetScrollView",
-        props,
-        children as React.ReactNode,
-      ),
+      React.createElement("mock-BottomSheetScrollView", props, children as React.ReactNode),
     BottomSheetFooter: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement(
-        "mock-BottomSheetFooter",
-        props,
-        children as React.ReactNode,
-      ),
+      React.createElement("mock-BottomSheetFooter", props, children as React.ReactNode),
     useBottomSheetSpringConfigs: (config: Record<string, unknown>) => config,
   };
 });
@@ -714,7 +688,7 @@ void mock.module("@gorhom/bottom-sheet", () => {
 // ---------------------------------------------------------------------------
 // react-native-reanimated — mock animation hooks for press/skeleton animations
 // ---------------------------------------------------------------------------
-void mock.module("react-native-reanimated", () => {
+mockModuleWithResolve("react-native-reanimated", () => {
   // Animated.View flattens style arrays so SSR tests can inspect style values
   const AnimatedView = React.forwardRef(
     (props: Record<string, unknown>, ref: unknown) => {
@@ -741,19 +715,11 @@ void mock.module("react-native-reanimated", () => {
       return ref.current;
     },
     useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
-    withSpring: (
-      toValue: number,
-      _config?: unknown,
-      callback?: (finished: boolean) => void,
-    ) => {
+    withSpring: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
       callback?.(true);
       return toValue;
     },
-    withTiming: (
-      toValue: number,
-      _config?: unknown,
-      callback?: (finished: boolean) => void,
-    ) => {
+    withTiming: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
       callback?.(true);
       return toValue;
     },
@@ -769,13 +735,7 @@ void mock.module("react-native-reanimated", () => {
     },
     createAnimatedComponent: (comp: unknown) => comp,
     StyleSheet: {
-      absoluteFillObject: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-      },
+      absoluteFillObject: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
     },
     FadeIn: { duration: () => ({ delay: () => ({}) }) },
     FadeOut: { duration: () => ({}) },
@@ -794,7 +754,7 @@ void mock.module("react-native-reanimated", () => {
 // ---------------------------------------------------------------------------
 // @legendapp/list — mock LegendList as a basic list renderer
 // ---------------------------------------------------------------------------
-void mock.module("@legendapp/list", () => ({
+mockModuleWithResolve("@legendapp/list", () => ({
   LegendList: React.forwardRef(
     (props: Record<string, unknown>, ref: unknown) => {
       const {
@@ -807,10 +767,7 @@ void mock.module("@legendapp/list", () => ({
         ...rest
       } = props as {
         data?: unknown[];
-        renderItem?: (info: {
-          item: unknown;
-          index: number;
-        }) => React.ReactNode;
+        renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
         ListEmptyComponent?: React.ComponentType | React.ReactElement;
         ListHeaderComponent?: React.ComponentType | React.ReactElement;
         refreshing?: boolean;
@@ -819,17 +776,15 @@ void mock.module("@legendapp/list", () => ({
       };
 
       const hasItems = Array.isArray(data) && data.length > 0;
-      const items =
-        hasItems && renderItem
-          ? data.map((item, index) => renderItem({ item, index }))
-          : null;
+      const items = hasItems && renderItem
+        ? data.map((item, index) => renderItem({ item, index }))
+        : null;
 
-      const empty =
-        !hasItems && ListEmptyComponent
-          ? typeof ListEmptyComponent === "function"
-            ? React.createElement(ListEmptyComponent)
-            : ListEmptyComponent
-          : null;
+      const empty = !hasItems && ListEmptyComponent
+        ? typeof ListEmptyComponent === "function"
+          ? React.createElement(ListEmptyComponent)
+          : ListEmptyComponent
+        : null;
 
       const header = ListHeaderComponent
         ? typeof ListHeaderComponent === "function"
@@ -850,7 +805,7 @@ void mock.module("@legendapp/list", () => ({
 // ---------------------------------------------------------------------------
 // @react-native-community/netinfo — default to connected
 // ---------------------------------------------------------------------------
-void mock.module("@react-native-community/netinfo", () => ({
+mockModuleWithResolve("@react-native-community/netinfo", () => ({
   useNetInfo: mock(() => ({
     isConnected: true,
     isInternetReachable: true,
@@ -876,7 +831,7 @@ void mock.module("@react-native-community/netinfo", () => ({
 // ---------------------------------------------------------------------------
 // react-native-reanimated-carousel — carousel component mock
 // ---------------------------------------------------------------------------
-void mock.module("react-native-reanimated-carousel", () => {
+mockModuleWithResolve("react-native-reanimated-carousel", () => {
   const CarouselComponent = React.forwardRef(
     (props: Record<string, unknown>, ref: React.Ref<unknown>) => {
       const { data, renderItem, ...rest } = props as {
@@ -914,12 +869,12 @@ void mock.module("react-native-reanimated-carousel", () => {
 // ---------------------------------------------------------------------------
 // react-native-worklets — required by carousel
 // ---------------------------------------------------------------------------
-void mock.module("react-native-worklets", () => ({}));
+mockModuleWithResolve("react-native-worklets", () => ({}));
 
 // ---------------------------------------------------------------------------
 // @tanstack/react-query-persist-client — mock PersistQueryClientProvider
 // ---------------------------------------------------------------------------
-void mock.module("@tanstack/react-query-persist-client", () => ({
+mockModuleWithResolve("@tanstack/react-query-persist-client", () => ({
   PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
 }));
@@ -927,7 +882,7 @@ void mock.module("@tanstack/react-query-persist-client", () => ({
 // ---------------------------------------------------------------------------
 // @tanstack/query-sync-storage-persister — mock createSyncStoragePersister
 // ---------------------------------------------------------------------------
-void mock.module("@tanstack/query-sync-storage-persister", () => ({
+mockModuleWithResolve("@tanstack/query-sync-storage-persister", () => ({
   createSyncStoragePersister: mock(() => ({})),
 }));
 
@@ -935,7 +890,7 @@ void mock.module("@tanstack/query-sync-storage-persister", () => ({
 // @paralleldrive/cuid2 — mock ID generation
 // ---------------------------------------------------------------------------
 let cuidCounter = 0;
-void mock.module("@paralleldrive/cuid2", () => ({
+mockModuleWithResolve("@paralleldrive/cuid2", () => ({
   createId: mock(() => `mock-cuid-${++cuidCounter}`),
 }));
 
@@ -943,7 +898,7 @@ void mock.module("@paralleldrive/cuid2", () => ({
 // @react-native-async-storage/async-storage — in-memory mock
 // ---------------------------------------------------------------------------
 const asyncStore = new Map<string, string>();
-void mock.module("@react-native-async-storage/async-storage", () => ({
+mockModuleWithResolve("@react-native-async-storage/async-storage", () => ({
   default: {
     getItem: mock(async (key: string) => asyncStore.get(key) ?? null),
     setItem: mock(async (key: string, value: string) => {
@@ -963,6 +918,34 @@ void mock.module("@react-native-async-storage/async-storage", () => ({
 // ---------------------------------------------------------------------------
 // better-auth/client/plugins — anonymousClient plugin import
 // ---------------------------------------------------------------------------
-void mock.module("better-auth/client/plugins", () => ({
+mockModuleWithResolve("better-auth/client/plugins", () => ({
   anonymousClient: () => ({ id: "anonymousClient" }),
+}));
+
+// ---------------------------------------------------------------------------
+// ~/utils/base-url — mock URL resolver
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("~/utils/base-url", () => ({
+  getBaseUrl: () => "http://localhost:3000",
+}));
+
+// ---------------------------------------------------------------------------
+// ~/utils/auth — mock auth client (first-party, baseline for all tests)
+// Re-uses mockAuthClient declared above for better-auth/react
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("~/utils/auth", () => ({
+  authClient: mockAuthClient,
+}));
+
+// ---------------------------------------------------------------------------
+// ~/utils/api — mock tRPC proxy and QueryClient (first-party, baseline)
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("~/utils/api", () => ({
+  trpc: createMockTRPCProxy(),
+  queryClient: {
+    getDefaultOptions: () => ({
+      queries: { gcTime: 1000 * 60 * 60 * 24 },
+    }),
+    invalidateQueries: mock(() => Promise.resolve()),
+  },
 }));

@@ -3,25 +3,22 @@ import { sql } from "drizzle-orm";
 import { check, index, pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
+  id: t.text().primaryKey(),
   name: t.text(),
   email: t.text().notNull().unique(),
   emailVerified: t.boolean().default(false),
   image: t.text(),
   isAnonymous: t.boolean().default(false),
-  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-  updatedAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
 }));
 
 export const sessions = pgTable("sessions", (t) => ({
   id: t.text().primaryKey(),
-  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
+  expiresAt: t.timestamp().notNull(),
   token: t.text().notNull().unique(),
-  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-  updatedAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
   ipAddress: t.text(),
   userAgent: t.text(),
   userId: t
@@ -41,12 +38,12 @@ export const accounts = pgTable("accounts", (t) => ({
   accessToken: t.text(),
   refreshToken: t.text(),
   idToken: t.text(),
-  accessTokenExpiresAt: t.timestamp({ withTimezone: true }),
-  refreshTokenExpiresAt: t.timestamp({ withTimezone: true }),
+  accessTokenExpiresAt: t.timestamp(),
+  refreshTokenExpiresAt: t.timestamp(),
   scope: t.text(),
   password: t.text(),
-  createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-  updatedAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
 }));
 
 export const bodyPhotos = pgTable(
@@ -65,10 +62,10 @@ export const bodyPhotos = pgTable(
     width: t.integer(),
     height: t.integer(),
     fileSize: t.integer(),
-    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-    updatedAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t.timestamp().defaultNow().notNull(),
   }),
-  (table) => [unique("body_photos_user_id_unique").on(table.userId)],
+  (table) => [unique().on(table.userId)],
 );
 
 export const GARMENT_CATEGORIES = [
@@ -112,8 +109,8 @@ export const garments = pgTable(
     width: t.integer(),
     height: t.integer(),
     fileSize: t.integer(),
-    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
-    updatedAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t.timestamp().defaultNow().notNull(),
   }),
   (table) => [index("garments_user_id_idx").on(table.userId)],
 );
@@ -155,12 +152,12 @@ export const tryOnRenders = pgTable(
     resultPath: t.text(),
     errorCode: t.text(),
     creditConsumed: t.boolean().notNull().default(false),
-    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    createdAt: t.timestamp().defaultNow().notNull(),
     updatedAt: t
-      .timestamp({ withTimezone: true })
+      .timestamp()
       .defaultNow()
       .notNull()
-      .$onUpdateFn(() => new Date()),
+      .$onUpdate(() => new Date()),
   }),
   (table) => [
     index("try_on_renders_job_id_idx").on(table.jobId),
@@ -191,7 +188,7 @@ export const renderFeedback = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     rating: feedbackRating().notNull(),
     category: t.text(),
-    createdAt: t.timestamp({ withTimezone: true }).defaultNow().notNull(),
+    createdAt: t.timestamp().defaultNow().notNull(),
   }),
   (table) => [index("render_feedback_user_id_idx").on(table.userId)],
 );
@@ -269,7 +266,7 @@ export const verifications = pgTable("verifications", (t) => ({
   id: t.text().primaryKey(),
   identifier: t.text().notNull(),
   value: t.text().notNull(),
-  expiresAt: t.timestamp({ withTimezone: true }).notNull(),
-  createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
-  updatedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+  expiresAt: t.timestamp().notNull(),
+  createdAt: t.timestamp().notNull().defaultNow(),
+  updatedAt: t.timestamp().notNull().defaultNow(),
 }));

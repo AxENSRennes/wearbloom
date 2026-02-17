@@ -15,17 +15,12 @@ import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
 
 function is5xxError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  if (
-    "status" in error &&
-    typeof (error as { status: unknown }).status === "number"
-  ) {
-    const status = (error as { status: number }).status;
-    return status >= 500 && status < 600;
-  }
   const msg = error.message;
   return (
     /\b5\d{2}\b/.test(msg) ||
-    /Internal Server Error|Bad Gateway|Service Unavailable/i.test(msg)
+    /Internal Server Error/i.test(msg) ||
+    /Bad Gateway/i.test(msg) ||
+    /Service Unavailable/i.test(msg)
   );
 }
 
@@ -119,7 +114,10 @@ export const tryonRouter = {
         .values({
           userId,
           garmentId: input.garmentId,
-          provider: ctx.tryOnProvider.name,
+          provider: ctx.tryOnProvider.name as
+            | "fal_fashn"
+            | "fal_nano_banana"
+            | "google_vto",
           status: "pending",
         })
         .returning({ id: tryOnRenders.id });

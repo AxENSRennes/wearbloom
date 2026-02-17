@@ -30,10 +30,13 @@ function resetMutationTracking() {
   onSuccessCallbacks.length = 0;
 }
 
+const { QueryClient, QueryClientProvider, useQuery, useQueryClient } =
+  await import("@tanstack/react-query");
 void mock.module("@tanstack/react-query", () => ({
-  QueryClient: class {},
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  useQueryClient,
   useMutation: (opts?: Record<string, unknown>) => {
     const mutateAsyncMock = mock(() => Promise.resolve());
     const result: MutationResult = {
@@ -56,14 +59,6 @@ void mock.module("@tanstack/react-query", () => ({
 
     return result;
   },
-  useQuery: () => ({
-    data: null,
-    isLoading: false,
-    isError: false,
-    error: null,
-    isPending: false,
-    isFetching: false,
-  }),
 }));
 
 // Dynamic import to pick up re-mocked module bindings

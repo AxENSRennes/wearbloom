@@ -19,8 +19,6 @@ export const subscriptionRouter = {
 
   grantInitialCredits: protectedProcedure.mutation(async ({ ctx }) => {
     const creditService = createCreditService({ db: ctx.db });
-    const balance = await creditService.getCreditBalance(ctx.session.user.id);
-    if (balance.totalGranted > 0) return balance;
     await creditService.grantFreeCredits(
       ctx.session.user.id,
       ctx.freeCreditsCount,

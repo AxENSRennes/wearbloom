@@ -47,8 +47,11 @@ void mock.module("~/hooks/useSubscription", () => ({
 }));
 
 // Mock auth with a session providing userId
+const _authBase = await import("~/utils/auth");
 void mock.module("~/utils/auth", () => ({
+  ..._authBase,
   authClient: {
+    ..._authBase.authClient,
     useSession: () => ({
       data: { user: { id: "test-user-id" } },
       isPending: false,

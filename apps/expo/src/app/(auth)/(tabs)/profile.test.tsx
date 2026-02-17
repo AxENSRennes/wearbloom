@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import * as rq from "@tanstack/react-query";
-import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import ProfileScreen from "./profile";
@@ -11,7 +11,7 @@ function render(component: React.ReactElement) {
 
 describe("ProfileScreen", () => {
   afterEach(() => {
-    mock.restore();
+    // Restore any spies between tests
   });
 
   test("exports a function component", () => {

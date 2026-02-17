@@ -30,11 +30,11 @@ void mock.module("~/hooks/useSubscriptionStatus", () => ({
   useSubscriptionStatus: () => subscriptionStatusState,
 }));
 
+const _routerBase = await import("expo-router");
 void mock.module("expo-router", () => ({
+  ..._routerBase,
   useRouter: () => routerMock,
   router: routerMock,
-  usePathname: () => "/",
-  useLocalSearchParams: () => ({}),
 }));
 
 const { usePaywallGuard } = await import("./usePaywallGuard");

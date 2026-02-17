@@ -1,18 +1,19 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import * as rq from "@tanstack/react-query";
 
 import { useSubscriptionStatus } from "./useSubscriptionStatus";
 
+afterEach(() => {
+  mock.restore();
+});
+
 function mockUseQuery(data: Record<string, unknown> | null, isLoading = false) {
-  void mock.module("@tanstack/react-query", () => ({
-    QueryClient: class {},
-    QueryClientProvider: ({ children }: { children: unknown }) => children,
-    useMutation: () => ({
-      mutate: mock(() => {}),
-      mutateAsync: mock(() => Promise.resolve()),
-      isPending: false,
-    }),
-    useQuery: () => ({ data, isLoading, isError: false, error: null }),
-  }));
+  spyOn(rq, "useQuery").mockReturnValue({
+    data,
+    isLoading,
+    isError: false,
+    error: null,
+  } as never);
 }
 
 describe("useSubscriptionStatus", () => {

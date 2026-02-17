@@ -6,7 +6,6 @@ import { useSharedValue } from "react-native-reanimated";
 import Carousel, { Pagination } from "react-native-reanimated-carousel";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
-import { colors } from "~/constants/theme";
 import { StepPickGarment } from "./StepPickGarment";
 import { StepSeeTheMagic } from "./StepSeeTheMagic";
 import { StepYourPhoto } from "./StepYourPhoto";
@@ -126,13 +125,13 @@ export function OnboardingFlow({
           dotStyle={{
             width: 10,
             height: 10,
-            backgroundColor: colors.border,
+            backgroundColor: "#D1D5DB",
             borderRadius: 5,
           }}
           activeDotStyle={{
             width: 10,
             height: 10,
-            backgroundColor: colors.textPrimary,
+            backgroundColor: "#1A1A1A",
             borderRadius: 5,
             overflow: "hidden",
           }}

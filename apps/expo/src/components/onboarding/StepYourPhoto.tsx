@@ -41,7 +41,7 @@ export function StepYourPhoto({
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [2, 3],
       quality: 0.8,
@@ -67,7 +67,7 @@ export function StepYourPhoto({
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [2, 3],
       quality: 0.8,
@@ -89,10 +89,7 @@ export function StepYourPhoto({
           First, let&apos;s see you
         </ThemedText>
 
-        <ThemedText
-          variant="body"
-          className="mt-2 text-center text-text-secondary"
-        >
+        <ThemedText variant="body" className="mt-2 text-center text-[#6B6B6B]">
           Take a photo or use an example
         </ThemedText>
 

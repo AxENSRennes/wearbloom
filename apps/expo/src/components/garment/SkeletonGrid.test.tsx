@@ -8,7 +8,7 @@ describe("SkeletonGrid", () => {
     const html = renderToStaticMarkup(<SkeletonGrid columnWidth={194} />);
 
     // Each skeleton item is a View, count the skeleton item markers
-    const skeletonItems = html.match(/testID="skeleton-item"/g);
+    const skeletonItems = html.match(/data-testid="skeleton-item"/g);
     expect(skeletonItems).toHaveLength(6);
   });
 
@@ -28,7 +28,7 @@ describe("SkeletonGrid", () => {
     const html = renderToStaticMarkup(<SkeletonGrid columnWidth={194} />);
 
     // Should have 3 rows (6 items / 2 columns)
-    const rows = html.match(/testID="skeleton-row"/g);
+    const rows = html.match(/data-testid="skeleton-row"/g);
     expect(rows).toHaveLength(3);
   });
 });

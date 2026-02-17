@@ -11,7 +11,7 @@ import { Image } from "expo-image";
 
 import type { WardrobeItem } from "~/types/wardrobe";
 import { isStockGarment } from "~/types/wardrobe";
-import { getAuthHeaders } from "~/utils/authHeaders";
+import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
 
 interface GarmentCardProps {
@@ -61,7 +61,10 @@ export function GarmentCard({
     ? garment.imageSource
     : {
         uri: `${getBaseUrl()}/api/images/${garment.id}`,
-        headers: getAuthHeaders(),
+        headers: (() => {
+          const cookies = authClient.getCookie();
+          return cookies ? { Cookie: cookies } : undefined;
+        })(),
       };
 
   const label = isStockGarment(garment)

@@ -80,13 +80,6 @@ export function createImageHandler({
       return;
     }
 
-    // Validate imageId format (cuid2: 21-25 lowercase alphanumeric chars)
-    if (!/^[a-z0-9]{21,25}$/.test(imageId)) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Invalid imageId format" }));
-      return;
-    }
-
     // Authenticate
     const headers = nodeHeadersToHeaders(req.headers);
     const session = await auth.api.getSession({ headers });

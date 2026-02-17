@@ -58,13 +58,15 @@ const restoreMutationState = {
 
 let mutationCallIndex = 0;
 
+const {
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useQueryClient: _useQueryClient,
+} = await import("@tanstack/react-query");
 void mock.module("@tanstack/react-query", () => ({
-  QueryClient: class MockQueryClient {
-    constructor() {}
-    invalidateQueries = invalidateQueriesMock;
-  },
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useQueryClient: _useQueryClient,
   useMutation: () => {
     // useStoreKit calls useMutation twice: first for verify, second for restore
     const idx = mutationCallIndex++;
@@ -82,9 +84,9 @@ void mock.module("@tanstack/react-query", () => ({
 function createTrpcProxy(): unknown {
   const handler: ProxyHandler<CallableFunction> = {
     get: (_target, prop) => {
-      if (prop === "queryOptions" || prop === "mutationOptions") {
-        return () => ({});
-      }
+      if (prop === "queryOptions") return () => ({});
+      if (prop === "mutationOptions")
+        return (opts?: Record<string, unknown>) => ({ ...opts });
       if (prop === "queryKey") {
         // queryKey is called as a function: trpc.subscription.getSubscriptionStatus.queryKey()
         return () => ["mock-query-key"];
@@ -98,9 +100,11 @@ function createTrpcProxy(): unknown {
 
 const trpcProxy = createTrpcProxy();
 
+const { queryClient: _queryClient } = await import("~/utils/api");
 void mock.module("~/utils/api", () => ({
   trpc: trpcProxy,
   queryClient: {
+    ..._queryClient,
     invalidateQueries: invalidateQueriesMock,
   },
 }));

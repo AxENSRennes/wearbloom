@@ -16,12 +16,10 @@ const appleSignInResult = {
 
 const signInAsyncMock = mock(() => Promise.resolve(appleSignInResult));
 
+const _appleAuthBase = await import("expo-apple-authentication");
 void mock.module("expo-apple-authentication", () => ({
+  ..._appleAuthBase,
   signInAsync: signInAsyncMock,
-  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
-  AppleAuthenticationButton: () => null,
-  AppleAuthenticationButtonType: { SIGN_IN: 0 },
-  AppleAuthenticationButtonStyle: { BLACK: 0 },
 }));
 
 // ---------------------------------------------------------------------------
@@ -35,11 +33,13 @@ const socialSignInMock = mock(() =>
 );
 const updateUserMock = mock(() => Promise.resolve({ data: null, error: null }));
 
+const _authBase = await import("~/utils/auth");
 void mock.module("~/utils/auth", () => ({
+  ..._authBase,
   authClient: {
-    signIn: { social: socialSignInMock },
+    ..._authBase.authClient,
+    signIn: { ..._authBase.authClient.signIn, social: socialSignInMock },
     updateUser: updateUserMock,
-    getCookie: () => null,
   },
 }));
 
@@ -53,18 +53,20 @@ const routerMock = {
   canGoBack: () => true,
 };
 
+const _routerBase = await import("expo-router");
 void mock.module("expo-router", () => ({
+  ..._routerBase,
   useRouter: () => routerMock,
   router: routerMock,
-  usePathname: () => "/",
-  useLocalSearchParams: () => ({}),
 }));
 
 // ---------------------------------------------------------------------------
 // Mock showToast
 // ---------------------------------------------------------------------------
 const showToastMock = mock(() => {});
+const _uiBase = await import("@acme/ui");
 void mock.module("@acme/ui", () => ({
+  ..._uiBase,
   showToast: showToastMock,
 }));
 
@@ -79,10 +81,17 @@ let onSuccessCb: (() => Promise<void>) | undefined;
 let onErrorCb: ((error: Error) => void) | undefined;
 let mutationFnCapture: (() => Promise<unknown>) | undefined;
 
+const {
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useQuery: _useQuery,
+  useQueryClient: _useQueryClient,
+} = await import("@tanstack/react-query");
 void mock.module("@tanstack/react-query", () => ({
-  QueryClient: class MockQueryClient {},
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useQuery: _useQuery,
+  useQueryClient: _useQueryClient,
   useMutation: (opts?: {
     mutationFn?: () => Promise<unknown>;
     onSuccess?: () => Promise<void>;
@@ -113,22 +122,17 @@ void mock.module("@tanstack/react-query", () => ({
       error: null,
     };
   },
-  useQuery: () => ({
-    data: null,
-    isLoading: false,
-    isPending: false,
-  }),
 }));
 
 // Mock tRPC proxy
 function createTrpcProxy(): unknown {
   const handler: ProxyHandler<CallableFunction> = {
     get: (_target, prop) => {
-      if (prop === "queryOptions" || prop === "mutationOptions") {
-        return () => ({});
-      }
+      if (prop === "queryOptions") return () => ({});
+      if (prop === "mutationOptions")
+        return (opts?: Record<string, unknown>) => ({ ...opts });
       if (prop === "queryKey") {
-        return ["mock-query-key"];
+        return () => ["mock-query-key"];
       }
       return createTrpcProxy();
     },
@@ -137,9 +141,10 @@ function createTrpcProxy(): unknown {
   return new Proxy(() => {}, handler);
 }
 
+const { queryClient: _queryClient } = await import("~/utils/api");
 void mock.module("~/utils/api", () => ({
   trpc: createTrpcProxy(),
-  queryClient: { invalidateQueries: mock(() => Promise.resolve()) },
+  queryClient: { ..._queryClient, invalidateQueries: mock(() => Promise.resolve()) },
 }));
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,6 @@ function isQueuedUpload(item: unknown): item is QueuedUpload {
 }
 
 const QUEUE_KEY = "wearbloom:upload-queue";
-const MAX_QUEUE_SIZE = 50;
 
 function getQueue(): QueuedUpload[] {
   const raw = mmkvStorage.getString(QUEUE_KEY);
@@ -43,9 +42,6 @@ function saveQueue(queue: QueuedUpload[]): void {
 
 export function enqueueUpload(payload: QueuedUpload): void {
   const current = getQueue();
-  if (current.length >= MAX_QUEUE_SIZE) {
-    throw new Error("Upload queue is full");
-  }
   current.push(payload);
   saveQueue(current);
 }

@@ -14,10 +14,9 @@ import BottomSheet, {
 import { Button, showToast, ThemedText } from "@acme/ui";
 
 import type { WardrobeItem } from "~/types/wardrobe";
-import { colors } from "~/constants/theme";
 import { isStockGarment } from "~/types/wardrobe";
 import { assertOnline } from "~/utils/assertOnline";
-import { getAuthHeaders } from "~/utils/authHeaders";
+import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
 
 interface GarmentDetailSheetProps {
@@ -65,7 +64,7 @@ export const GarmentDetailSheet = forwardRef<
             width: 36,
             height: 4,
             borderRadius: 2,
-            backgroundColor: colors.border,
+            backgroundColor: "#EBEBEB",
             marginVertical: 12,
           }}
         />
@@ -106,7 +105,10 @@ export const GarmentDetailSheet = forwardRef<
           ? garment.imageSource
           : {
               uri: `${getBaseUrl()}/api/images/${garment.id}`,
-              headers: getAuthHeaders(),
+              headers: (() => {
+                const cookies = authClient.getCookie();
+                return cookies ? { Cookie: cookies } : undefined;
+              })(),
             }
         : undefined,
     [garment],
@@ -133,7 +135,7 @@ export const GarmentDetailSheet = forwardRef<
       animateOnMount={!reducedMotion}
       animationConfigs={reducedMotion ? undefined : animationConfigs}
       backgroundStyle={{
-        backgroundColor: colors.background,
+        backgroundColor: "#FFFFFF",
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
       }}

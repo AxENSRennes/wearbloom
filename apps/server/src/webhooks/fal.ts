@@ -46,32 +46,6 @@ async function getJwksKeys(
   return cachedKeys;
 }
 
-function tryVerifyWithKeys(
-  keys: JwksKey[],
-  signatureBytes: Buffer,
-  messageBytes: Buffer,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sodium: any,
-): boolean {
-  for (const keyInfo of keys) {
-    const publicKeyBytes = Buffer.from(keyInfo.x, "base64url");
-    try {
-      if (
-        sodium.crypto_sign_verify_detached(
-          signatureBytes,
-          messageBytes,
-          publicKeyBytes,
-        )
-      ) {
-        return true;
-      }
-    } catch {
-      // Invalid key format, try next
-    }
-  }
-  return false;
-}
-
 async function verifyFalWebhookSignature(
   requestId: string,
   userId: string,
@@ -98,15 +72,23 @@ async function verifyFalWebhookSignature(
 
   // Try each JWKS public key
   const keys = await getJwksKeys(fetchFn);
-  if (tryVerifyWithKeys(keys, signatureBytes, messageBytes, sodium)) {
-    return true;
+  for (const keyInfo of keys) {
+    const publicKeyBytes = Buffer.from(keyInfo.x, "base64url");
+    try {
+      if (
+        sodium.crypto_sign_verify_detached(
+          signatureBytes,
+          messageBytes,
+          publicKeyBytes,
+        )
+      ) {
+        return true;
+      }
+    } catch {
+      // Invalid key format, try next
+    }
   }
-
-  // Force-refresh cache and retry once
-  cachedKeys = null;
-  cacheTimestamp = 0;
-  const freshKeys = await getJwksKeys(fetchFn);
-  return tryVerifyWithKeys(freshKeys, signatureBytes, messageBytes, sodium);
+  return false;
 }
 
 interface FalWebhookPayload {

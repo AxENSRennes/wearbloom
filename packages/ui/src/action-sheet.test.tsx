@@ -51,7 +51,7 @@ describe("ActionSheet", () => {
   test("renders drag indicator", () => {
     const html = render({});
     // The drag indicator is a View with specific sizing classes inside a centering container
-    expect(html).toContain("h-1 w-10 rounded-full bg-border");
+    expect(html).toContain("bg-border h-1 w-10 rounded-full");
   });
 
   test("renders close backdrop with accessibility", () => {

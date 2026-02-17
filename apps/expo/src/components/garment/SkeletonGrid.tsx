@@ -47,14 +47,14 @@ export function SkeletonGrid({ columnWidth }: SkeletonGridProps) {
       {rows.map((rowIndex) => (
         <View
           key={rowIndex}
-          testID="skeleton-row"
+          data-testid="skeleton-row"
           className="flex-row"
           style={{ gap: 2 }}
         >
           {Array.from({ length: NUM_COLUMNS }, (_, colIndex) => (
             <Animated.View
               key={colIndex}
-              testID="skeleton-item"
+              data-testid="skeleton-item"
               style={[
                 { width: columnWidth, height: itemHeight },
                 animatedStyle,

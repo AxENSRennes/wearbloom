@@ -1,5 +1,5 @@
 import React from "react";
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // ---------------------------------------------------------------------------
@@ -15,17 +15,17 @@ const queryState = {
   refetch: mock(() => Promise.resolve()),
 };
 
+const {
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useMutation: _useMutation,
+  useQueryClient: _useQueryClient,
+} = await import("@tanstack/react-query");
 void mock.module("@tanstack/react-query", () => ({
-  QueryClient: class MockQueryClient {
-    constructor() {}
-  },
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
-  useMutation: () => ({
-    mutate: mock(() => {}),
-    mutateAsync: mock(() => Promise.resolve()),
-    isPending: false,
-  }),
+  QueryClient: _RQClient,
+  QueryClientProvider: _RQProvider,
+  useMutation: _useMutation,
+  useQueryClient: _useQueryClient,
   useQuery: () => queryState,
 }));
 
@@ -33,11 +33,11 @@ void mock.module("@tanstack/react-query", () => ({
 function createTrpcProxy(): unknown {
   const handler: ProxyHandler<CallableFunction> = {
     get: (_target, prop) => {
-      if (prop === "queryOptions" || prop === "mutationOptions") {
-        return () => ({});
-      }
+      if (prop === "queryOptions") return () => ({});
+      if (prop === "mutationOptions")
+        return (opts?: Record<string, unknown>) => ({ ...opts });
       if (prop === "queryKey") {
-        return ["mock-query-key"];
+        return () => ["mock-query-key"];
       }
       return createTrpcProxy();
     },
@@ -46,9 +46,10 @@ function createTrpcProxy(): unknown {
   return new Proxy(() => {}, handler);
 }
 
+const { queryClient: _queryClient } = await import("~/utils/api");
 void mock.module("~/utils/api", () => ({
   trpc: createTrpcProxy(),
-  queryClient: { invalidateQueries: mock(() => Promise.resolve()) },
+  queryClient: { ..._queryClient, invalidateQueries: mock(() => Promise.resolve()) },
 }));
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,14 @@ function runHook(): ReturnType<typeof useSubscription> {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+afterAll(() => {
+  queryState.data = null;
+  queryState.isLoading = false;
+  queryState.isError = false;
+  queryState.isPending = false;
+  queryState.isFetching = false;
+});
+
 describe("useSubscription", () => {
   beforeEach(() => {
     queryState.data = null;

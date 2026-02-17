@@ -200,8 +200,8 @@ describe("fal webhook handler", () => {
   test("invalid signature → returns 401", async () => {
     // Override sodium mock for this test
     const sodium = (await import("libsodium-wrappers")).default;
-    const original = sodium.crypto_sign_verify_detached;
-    sodium.crypto_sign_verify_detached = mock(() => false);
+    const origVerify = sodium.crypto_sign_verify_detached;
+    sodium.crypto_sign_verify_detached = mock(() => false) as typeof origVerify;
 
     const db = createMockDb();
     const imageStorage = createMockImageStorage();
@@ -218,7 +218,8 @@ describe("fal webhook handler", () => {
 
     expect(res._statusCode).toBe(401);
 
-    sodium.crypto_sign_verify_detached = original;
+    // Restore
+    sodium.crypto_sign_verify_detached = origVerify;
   });
 
   test("expired timestamp (>5 min) → returns 401", async () => {
