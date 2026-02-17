@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as rq from "@tanstack/react-query";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { useSubscriptionStatus } from "./useSubscriptionStatus";
 

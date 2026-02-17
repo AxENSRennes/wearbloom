@@ -1,7 +1,7 @@
 import React from "react";
+import * as rq from "@tanstack/react-query";
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import * as rq from "@tanstack/react-query";
 
 import { CreditCounter } from "./CreditCounter";
 

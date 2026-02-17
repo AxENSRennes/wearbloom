@@ -1,5 +1,5 @@
-import { createElement } from "react";
 import type { ReactElement } from "react";
+import { createElement } from "react";
 // @ts-expect-error -- __searchParams is a test-only export from expo-router mock
 import { __searchParams } from "expo-router";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";

@@ -1,5 +1,5 @@
-import { createElement } from "react";
 import type { ReactElement } from "react";
+import { createElement } from "react";
 import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 

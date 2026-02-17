@@ -49,7 +49,10 @@ function createTrpcProxy(): unknown {
 const { queryClient: _queryClient } = await import("~/utils/api");
 void mock.module("~/utils/api", () => ({
   trpc: createTrpcProxy(),
-  queryClient: { ..._queryClient, invalidateQueries: mock(() => Promise.resolve()) },
+  queryClient: {
+    ..._queryClient,
+    invalidateQueries: mock(() => Promise.resolve()),
+  },
 }));
 
 // ---------------------------------------------------------------------------
