@@ -15,6 +15,10 @@
       "types": "./dist/src/services/subscriptionManager.d.ts",
       "default": "./src/services/subscriptionManager.ts"
     },
+    "./services/creditService": {
+      "types": "./dist/src/services/creditService.d.ts",
+      "default": "./src/services/creditService.ts"
+    },
     "./services/imageStorage": {
       "types": "./dist/src/services/imageStorage.d.ts",
       "default": "./src/services/imageStorage.ts"

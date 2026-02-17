@@ -21,6 +21,12 @@ describe("createImageStorage", () => {
   });
 
   describe("saveBodyPhoto", () => {
+    test("rejects path traversal in userId", async () => {
+      await expect(
+        storage.saveBodyPhoto("../../etc", Buffer.from("data"), "image/jpeg"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
     test("creates directory structure and writes file", async () => {
       const fileData = Buffer.from("fake-image-data");
       const filePath = await storage.saveBodyPhoto(
@@ -50,6 +56,12 @@ describe("createImageStorage", () => {
   });
 
   describe("deleteUserDirectory", () => {
+    test("rejects path traversal in userId", async () => {
+      await expect(
+        storage.deleteUserDirectory("../../etc"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
     test("removes user directory and all contents", async () => {
       // Create some files for the user
       await storage.saveBodyPhoto("user-rm", Buffer.from("img1"), "image/jpeg");
@@ -69,6 +81,18 @@ describe("createImageStorage", () => {
   });
 
   describe("saveGarmentPhoto", () => {
+    test("rejects path traversal in userId", async () => {
+      await expect(
+        storage.saveGarmentPhoto("../../etc", Buffer.from("data"), "image/jpeg", "garment-1"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
+    test("rejects path traversal in garmentId", async () => {
+      await expect(
+        storage.saveGarmentPhoto("user-123", Buffer.from("data"), "image/jpeg", "../../../../etc/passwd"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
     test("creates file at expected garment path", async () => {
       const fileData = Buffer.from("garment-image-data");
       const filePath = await storage.saveGarmentPhoto(
@@ -117,6 +141,18 @@ describe("createImageStorage", () => {
   });
 
   describe("saveRenderResult", () => {
+    test("rejects path traversal in userId", async () => {
+      await expect(
+        storage.saveRenderResult("../../etc", "render-1", Buffer.from("data"), "image/png"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
+    test("rejects path traversal in renderId", async () => {
+      await expect(
+        storage.saveRenderResult("user-123", "../../../../etc/passwd", Buffer.from("data"), "image/png"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
     test("creates file at expected render path", async () => {
       const imageData = Buffer.from("render-result-data");
       const filePath = await storage.saveRenderResult(
@@ -175,6 +211,18 @@ describe("createImageStorage", () => {
   });
 
   describe("deleteGarmentFiles", () => {
+    test("rejects path traversal in userId", async () => {
+      await expect(
+        storage.deleteGarmentFiles("../../etc", "garment-1"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
+    test("rejects path traversal in garmentId", async () => {
+      await expect(
+        storage.deleteGarmentFiles("user-123", "../../../../etc/passwd"),
+      ).rejects.toThrow("Path traversal detected");
+    });
+
     test("removes garment original and cutout files", async () => {
       // Create both files
       await storage.saveGarmentPhoto(

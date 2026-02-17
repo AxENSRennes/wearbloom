@@ -16,6 +16,14 @@ mock.module("libsodium-wrappers", () => ({
   },
 }));
 
+// Mock creditService — track consumeCredit calls
+const mockConsumeCredit = mock(() => Promise.resolve({ success: true, remaining: 2 }));
+mock.module("@acme/api/services/creditService", () => ({
+  createCreditService: mock(() => ({
+    consumeCredit: mockConsumeCredit,
+  })),
+}));
+
 const logger = pino({ level: "silent" });
 
 function createMockDb(renderRecord?: {
@@ -123,6 +131,7 @@ const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   _resetJwksCache();
+  mockConsumeCredit.mockClear();
   globalThis.fetch = mock((url: string | URL | Request) => {
     const urlStr = typeof url === "string" ? url : url.toString();
     if (urlStr.includes("jwks.json")) {
@@ -390,6 +399,61 @@ describe("fal webhook handler", () => {
 
     expect(res._statusCode).toBe(200);
     expect(imageStorage.saveRenderResult).not.toHaveBeenCalled();
+  });
+
+  test("completed render calls creditService.consumeCredit", async () => {
+    const db = createMockDb({
+      id: "render-credit",
+      userId: "user-credit-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(mockConsumeCredit).toHaveBeenCalledWith("user-credit-123");
+  });
+
+  test("failed render does NOT call creditService.consumeCredit", async () => {
+    const db = createMockDb({
+      id: "render-abc",
+      userId: "user-123",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "ERROR",
+      error: "Something went wrong",
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+    await handler(req, res);
+
+    expect(mockConsumeCredit).not.toHaveBeenCalled();
   });
 
   test("SSRF protection — blocks non-fal.media image URLs", async () => {

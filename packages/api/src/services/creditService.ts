@@ -1,8 +1,11 @@
 import type { db as DbInstance } from "@acme/db/client";
+
 import { and, eq, lt, sql } from "@acme/db";
 import { credits } from "@acme/db/schema";
 
-export function createCreditService({ db }: { db: typeof DbInstance }) {
+type CreditServiceDb = Pick<typeof DbInstance, "select" | "update" | "insert">;
+
+export function createCreditService({ db }: { db: CreditServiceDb }) {
   return {
     async grantFreeCredits(userId: string, count: number): Promise<void> {
       await db

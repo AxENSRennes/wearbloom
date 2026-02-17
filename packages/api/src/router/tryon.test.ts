@@ -9,6 +9,34 @@ import {
   mockDbUpdate,
 } from "../../test/helpers";
 
+function mockDbTransaction(db: Record<string, unknown>) {
+  const txUpdateChain = mockDbUpdate();
+  const tx = {
+    update: mock(() => txUpdateChain),
+    // creditService.refundCredit uses these
+    select: mock(() => mockDbSelect([])),
+  };
+  const origTransaction = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(db),
+    "transaction",
+  ) ?? Object.getOwnPropertyDescriptor(db, "transaction");
+  Object.defineProperty(db, "transaction", {
+    value: mock(async (fn: (tx: unknown) => Promise<void>) => {
+      await fn(tx);
+    }),
+    writable: true,
+    configurable: true,
+  });
+  const restore = () => {
+    if (origTransaction) {
+      Object.defineProperty(db, "transaction", origTransaction);
+    } else {
+      delete db.transaction;
+    }
+  };
+  return { tx, txUpdateChain, restore };
+}
+
 function mockDbInsertUnique() {
   const chain: Record<string, unknown> = {};
   chain.values = mock(() => chain);
@@ -126,6 +154,64 @@ describe("tryon.requestRender", () => {
     ).rejects.toThrow(/NO_BODY_PHOTO/);
   });
 
+  test("throws INSUFFICIENT_CREDITS when user has no credits", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      )
+      // Credit check — no credits remaining
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 3 }]) as never,
+      );
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.requestRender({ garmentId: "garment-1" }),
+    ).rejects.toThrow(/INSUFFICIENT_CREDITS/);
+  });
+
+  test("throws INSUFFICIENT_CREDITS when user has no credit row", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: null,
+            category: "tops",
+          },
+        ]) as never,
+      )
+      // Credit check — no credit row at all
+      .mockReturnValueOnce(mockDbSelect([]) as never);
+
+    const { caller } = await createAuthenticatedCaller();
+
+    await expect(
+      caller.tryon.requestRender({ garmentId: "garment-1" }),
+    ).rejects.toThrow(/INSUFFICIENT_CREDITS/);
+  });
+
   test("validates garment exists and belongs to user", async () => {
     const { db } = await import("@acme/db/client");
     selectSpy = spyOn(db as never, "select")
@@ -160,6 +246,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-new") as never,
@@ -192,6 +282,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-abc") as never,
@@ -231,6 +325,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-xyz") as never,
@@ -318,6 +416,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-cat-ok") as never,
@@ -349,6 +451,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-retry") as never,
@@ -394,6 +500,10 @@ describe("tryon.requestRender", () => {
             category: "tops",
           },
         ]) as never,
+      )
+      // Credit check — has credits
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 0 }]) as never,
       );
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("render-422") as never,
@@ -725,9 +835,7 @@ describe("tryon.submitFeedback", () => {
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("feedback-2") as never,
     );
-    updateSpy = spyOn(db as never, "update").mockReturnValue(
-      mockDbUpdate() as never,
-    );
+    const { restore } = mockDbTransaction(db as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.submitFeedback({
@@ -738,9 +846,10 @@ describe("tryon.submitFeedback", () => {
 
     expect(result.success).toBe(true);
     expect(result.creditRefunded).toBe(true);
+    restore();
   });
 
-  test("sets creditConsumed = false on thumbs_down (refund)", async () => {
+  test("sets creditConsumed = false on thumbs_down and refunds credit", async () => {
     const { db } = await import("@acme/db/client");
     selectSpy = spyOn(db as never, "select").mockReturnValue(
       mockDbSelect([
@@ -755,10 +864,7 @@ describe("tryon.submitFeedback", () => {
     insertSpy = spyOn(db as never, "insert").mockReturnValue(
       mockDbInsert("feedback-3") as never,
     );
-    const updateChain = mockDbUpdate();
-    updateSpy = spyOn(db as never, "update").mockReturnValue(
-      updateChain as never,
-    );
+    const { tx, txUpdateChain, restore } = mockDbTransaction(db as never);
 
     const { caller } = await createAuthenticatedCaller();
     await caller.tryon.submitFeedback({
@@ -766,10 +872,13 @@ describe("tryon.submitFeedback", () => {
       rating: "thumbs_down",
     });
 
-    expect(updateSpy).toHaveBeenCalled();
-    expect(updateChain.set).toHaveBeenCalledWith(
+    expect(db.transaction).toHaveBeenCalled();
+    // tx.update called for creditConsumed: false + refundCredit
+    expect(tx.update).toHaveBeenCalled();
+    expect(txUpdateChain.set).toHaveBeenCalledWith(
       expect.objectContaining({ creditConsumed: false }),
     );
+    restore();
   });
 
   test("does NOT change creditConsumed on thumbs_up", async () => {

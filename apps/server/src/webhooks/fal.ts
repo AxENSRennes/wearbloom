@@ -6,6 +6,7 @@ import type { Logger } from "pino";
 import type { db as _dbInstance } from "@acme/db/client";
 
 import { eq } from "@acme/db";
+import { createCreditService } from "@acme/api/services/creditService";
 import { tryOnRenders } from "@acme/db/schema";
 
 const JWKS_URL = "https://rest.alpha.fal.ai/.well-known/jwks.json";
@@ -224,6 +225,10 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
           .update(tryOnRenders)
           .set({ status: "completed", resultPath, creditConsumed: true })
           .where(eq(tryOnRenders.id, render.id));
+
+        // Deduct credit from the credits table
+        const creditService = createCreditService({ db: deps.db });
+        await creditService.consumeCredit(render.userId);
 
         deps.logger.info(
           { renderId: render.id, resultPath },

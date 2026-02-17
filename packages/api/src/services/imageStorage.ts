@@ -39,7 +39,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
         "body",
         `avatar_${String(timestamp)}${ext}`,
       );
-      const absolutePath = join(basePath, relativePath);
+      const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });
       await writeFile(absolutePath, fileData);
@@ -69,7 +69,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
     },
 
     async deleteUserDirectory(userId: string): Promise<void> {
-      const userDir = join(basePath, userId);
+      const userDir = safePath(userId);
       await rm(userDir, { recursive: true, force: true });
       logger?.info({ userId }, "User directory deleted from disk");
     },
@@ -90,7 +90,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
         "garments",
         `${garmentId}_original${ext}`,
       );
-      const absolutePath = join(basePath, relativePath);
+      const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });
       await writeFile(absolutePath, fileData);
@@ -113,7 +113,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
         "garments",
         `${garmentId}_cutout.png`,
       );
-      const absolutePath = join(basePath, relativePath);
+      const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });
       await writeFile(absolutePath, fileData);
@@ -130,13 +130,12 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       userId: string,
       garmentId: string,
     ): Promise<void> {
-      const garmentDir = join(basePath, userId, "garments");
       const patterns = [`${garmentId}_original`, `${garmentId}_cutout`];
 
       for (const pattern of patterns) {
         // Try common extensions
         for (const ext of [".jpg", ".png"]) {
-          const filePath = join(garmentDir, `${pattern}${ext}`);
+          const filePath = safePath(join(userId, "garments", `${pattern}${ext}`));
           try {
             await rm(filePath);
             logger?.info(
@@ -162,7 +161,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
         "renders",
         `${renderId}_result${ext}`,
       );
-      const absolutePath = join(basePath, relativePath);
+      const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });
       await writeFile(absolutePath, imageData);

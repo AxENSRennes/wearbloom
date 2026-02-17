@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 import { and, count, eq, gt } from "@acme/db";
 import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
 
+import { createCreditService } from "../services/creditService";
 import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
 
 function is5xxError(error: unknown): boolean {
@@ -87,6 +88,16 @@ export const tryonRouter = {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "INVALID_CATEGORY",
+        });
+      }
+
+      // Check credit balance before creating render
+      const creditService = createCreditService({ db: ctx.db });
+      const hasCredits = await creditService.hasCreditsRemaining(userId);
+      if (!hasCredits) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "INSUFFICIENT_CREDITS",
         });
       }
 
@@ -313,13 +324,18 @@ export const tryonRouter = {
               gt(renderFeedback.createdAt, thirtyDaysAgo),
             ),
           );
-        shouldRefund = (refundCount?.count ?? 0) <= MAX_REFUNDS_PER_MONTH;
+        shouldRefund = (refundCount?.count ?? 0) < MAX_REFUNDS_PER_MONTH;
 
         if (shouldRefund) {
-          await ctx.db
-            .update(tryOnRenders)
-            .set({ creditConsumed: false })
-            .where(eq(tryOnRenders.id, input.renderId));
+          await ctx.db.transaction(async (tx) => {
+            await tx
+              .update(tryOnRenders)
+              .set({ creditConsumed: false })
+              .where(eq(tryOnRenders.id, input.renderId));
+
+            const creditSvc = createCreditService({ db: tx });
+            await creditSvc.refundCredit(userId);
+          });
         }
       }
 
