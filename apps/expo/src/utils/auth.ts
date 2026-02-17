@@ -5,12 +5,14 @@ import { createAuthClient } from "better-auth/react";
 
 import { getBaseUrl } from "./base-url";
 
+const APP_SCHEME = "wearbloom";
+
 export const authClient = createAuthClient({
   baseURL: getBaseUrl(),
   plugins: [
     expoClient({
-      scheme: "expo",
-      storagePrefix: "expo",
+      scheme: APP_SCHEME,
+      storagePrefix: APP_SCHEME,
       storage: SecureStore,
     }),
     anonymousClient(),

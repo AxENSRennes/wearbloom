@@ -1,10 +1,16 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
+const APP_NAME = "Wearbloom";
+const APP_SLUG = "wearbloom";
+const APP_SCHEME = "wearbloom";
+const APP_BUNDLE_ID = "com.axel.wearbloom";
+const API_URL = "https://api.wearbloom.app";
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "expo",
-  slug: "expo",
-  scheme: "expo",
+  name: APP_NAME,
+  slug: APP_SLUG,
+  scheme: APP_SCHEME,
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon-light.png",
@@ -14,8 +20,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   newArchEnabled: true,
   assetBundlePatterns: ["**/*"],
+  extra: {
+    ...config.extra,
+    apiUrl: API_URL,
+  },
   ios: {
-    bundleIdentifier: "your.bundle.identifier",
+    bundleIdentifier: APP_BUNDLE_ID,
     supportsTablet: true,
     icon: {
       light: "./assets/icon-light.png",
@@ -23,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: "your.bundle.identifier",
+    package: APP_BUNDLE_ID,
     adaptiveIcon: {
       foregroundImage: "./assets/icon-light.png",
       backgroundColor: "#1F104A",

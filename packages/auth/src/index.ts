@@ -74,6 +74,7 @@ export function initAuth<
     },
     trustedOrigins: [
       "expo://",
+      "wearbloom://",
       "https://appleid.apple.com",
       ...(options.isDev ? ["exp://"] : []),
     ],
