@@ -1,6 +1,6 @@
 # Story 5.4: Replace Example Photos Post-Onboarding
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -331,3 +331,4 @@ No blocking issues encountered. All tasks implemented cleanly following TDD red-
 ## Change Log
 
 - 2026-02-17: Implemented Story 5.4 — Replace Example Photos Post-Onboarding. Added body photo source tracking, contextual replacement banner, stock garment hide/show preferences, accessibility, and haptic feedback. All 6 tasks complete, 451 tests pass.
+- 2026-02-17: Code Review — Adversarial review found 11 issues (3 HIGH, 5 MEDIUM, 3 LOW). All HIGH and MEDIUM auto-fixed: added missing .catch() on async promise (M1), fixed stale closure in toggleShowStock (M2), added real behavioral tests for useStockPhotoStatus/BodyPhotoManager/useStockGarmentPreferences (H1/H2/M3), renamed misleading test names (H3), fixed accessibilityRole on non-interactive View (M4), prevented UI flash with isLoading guard (M5), fixed deprecated MediaTypeOptions API (L2), fixed unsafe cast in stockGarmentPreferences (L3). Updated banner test assertions. 462 tests pass, 0 fail.

@@ -29,7 +29,7 @@ export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const bodyPhotoQuery = useQuery(trpc.user.getBodyPhoto.queryOptions());
 
-  const { usedStockBodyPhoto } = useStockPhotoStatus();
+  const { usedStockBodyPhoto, isLoading: isStockStatusLoading } = useStockPhotoStatus();
   const { showStock, hiddenIds, toggleShowStock, unhideAll } =
     useStockGarmentPreferences();
   const cookies = authClient.getCookie();
@@ -108,7 +108,7 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {usedStockBodyPhoto && !hasBodyPhoto ? (
+        {!isStockStatusLoading && usedStockBodyPhoto && !hasBodyPhoto ? (
           <View className="mb-4">
             <StockPhotoReplacementBanner />
           </View>

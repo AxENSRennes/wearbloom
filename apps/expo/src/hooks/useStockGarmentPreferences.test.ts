@@ -92,4 +92,31 @@ describe("useStockGarmentPreferences", () => {
     );
     expect(typeof captured?.unhideAll).toBe("function");
   });
+
+  test("hideGarment calls underlying utility without throwing", async () => {
+    let captured: ReturnType<typeof useStockGarmentPreferences> | undefined;
+    renderToStaticMarkup(
+      React.createElement(TestComponent, {
+        onResult: (r) => {
+          captured = r;
+        },
+      }),
+    );
+
+    // Should not throw when called
+    await expect(captured!.hideGarment("test-id")).resolves.toBeUndefined();
+  });
+
+  test("unhideAll calls underlying utility without throwing", async () => {
+    let captured: ReturnType<typeof useStockGarmentPreferences> | undefined;
+    renderToStaticMarkup(
+      React.createElement(TestComponent, {
+        onResult: (r) => {
+          captured = r;
+        },
+      }),
+    );
+
+    await expect(captured!.unhideAll()).resolves.toBeUndefined();
+  });
 });

@@ -28,11 +28,13 @@ export function useStockGarmentPreferences() {
     setHiddenIds((prev) => prev.filter((i) => i !== id));
   }, []);
 
-  const toggleShowStock = useCallback(async () => {
-    const next = !showStock;
-    await setShowStockGarments(next);
-    setShowStock(next);
-  }, [showStock]);
+  const toggleShowStock = useCallback(() => {
+    setShowStock((prev) => {
+      const next = !prev;
+      void setShowStockGarments(next);
+      return next;
+    });
+  }, []);
 
   const unhideAll = useCallback(async () => {
     await unhideAllStockGarments();

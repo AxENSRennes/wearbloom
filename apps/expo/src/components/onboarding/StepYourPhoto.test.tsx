@@ -82,7 +82,7 @@ describe("StepYourPhoto - body photo source persistence", () => {
     mock.restore();
   });
 
-  test("calls setOnboardingBodyPhotoSource('stock') when stock photo is used via onPhotoSelected", () => {
+  test("does not call setOnboardingBodyPhotoSource during render (only on button press)", () => {
     const spy = spyOn(
       onboardingState,
       "setOnboardingBodyPhotoSource",
@@ -103,7 +103,7 @@ describe("StepYourPhoto - body photo source persistence", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  test("setOnboardingBodyPhotoSource is imported and callable", () => {
+  test("exports setOnboardingBodyPhotoSource as a function", () => {
     expect(typeof onboardingState.setOnboardingBodyPhotoSource).toBe(
       "function",
     );

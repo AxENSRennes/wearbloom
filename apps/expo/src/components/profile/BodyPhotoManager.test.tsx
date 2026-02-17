@@ -81,7 +81,7 @@ describe("BodyPhotoManager", () => {
     );
   });
 
-  test("renders correctly with stock flag clearing wired in onSuccess", () => {
+  test("setOnboardingBodyPhotoSource is not called during render", () => {
     const spy = spyOn(
       onboardingState,
       "setOnboardingBodyPhotoSource",
@@ -92,5 +92,30 @@ describe("BodyPhotoManager", () => {
     expect(html).toContain("Add Your Body Photo");
     // The spy should not be called during render (only during onSuccess)
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  test("upload onSuccess callback calls setOnboardingBodyPhotoSource('own')", () => {
+    const sourceSpy = spyOn(
+      onboardingState,
+      "setOnboardingBodyPhotoSource",
+    ).mockResolvedValue(undefined);
+
+    const mutationSpy = spyOn(rq, "useMutation");
+
+    renderToString(<BodyPhotoManager />);
+
+    // Find the upload mutation call (useMutation is called once in BodyPhotoManager)
+    expect(mutationSpy).toHaveBeenCalled();
+    const firstCall = mutationSpy.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const mutationOpts = (firstCall as unknown[])[0] as Record<string, unknown>;
+
+    // Invoke onSuccess handler
+    const onSuccess = mutationOpts.onSuccess as (() => void) | undefined;
+    expect(onSuccess).toBeDefined();
+    onSuccess!();
+
+    // Verify setOnboardingBodyPhotoSource was called with "own"
+    expect(sourceSpy).toHaveBeenCalledWith("own");
   });
 });

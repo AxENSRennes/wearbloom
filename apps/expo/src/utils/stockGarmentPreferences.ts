@@ -8,7 +8,8 @@ export async function getHiddenStockGarmentIds(): Promise<string[]> {
   if (!value) return [];
   try {
     const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) ? (parsed as string[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === "string");
   } catch {
     return [];
   }

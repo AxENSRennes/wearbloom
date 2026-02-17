@@ -14,6 +14,8 @@ export function useStockPhotoStatus() {
     void getOnboardingBodyPhotoSource().then((s) => {
       setSource(s);
       setSourceLoaded(true);
+    }).catch(() => {
+      setSourceLoaded(true);
     });
   }, []);
 

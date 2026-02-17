@@ -38,14 +38,14 @@ describe("StockPhotoReplacementBanner", () => {
       createElement(StockPhotoReplacementBanner),
     );
     expect(html).toContain(
-      "You&#x27;re using an example body photo. Tap to add your own.",
+      "You&#x27;re using an example body photo",
     );
   });
 
-  test("has button accessibility role", () => {
+  test("has summary accessibility role", () => {
     const html = renderToStaticMarkup(
       createElement(StockPhotoReplacementBanner),
     );
-    expect(html).toContain('accessibilityRole="button"');
+    expect(html).toContain('accessibilityRole="summary"');
   });
 });
