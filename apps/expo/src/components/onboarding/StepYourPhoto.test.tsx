@@ -3,7 +3,6 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
 import * as onboardingState from "~/utils/onboardingState";
-
 import { StepYourPhoto } from "./StepYourPhoto";
 
 describe("StepYourPhoto", () => {
@@ -93,9 +92,7 @@ describe("StepYourPhoto - body photo source persistence", () => {
     // Render triggers no side-effect; the call happens when handleUsePhoto fires
     // Since SSR tests can't fire events, we verify the import is wired correctly
     // by checking the function is available in the module
-    renderToString(
-      createElement(StepYourPhoto, { onPhotoSelected }),
-    );
+    renderToString(createElement(StepYourPhoto, { onPhotoSelected }));
 
     // The spy should not have been called during render (only on button press)
     // This test verifies the spy is wired correctly; behavioral tests below

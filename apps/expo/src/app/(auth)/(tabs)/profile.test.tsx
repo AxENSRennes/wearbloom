@@ -5,7 +5,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import * as stockGarmentModule from "~/hooks/useStockGarmentPreferences";
 import * as stockPhotoModule from "~/hooks/useStockPhotoStatus";
-
 import ProfileScreen from "./profile";
 
 function render(component: React.ReactElement) {

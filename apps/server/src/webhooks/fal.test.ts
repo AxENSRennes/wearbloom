@@ -28,14 +28,17 @@ mock.module("@acme/api/services/creditService", () => ({
 
 const logger = pino({ level: "silent" });
 
-function createMockDb(renderRecord?: {
-  id: string;
-  userId: string;
-  status: string;
-}, subscriptionRecord?: {
-  status: "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
-  expiresAt: Date | null;
-}) {
+function createMockDb(
+  renderRecord?: {
+    id: string;
+    userId: string;
+    status: string;
+  },
+  subscriptionRecord?: {
+    status: "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
+    expiresAt: Date | null;
+  },
+) {
   let selectCallCount = 0;
   const selectChain: Record<string, unknown> = {};
   const methods = ["select", "from", "where", "limit"];
@@ -62,11 +65,13 @@ function createMockDb(renderRecord?: {
   const db = {
     select: mock(() => selectChain),
     update: mock(() => updateChain),
-    transaction: mock(async (fn: (tx: { update: () => unknown }) => Promise<void>) => {
-      await fn({
-        update: db.update as unknown as () => unknown,
-      });
-    }),
+    transaction: mock(
+      async (fn: (tx: { update: () => unknown }) => Promise<void>) => {
+        await fn({
+          update: db.update as unknown as () => unknown,
+        });
+      },
+    ),
     _selectChain: selectChain,
     _updateChain: updateChain,
   };

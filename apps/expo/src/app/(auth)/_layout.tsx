@@ -1,5 +1,5 @@
-import { View } from "react-native";
 import type { Href } from "expo-router";
+import { View } from "react-native";
 import { Redirect, Stack } from "expo-router";
 
 import { Spinner } from "@acme/ui";

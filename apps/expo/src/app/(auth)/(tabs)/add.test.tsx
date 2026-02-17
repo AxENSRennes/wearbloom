@@ -259,6 +259,6 @@ describe("AddGarmentScreen — Story 3.5 integration", () => {
     const source = await Bun.file(import.meta.dir + "/add.tsx").text();
     expect(source).toContain('const WARDROBE_ROUTE = "/(auth)/(tabs)/"');
     expect(source).toContain("router.push(WARDROBE_ROUTE as Href)");
-    expect(source).not.toContain('/(auth)/(tabs)/home');
+    expect(source).not.toContain("/(auth)/(tabs)/home");
   });
 });

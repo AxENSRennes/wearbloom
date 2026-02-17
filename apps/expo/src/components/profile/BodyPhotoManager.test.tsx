@@ -3,7 +3,6 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
 import * as onboardingState from "~/utils/onboardingState";
-
 import { BodyPhotoManager } from "./BodyPhotoManager";
 
 describe("BodyPhotoManager", () => {

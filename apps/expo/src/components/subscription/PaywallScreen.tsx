@@ -225,7 +225,11 @@ export function PaywallScreen({
               variant="secondary"
               onPress={() => void handleRestore()}
             />
-            <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
+            <Button
+              label="Back to wardrobe"
+              variant="ghost"
+              onPress={onClose}
+            />
           </View>
         </View>
       </SafeAreaView>

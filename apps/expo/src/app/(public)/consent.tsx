@@ -1,6 +1,6 @@
+import type { Href } from "expo-router";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { Href } from "expo-router";
 import { Stack, useRouter } from "expo-router";
 
 import { Button, ThemedPressable, ThemedText } from "@acme/ui";
@@ -29,8 +29,8 @@ export default function ConsentScreen() {
             className="text-center text-text-secondary"
           >
             We collect your photos and wardrobe data to power AI try-on. Your
-            data is stored securely, shared only with essential providers
-            (AI processing and Apple billing), and not used for advertising or
+            data is stored securely, shared only with essential providers (AI
+            processing and Apple billing), and not used for advertising or
             marketing.
           </ThemedText>
 

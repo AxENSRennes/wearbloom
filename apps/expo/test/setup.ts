@@ -825,6 +825,7 @@ mockModuleWithResolve("@legendapp/list", () => ({
       const {
         data,
         renderItem,
+        keyExtractor,
         ListEmptyComponent,
         ListHeaderComponent,
         refreshing: _refreshing,
@@ -836,6 +837,7 @@ mockModuleWithResolve("@legendapp/list", () => ({
           item: unknown;
           index: number;
         }) => React.ReactNode;
+        keyExtractor?: (item: unknown, index: number) => string | number;
         ListEmptyComponent?: React.ComponentType | React.ReactElement;
         ListHeaderComponent?: React.ComponentType | React.ReactElement;
         refreshing?: boolean;
@@ -846,7 +848,17 @@ mockModuleWithResolve("@legendapp/list", () => ({
       const hasItems = Array.isArray(data) && data.length > 0;
       const items =
         hasItems && renderItem
-          ? data.map((item, index) => renderItem({ item, index }))
+          ? data.map((item, index) => {
+              const rendered = renderItem({ item, index });
+              const extractedKey = keyExtractor?.(item, index);
+              const key =
+                typeof extractedKey === "string" ||
+                typeof extractedKey === "number"
+                  ? extractedKey
+                  : index;
+
+              return React.createElement(React.Fragment, { key }, rendered);
+            })
           : null;
 
       const empty =

@@ -11,12 +11,14 @@ export function useStockPhotoStatus() {
   const bodyPhotoQuery = useQuery(trpc.user.getBodyPhoto.queryOptions());
 
   useEffect(() => {
-    void getOnboardingBodyPhotoSource().then((s) => {
-      setSource(s);
-      setSourceLoaded(true);
-    }).catch(() => {
-      setSourceLoaded(true);
-    });
+    void getOnboardingBodyPhotoSource()
+      .then((s) => {
+        setSource(s);
+        setSourceLoaded(true);
+      })
+      .catch(() => {
+        setSourceLoaded(true);
+      });
   }, []);
 
   const hasDbPhoto = bodyPhotoQuery.data != null;

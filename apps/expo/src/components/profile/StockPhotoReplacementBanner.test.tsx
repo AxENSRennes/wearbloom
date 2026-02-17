@@ -37,9 +37,7 @@ describe("StockPhotoReplacementBanner", () => {
     const html = renderToStaticMarkup(
       createElement(StockPhotoReplacementBanner),
     );
-    expect(html).toContain(
-      "You&#x27;re using an example body photo",
-    );
+    expect(html).toContain("You&#x27;re using an example body photo");
   });
 
   test("has summary accessibility role", () => {

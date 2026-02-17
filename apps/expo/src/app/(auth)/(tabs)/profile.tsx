@@ -1,11 +1,11 @@
+import type { Href } from "expo-router";
 import { useState } from "react";
 import { Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import * as Haptics from "expo-haptics";
 import { ChevronRight, User } from "lucide-react-native";
 
 import {
@@ -30,7 +30,8 @@ export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const bodyPhotoQuery = useQuery(trpc.user.getBodyPhoto.queryOptions());
 
-  const { usedStockBodyPhoto, isLoading: isStockStatusLoading } = useStockPhotoStatus();
+  const { usedStockBodyPhoto, isLoading: isStockStatusLoading } =
+    useStockPhotoStatus();
   const { showStock, hiddenIds, toggleShowStock, unhideAll } =
     useStockGarmentPreferences();
   const cookies = authClient.getCookie();

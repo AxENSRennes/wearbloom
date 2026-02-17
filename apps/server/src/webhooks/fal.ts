@@ -243,13 +243,17 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
         );
 
         const subscriptionManager = createSubscriptionManager({ db: deps.db });
-        const isSubscriber = await subscriptionManager.isSubscriber(render.userId);
+        const isSubscriber = await subscriptionManager.isSubscriber(
+          render.userId,
+        );
         const shouldConsumeCredit = !isSubscriber;
 
         await deps.db.transaction(async (tx) => {
           if (shouldConsumeCredit) {
             const creditService = createCreditService({ db: tx });
-            const consumeResult = await creditService.consumeCredit(render.userId);
+            const consumeResult = await creditService.consumeCredit(
+              render.userId,
+            );
             if (!consumeResult.success) {
               throw new Error("INSUFFICIENT_CREDITS");
             }

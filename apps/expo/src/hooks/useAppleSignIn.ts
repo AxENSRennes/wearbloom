@@ -1,5 +1,5 @@
-import * as AppleAuthentication from "expo-apple-authentication";
 import type { Href } from "expo-router";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 

@@ -174,15 +174,19 @@ export const tryonRouter = {
 
             let shouldConsumeCredit = hasCredits && !allowWithoutCredits;
             if (shouldConsumeCredit) {
-              const subscriptionManager = createSubscriptionManager({ db: ctx.db });
-              const isSubscriberNow = await subscriptionManager.isSubscriber(userId);
+              const subscriptionManager = createSubscriptionManager({
+                db: ctx.db,
+              });
+              const isSubscriberNow =
+                await subscriptionManager.isSubscriber(userId);
               shouldConsumeCredit = !isSubscriberNow;
             }
 
             if (shouldConsumeCredit) {
               await ctx.db.transaction(async (tx) => {
-                const consumeResult = await createCreditService({ db: tx })
-                  .consumeCredit(userId);
+                const consumeResult = await createCreditService({
+                  db: tx,
+                }).consumeCredit(userId);
                 if (!consumeResult.success) {
                   throw new TRPCError({
                     code: "FORBIDDEN",

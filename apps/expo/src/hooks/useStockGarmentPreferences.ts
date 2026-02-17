@@ -41,5 +41,12 @@ export function useStockGarmentPreferences() {
     setHiddenIds([]);
   }, []);
 
-  return { hiddenIds, showStock, hideGarment, unhideGarment, toggleShowStock, unhideAll };
+  return {
+    hiddenIds,
+    showStock,
+    hideGarment,
+    unhideGarment,
+    toggleShowStock,
+    unhideAll,
+  };
 }
