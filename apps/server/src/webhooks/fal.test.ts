@@ -32,7 +32,11 @@ function createMockDb(renderRecord?: {
   id: string;
   userId: string;
   status: string;
+}, subscriptionRecord?: {
+  status: "trial" | "subscribed" | "expired" | "cancelled" | "grace_period";
+  expiresAt: Date | null;
 }) {
+  let selectCallCount = 0;
   const selectChain: Record<string, unknown> = {};
   const methods = ["select", "from", "where", "limit"];
   for (const method of methods) {
@@ -40,7 +44,11 @@ function createMockDb(renderRecord?: {
   }
   selectChain.then = mock((...args: unknown[]) => {
     const resolve = args[0] as (val: unknown[]) => void;
-    return resolve(renderRecord ? [renderRecord] : []);
+    selectCallCount++;
+    if (selectCallCount === 1) {
+      return resolve(renderRecord ? [renderRecord] : []);
+    }
+    return resolve(subscriptionRecord ? [subscriptionRecord] : []);
   });
 
   const updateChain: Record<string, unknown> = {};
@@ -51,12 +59,19 @@ function createMockDb(renderRecord?: {
     return resolve(undefined);
   });
 
-  return {
+  const db = {
     select: mock(() => selectChain),
     update: mock(() => updateChain),
+    transaction: mock(async (fn: (tx: { update: () => unknown }) => Promise<void>) => {
+      await fn({
+        update: db.update as unknown as () => unknown,
+      });
+    }),
     _selectChain: selectChain,
     _updateChain: updateChain,
-  } as unknown as typeof _dbType & {
+  };
+
+  return db as unknown as typeof _dbType & {
     _selectChain: typeof selectChain;
     _updateChain: typeof updateChain;
   };
@@ -449,6 +464,48 @@ describe("fal webhook handler", () => {
     expect(mockConsumeCredit).toHaveBeenCalledWith("user-credit-123");
   });
 
+  test("completed render does NOT consume credit for active subscriber", async () => {
+    const db = createMockDb(
+      {
+        id: "render-subscriber",
+        userId: "user-subscriber-1",
+        status: "processing",
+      },
+      {
+        status: "subscribed",
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    );
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(mockConsumeCredit).not.toHaveBeenCalled();
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "completed", creditConsumed: false }),
+    );
+  });
+
   test("failed render does NOT call creditService.consumeCredit", async () => {
     const db = createMockDb({
       id: "render-abc",
@@ -469,6 +526,45 @@ describe("fal webhook handler", () => {
     await handler(req, res);
 
     expect(mockConsumeCredit).not.toHaveBeenCalled();
+  });
+
+  test("insufficient credits during completion marks render as failed", async () => {
+    mockConsumeCredit.mockResolvedValueOnce({ success: false, remaining: 0 });
+
+    const db = createMockDb({
+      id: "render-credit-fail",
+      userId: "user-no-credits",
+      status: "processing",
+    });
+    const imageStorage = createMockImageStorage();
+    const handler = createFalWebhookHandler({ db, imageStorage, logger });
+
+    const payload = JSON.stringify({
+      request_id: "fal-req-123",
+      status: "OK",
+      payload: {
+        images: [
+          {
+            url: "https://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
+      },
+    });
+
+    const req = createMockRequest(payload);
+    const res = createMockResponse();
+    await handler(req, res);
+
+    expect(res._statusCode).toBe(200);
+    expect(db._updateChain.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "failed",
+        errorCode: "INSUFFICIENT_CREDITS",
+      }),
+    );
   });
 
   test("SSRF protection — blocks non-fal.media image URLs", async () => {

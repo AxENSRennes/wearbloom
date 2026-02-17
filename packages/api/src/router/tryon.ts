@@ -11,6 +11,7 @@ import {
 } from "@acme/db/schema";
 
 import { createCreditService } from "../services/creditService";
+import { createSubscriptionManager } from "../services/subscriptionManager";
 import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
 
 function is5xxError(error: unknown): boolean {
@@ -98,14 +99,20 @@ export const tryonRouter = {
         });
       }
 
-      // Check credit balance before creating render
+      // Check entitlement before creating render
       const creditService = createCreditService({ db: ctx.db });
       const hasCredits = await creditService.hasCreditsRemaining(userId);
+      let allowWithoutCredits = false;
       if (!hasCredits) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "INSUFFICIENT_CREDITS",
-        });
+        const subscriptionManager = createSubscriptionManager({ db: ctx.db });
+        const isSubscriber = await subscriptionManager.isSubscriber(userId);
+        if (!isSubscriber) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "INSUFFICIENT_CREDITS",
+          });
+        }
+        allowWithoutCredits = true;
       }
 
       // Create render record
@@ -164,17 +171,47 @@ export const tryonRouter = {
               immediateResult.imageData,
               immediateResult.contentType,
             );
-            await ctx.db
-              .update(tryOnRenders)
-              .set({
-                jobId,
-                status: "completed",
-                resultPath,
-                creditConsumed: true,
-              })
-              .where(eq(tryOnRenders.id, renderRecord.id));
-            const creditSvc = createCreditService({ db: ctx.db });
-            await creditSvc.consumeCredit(userId);
+
+            let shouldConsumeCredit = hasCredits && !allowWithoutCredits;
+            if (shouldConsumeCredit) {
+              const subscriptionManager = createSubscriptionManager({ db: ctx.db });
+              const isSubscriberNow = await subscriptionManager.isSubscriber(userId);
+              shouldConsumeCredit = !isSubscriberNow;
+            }
+
+            if (shouldConsumeCredit) {
+              await ctx.db.transaction(async (tx) => {
+                const consumeResult = await createCreditService({ db: tx })
+                  .consumeCredit(userId);
+                if (!consumeResult.success) {
+                  throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "INSUFFICIENT_CREDITS",
+                  });
+                }
+
+                await tx
+                  .update(tryOnRenders)
+                  .set({
+                    jobId,
+                    status: "completed",
+                    resultPath,
+                    creditConsumed: true,
+                  })
+                  .where(eq(tryOnRenders.id, renderRecord.id));
+              });
+            } else {
+              await ctx.db
+                .update(tryOnRenders)
+                .set({
+                  jobId,
+                  status: "completed",
+                  resultPath,
+                  creditConsumed: false,
+                })
+                .where(eq(tryOnRenders.id, renderRecord.id));
+            }
+
             return { renderId: renderRecord.id };
           }
 
@@ -186,6 +223,13 @@ export const tryonRouter = {
 
           return { renderId: renderRecord.id };
         } catch (error) {
+          if (
+            error instanceof TRPCError &&
+            error.message === "INSUFFICIENT_CREDITS"
+          ) {
+            throw error;
+          }
+
           // Only retry on 5xx errors, and only on first attempt
           if (attempt < maxAttempts && is5xxError(error)) {
             continue;

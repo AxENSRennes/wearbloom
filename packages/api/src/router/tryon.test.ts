@@ -179,7 +179,9 @@ describe("tryon.requestRender", () => {
       // Credit check — no credits remaining
       .mockReturnValueOnce(
         mockDbSelect([{ totalGranted: 3, totalConsumed: 3 }]) as never,
-      );
+      )
+      // Subscription lookup — no active subscription
+      .mockReturnValueOnce(mockDbSelect([]) as never);
 
     const { caller } = await createAuthenticatedCaller();
 
@@ -207,6 +209,8 @@ describe("tryon.requestRender", () => {
         ]) as never,
       )
       // Credit check — no credit row at all
+      .mockReturnValueOnce(mockDbSelect([]) as never)
+      // Subscription lookup — no active subscription
       .mockReturnValueOnce(mockDbSelect([]) as never);
 
     const { caller } = await createAuthenticatedCaller();
@@ -214,6 +218,50 @@ describe("tryon.requestRender", () => {
     await expect(
       caller.tryon.requestRender({ garmentId: "garment-1" }),
     ).rejects.toThrow(/INSUFFICIENT_CREDITS/);
+  });
+
+  test("allows active subscriber to render even with zero credits", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select")
+      .mockReturnValueOnce(
+        mockDbSelect([
+          { id: "bp-1", filePath: "user-123/body/avatar.jpg" },
+        ]) as never,
+      )
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            id: "garment-1",
+            imagePath: "user-123/garments/g1_original.jpg",
+            cutoutPath: "user-123/garments/g1_cutout.png",
+            category: "tops",
+          },
+        ]) as never,
+      )
+      // Credit check — no credits remaining
+      .mockReturnValueOnce(
+        mockDbSelect([{ totalGranted: 3, totalConsumed: 3 }]) as never,
+      )
+      // Subscription lookup — active subscriber should pass entitlement check
+      .mockReturnValueOnce(
+        mockDbSelect([
+          {
+            status: "subscribed",
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        ]) as never,
+      );
+    insertSpy = spyOn(db as never, "insert").mockReturnValue(
+      mockDbInsert("render-subscriber") as never,
+    );
+    updateSpy = spyOn(db as never, "update").mockReturnValue(
+      mockDbUpdate() as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.requestRender({ garmentId: "garment-1" });
+
+    expect(result.renderId).toBe("render-subscriber");
   });
 
   test("validates garment exists and belongs to user", async () => {

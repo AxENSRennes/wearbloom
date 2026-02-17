@@ -4,6 +4,7 @@ import type { Logger } from "pino";
 
 import type { db as _dbInstance } from "@acme/db/client";
 import { createCreditService } from "@acme/api/services/creditService";
+import { createSubscriptionManager } from "@acme/api/services/subscriptionManager";
 import { eq } from "@acme/db";
 import { tryOnRenders } from "@acme/db/schema";
 
@@ -241,28 +242,45 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
           image.content_type,
         );
 
-        // Update DB
-        await deps.db
-          .update(tryOnRenders)
-          .set({ status: "completed", resultPath, creditConsumed: true })
-          .where(eq(tryOnRenders.id, render.id));
+        const subscriptionManager = createSubscriptionManager({ db: deps.db });
+        const isSubscriber = await subscriptionManager.isSubscriber(render.userId);
+        const shouldConsumeCredit = !isSubscriber;
 
-        // Deduct credit from the credits table
-        const creditService = createCreditService({ db: deps.db });
-        await creditService.consumeCredit(render.userId);
+        await deps.db.transaction(async (tx) => {
+          if (shouldConsumeCredit) {
+            const creditService = createCreditService({ db: tx });
+            const consumeResult = await creditService.consumeCredit(render.userId);
+            if (!consumeResult.success) {
+              throw new Error("INSUFFICIENT_CREDITS");
+            }
+          }
+
+          await tx
+            .update(tryOnRenders)
+            .set({
+              status: "completed",
+              resultPath,
+              creditConsumed: shouldConsumeCredit,
+            })
+            .where(eq(tryOnRenders.id, render.id));
+        });
 
         deps.logger.info(
           { renderId: render.id, resultPath },
           "Render completed successfully",
         );
       } catch (err) {
+        const errorCode =
+          err instanceof Error && err.message === "INSUFFICIENT_CREDITS"
+            ? "INSUFFICIENT_CREDITS"
+            : "RENDER_FAILED";
         deps.logger.error(
           { renderId: render.id, err },
           "Failed to process render result",
         );
         await deps.db
           .update(tryOnRenders)
-          .set({ status: "failed", errorCode: "RENDER_FAILED" })
+          .set({ status: "failed", errorCode })
           .where(eq(tryOnRenders.id, render.id));
       }
     } else {

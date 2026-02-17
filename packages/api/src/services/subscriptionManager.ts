@@ -97,6 +97,16 @@ export function createSubscriptionManager({ db }: { db: typeof dbType }) {
       return rows[0];
     },
 
+    async isSubscriber(userId: string): Promise<boolean> {
+      const subscription = await this.getSubscription(userId);
+      const state = this.computeSubscriptionState(
+        subscription
+          ? { status: subscription.status, expiresAt: subscription.expiresAt }
+          : null,
+      );
+      return state.isSubscriber;
+    },
+
     async upsertSubscription(
       userId: string,
       data: {
