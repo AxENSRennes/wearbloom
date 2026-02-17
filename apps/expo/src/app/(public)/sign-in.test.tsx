@@ -1,4 +1,5 @@
-import React, { createElement } from "react";
+import { createElement } from "react";
+import type { ReactElement } from "react";
 import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -70,7 +71,7 @@ function assertDefined<T>(
   if (val === undefined) throw new Error(msg);
 }
 
-function render(component: React.ReactElement) {
+function render(component: ReactElement) {
   return renderToStaticMarkup(component);
 }
 

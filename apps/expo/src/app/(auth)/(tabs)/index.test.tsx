@@ -552,9 +552,8 @@ describe("WardrobeScreen", () => {
 
     const useCallbackSpy = spyOn(React, "useCallback");
     // Pass through useCallback (safe in SSR — no re-renders)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     useCallbackSpy.mockImplementation(
-      (<T extends (...args: any[]) => any>(fn: T) =>
+      ((fn: (...args: unknown[]) => unknown, _deps: React.DependencyList) =>
         fn) as typeof React.useCallback,
     );
 

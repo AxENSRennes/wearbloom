@@ -1,4 +1,5 @@
-import React, { createElement } from "react";
+import { createElement } from "react";
+import type { ReactElement } from "react";
 // @ts-expect-error -- __searchParams is a test-only export from expo-router mock
 import { __searchParams } from "expo-router";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
@@ -72,7 +73,7 @@ function assertDefined<T>(
   if (val === undefined) throw new Error(msg);
 }
 
-function render(component: React.ReactElement) {
+function render(component: ReactElement) {
   return renderToStaticMarkup(component);
 }
 
