@@ -136,6 +136,7 @@ mockModuleWithResolve("react-native", () => ({
   Text: mockComponent("Text"),
   TextInput: mockComponent("TextInput"),
   ScrollView: mockComponent("ScrollView"),
+  Switch: mockComponent("Switch"),
   Pressable: mockComponent("Pressable"),
   TouchableOpacity: mockComponent("TouchableOpacity"),
   ActivityIndicator: mockComponent("ActivityIndicator"),

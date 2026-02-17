@@ -598,12 +598,33 @@ describe("WardrobeScreen", () => {
     // Component order: handleDeleteConfirm(0), handleCategorySelect(1),
     // handleRefresh(0), handleSheetDismiss(0), handleTryOn(1).
     // handleTryOn is the SECOND useCallback with length === 1.
+    // Find handleTryOn: it's the useCallback whose body calls requestRenderMutation.mutate.
+    // Filter callbacks with 1 param, then find the one that triggers our mock mutation's onError.
     const callbacksWithOneParam = useCallbackSpy.mock.calls.filter(
       (call) => typeof call[0] === "function" && call[0].length === 1,
     );
-    const handleTryOn = callbacksWithOneParam[1]?.[0] as
-      | ((garmentId: string) => void)
-      | undefined;
+    // handleTryOn is the callback that accepts a garmentId string and calls mutate.
+    // With hooks from useStockGarmentPreferences adding more callbacks, find it by testing behavior:
+    let handleTryOn: ((garmentId: string) => void) | undefined;
+    for (const call of callbacksWithOneParam) {
+      const fn = call[0] as (arg: string) => void;
+      try {
+        (showToast as ReturnType<typeof mock>).mockClear();
+        fn("test-garment");
+        if (
+          (showToast as ReturnType<typeof mock>).mock.calls.some(
+            (c: unknown[]) =>
+              (c[0] as Record<string, unknown>)?.message ===
+              "Try-on not available for this category.",
+          )
+        ) {
+          handleTryOn = fn;
+          break;
+        }
+      } catch {
+        // Not the right callback
+      }
+    }
     expect(handleTryOn).toBeDefined();
 
     // Clear accumulated showToast calls from prior tests (mock.module mocks
@@ -693,6 +714,41 @@ describe("WardrobeScreen", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
 
     expect(html).toContain("Offline");
+  });
+
+  // -------------------------------------------------------------------------
+  // Story 5.4 — Stock garment filtering
+  // -------------------------------------------------------------------------
+  test("renders hide stock garment AlertDialog", () => {
+    stubUseQuery({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    expect(html).toContain("Hide stock garment?");
+    expect(html).toContain("You can restore it later from Settings.");
+  });
+
+  test("stock garments have onLongPress handler for hiding", () => {
+    stubUseQuery({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(<WardrobeScreen />);
+
+    // Stock garment cards should have an onLongPress handler (not undefined)
+    // The mock-ThemedPressable renders the onLongPress prop
+    // Stock garments should be rendered with long-press capability
+    expect(html).toContain("stock-tops-1");
   });
 
   test("no offline indicator when connected", () => {

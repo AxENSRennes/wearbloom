@@ -6,6 +6,8 @@ import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import * as Haptics from "expo-haptics";
+
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
 import type { CategoryFilter } from "~/constants/categories";
@@ -18,6 +20,7 @@ import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
+import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
 import { isStockGarment } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
 
@@ -36,10 +39,13 @@ export default function WardrobeScreen() {
   const [selectedGarment, setSelectedGarment] = useState<WardrobeItem | null>(
     null,
   );
+  const [stockGarmentToHide, setStockGarmentToHide] =
+    useState<WardrobeItem | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isConnected } = useNetworkStatus();
+  const { hiddenIds, showStock, hideGarment } = useStockGarmentPreferences();
   const [isManualRefresh, setIsManualRefresh] = useState(false);
 
   const supportedCategoriesQuery = useQuery(
@@ -155,8 +161,21 @@ export default function WardrobeScreen() {
       ...g,
       isStock: false as const,
     }));
-    return [...personal, ...getStockGarmentsByCategory(selectedCategory)];
-  }, [garments, selectedCategory]);
+    if (!showStock) return personal;
+    const stockItems = getStockGarmentsByCategory(selectedCategory).filter(
+      (s) => !hiddenIds.includes(s.id),
+    );
+    return [...personal, ...stockItems];
+  }, [garments, selectedCategory, showStock, hiddenIds]);
+
+  const handleHideStockConfirm = useCallback(() => {
+    if (stockGarmentToHide) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void hideGarment(stockGarmentToHide.id);
+      setStockGarmentToHide(null);
+      showToast({ message: "Stock garment hidden", variant: "info" });
+    }
+  }, [stockGarmentToHide, hideGarment]);
 
   const renderGarment = useCallback(
     ({ item }: { item: WardrobeItem }) => (
@@ -164,7 +183,9 @@ export default function WardrobeScreen() {
         garment={item}
         onPress={() => setSelectedGarment(item)}
         onLongPress={
-          !isStockGarment(item) ? () => setGarmentToDelete(item) : undefined
+          isStockGarment(item)
+            ? () => setStockGarmentToHide(item)
+            : () => setGarmentToDelete(item)
         }
         columnWidth={COLUMN_WIDTH}
       />
@@ -257,6 +278,15 @@ export default function WardrobeScreen() {
         confirmLabel="Delete"
         variant="destructive"
         isLoading={deleteMutation.isPending}
+      />
+      <AlertDialog
+        isOpen={stockGarmentToHide !== null}
+        onClose={() => setStockGarmentToHide(null)}
+        onConfirm={handleHideStockConfirm}
+        title="Hide stock garment?"
+        message="You can restore it later from Settings."
+        confirmLabel="Hide"
+        accessibilityLabel="Hide stock garment confirmation"
       />
       <GarmentDetailSheet
         ref={bottomSheetRef}

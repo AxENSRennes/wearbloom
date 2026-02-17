@@ -9,6 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Button, showToast, ThemedText } from "@acme/ui";
 
 import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
+import { setOnboardingBodyPhotoSource } from "~/utils/onboardingState";
 
 export interface StepYourPhotoProps {
   onPhotoSelected: (uri: string, isStock: boolean) => void;
@@ -24,8 +25,10 @@ export function StepYourPhoto({
 
   const handleUsePhoto = useCallback(() => {
     if (isUsingStock) {
+      void setOnboardingBodyPhotoSource("stock");
       onPhotoSelected("stock-body-01", true);
     } else if (selectedUri) {
+      void setOnboardingBodyPhotoSource("own");
       onPhotoSelected(selectedUri, false);
     }
   }, [onPhotoSelected, selectedUri, isUsingStock]);
@@ -52,6 +55,7 @@ export function StepYourPhoto({
       setPreviewSource({ uri } as ImageSourcePropType);
       setSelectedUri(uri);
       setIsUsingStock(false);
+      void setOnboardingBodyPhotoSource("own");
       onPhotoSelected(uri, false);
     }
   }, [onPhotoSelected]);
@@ -78,6 +82,7 @@ export function StepYourPhoto({
       setPreviewSource({ uri } as ImageSourcePropType);
       setSelectedUri(uri);
       setIsUsingStock(false);
+      void setOnboardingBodyPhotoSource("own");
       onPhotoSelected(uri, false);
     }
   }, [onPhotoSelected]);

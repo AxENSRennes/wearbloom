@@ -11,6 +11,7 @@ import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
 import { compressImage } from "~/utils/imageCompressor";
+import { setOnboardingBodyPhotoSource } from "~/utils/onboardingState";
 
 export function BodyPhotoManager() {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export function BodyPhotoManager() {
         void queryClient.invalidateQueries({
           queryKey: trpc.user.getBodyPhoto.queryKey(),
         });
+        void setOnboardingBodyPhotoSource("own");
         showToast({ message: "Photo saved successfully!", variant: "success" });
       },
       onError: () => {

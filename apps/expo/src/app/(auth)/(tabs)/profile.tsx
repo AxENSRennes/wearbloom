@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
 import { ChevronRight, User } from "lucide-react-native";
 
 import {
@@ -15,7 +16,10 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { StockPhotoReplacementBanner } from "~/components/profile/StockPhotoReplacementBanner";
 import { CreditCounter } from "~/components/subscription/CreditCounter";
+import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
+import { useStockPhotoStatus } from "~/hooks/useStockPhotoStatus";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
@@ -25,6 +29,9 @@ export default function ProfileScreen() {
   const { data: session } = authClient.useSession();
   const bodyPhotoQuery = useQuery(trpc.user.getBodyPhoto.queryOptions());
 
+  const { usedStockBodyPhoto } = useStockPhotoStatus();
+  const { showStock, hiddenIds, toggleShowStock, unhideAll } =
+    useStockGarmentPreferences();
   const cookies = authClient.getCookie();
   const hasBodyPhoto = bodyPhotoQuery.data != null;
   const bodyPhotoUrl = bodyPhotoQuery.data
@@ -101,26 +108,32 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <ThemedPressable
-          className="mb-4 flex-row items-center justify-between rounded-xl bg-surface px-4 py-3"
-          onPress={() => router.push("/(auth)/body-photo")}
-          accessibilityRole="button"
-          accessibilityLabel={
-            hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"
-          }
-          accessibilityHint="Navigate to body photo management screen"
-        >
-          <ThemedText
-            variant="body"
-            className={hasBodyPhoto ? "text-text-secondary" : "text-accent"}
+        {usedStockBodyPhoto && !hasBodyPhoto ? (
+          <View className="mb-4">
+            <StockPhotoReplacementBanner />
+          </View>
+        ) : (
+          <ThemedPressable
+            className="mb-4 flex-row items-center justify-between rounded-xl bg-surface px-4 py-3"
+            onPress={() => router.push("/(auth)/body-photo")}
+            accessibilityRole="button"
+            accessibilityLabel={
+              hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"
+            }
+            accessibilityHint="Navigate to body photo management screen"
           >
-            {hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"}
-          </ThemedText>
-          <ChevronRight
-            size={20}
-            color={wearbloomTheme.colors["text-tertiary"]}
-          />
-        </ThemedPressable>
+            <ThemedText
+              variant="body"
+              className={hasBodyPhoto ? "text-text-secondary" : "text-accent"}
+            >
+              {hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"}
+            </ThemedText>
+            <ChevronRight
+              size={20}
+              color={wearbloomTheme.colors["text-tertiary"]}
+            />
+          </ThemedPressable>
+        )}
 
         {session?.user && (
           <View className="rounded-xl bg-surface p-4">
@@ -137,6 +150,44 @@ export default function ProfileScreen() {
           </ThemedText>
           <View className="rounded-xl bg-surface px-4 py-3">
             <CreditCounter />
+          </View>
+
+          <ThemedText
+            variant="caption"
+            className="mt-2 px-1 text-text-secondary"
+          >
+            Wardrobe
+          </ThemedText>
+          <View className="rounded-xl bg-surface px-4 py-3">
+            <View className="flex-row items-center justify-between">
+              <ThemedText variant="body" className="text-text-secondary">
+                Show stock garments
+              </ThemedText>
+              <Switch
+                value={showStock}
+                onValueChange={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  void toggleShowStock();
+                }}
+                accessibilityLabel="Show stock garments"
+                accessibilityRole="switch"
+              />
+            </View>
+            {hiddenIds.length > 0 && (
+              <View className="mt-3 border-t border-border pt-3">
+                <Button
+                  label="Restore hidden garments"
+                  variant="ghost"
+                  onPress={() => {
+                    void unhideAll();
+                    showToast({
+                      message: "All stock garments restored",
+                      variant: "success",
+                    });
+                  }}
+                />
+              </View>
+            )}
           </View>
 
           <ThemedText

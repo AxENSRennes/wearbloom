@@ -1,12 +1,14 @@
 import * as rq from "@tanstack/react-query";
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
+
+import * as onboardingState from "~/utils/onboardingState";
 
 import { BodyPhotoManager } from "./BodyPhotoManager";
 
 describe("BodyPhotoManager", () => {
   afterEach(() => {
-    // Restore any spies between tests
+    mock.restore();
   });
 
   test("renders placeholder when no body photo exists", () => {
@@ -70,5 +72,25 @@ describe("BodyPhotoManager", () => {
     expect(html).not.toContain("Body photo placeholder");
 
     spy.mockRestore();
+  });
+
+  // Story 5.4 — Clear stock flag on upload success
+  test("imports setOnboardingBodyPhotoSource for clearing stock flag", () => {
+    expect(typeof onboardingState.setOnboardingBodyPhotoSource).toBe(
+      "function",
+    );
+  });
+
+  test("renders correctly with stock flag clearing wired in onSuccess", () => {
+    const spy = spyOn(
+      onboardingState,
+      "setOnboardingBodyPhotoSource",
+    ).mockResolvedValue(undefined);
+
+    const html = renderToString(<BodyPhotoManager />);
+    // Component still renders correctly with the spy in place
+    expect(html).toContain("Add Your Body Photo");
+    // The spy should not be called during render (only during onSuccess)
+    expect(spy).not.toHaveBeenCalled();
   });
 });

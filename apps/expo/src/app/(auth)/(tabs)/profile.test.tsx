@@ -1,7 +1,10 @@
 import { createElement } from "react";
 import * as rq from "@tanstack/react-query";
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
+
+import * as stockGarmentModule from "~/hooks/useStockGarmentPreferences";
+import * as stockPhotoModule from "~/hooks/useStockPhotoStatus";
 
 import ProfileScreen from "./profile";
 
@@ -11,7 +14,7 @@ function render(component: React.ReactElement) {
 
 describe("ProfileScreen", () => {
   afterEach(() => {
-    // Restore any spies between tests
+    mock.restore();
   });
 
   test("exports a function component", () => {
@@ -127,5 +130,89 @@ describe("ProfileScreen", () => {
     expect(html).not.toContain("Body photo placeholder");
 
     spy.mockRestore();
+  });
+
+  // Story 5.4 — Stock photo conditional rendering
+  test("shows StockPhotoReplacementBanner when stock photo used and no DB photo", () => {
+    spyOn(stockPhotoModule, "useStockPhotoStatus").mockReturnValue({
+      usedStockBodyPhoto: true,
+      isLoading: false,
+    });
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("You&#x27;re using an example photo");
+    expect(html).toContain("Add Your Photo");
+    expect(html).not.toContain("Add Body Photo");
+  });
+
+  test("shows standard Add Body Photo when own source and no DB photo", () => {
+    spyOn(stockPhotoModule, "useStockPhotoStatus").mockReturnValue({
+      usedStockBodyPhoto: false,
+      isLoading: false,
+    });
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Add Body Photo");
+    expect(html).not.toContain("You&#x27;re using an example photo");
+  });
+
+  // Story 5.4 — Stock garment settings
+  test("renders Wardrobe section header", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Wardrobe");
+  });
+
+  test("renders Show stock garments toggle", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Show stock garments");
+    expect(html).toContain("mock-Switch");
+  });
+
+  test("renders Restore hidden garments button when items are hidden", () => {
+    spyOn(stockGarmentModule, "useStockGarmentPreferences").mockReturnValue({
+      showStock: true,
+      hiddenIds: ["garment-1"],
+      hideGarment: mock(() => Promise.resolve()),
+      unhideGarment: mock(() => Promise.resolve()),
+      toggleShowStock: mock(() => Promise.resolve()),
+      unhideAll: mock(() => Promise.resolve()),
+    });
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Restore hidden garments");
+  });
+
+  test("does not render Restore button when no items hidden", () => {
+    spyOn(stockGarmentModule, "useStockGarmentPreferences").mockReturnValue({
+      showStock: true,
+      hiddenIds: [],
+      hideGarment: mock(() => Promise.resolve()),
+      unhideGarment: mock(() => Promise.resolve()),
+      toggleShowStock: mock(() => Promise.resolve()),
+      unhideAll: mock(() => Promise.resolve()),
+    });
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).not.toContain("Restore hidden garments");
+  });
+
+  test("shows Update Body Photo when DB photo exists (regardless of stock status)", () => {
+    spyOn(stockPhotoModule, "useStockPhotoStatus").mockReturnValue({
+      usedStockBodyPhoto: false,
+      isLoading: false,
+    });
+    spyOn(rq, "useQuery").mockReturnValue({
+      data: { imageId: "photo-xyz", imageUrl: "/api/images/photo-xyz" },
+      isLoading: false,
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: () => Promise.resolve({} as never),
+    } as never);
+
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("Update Body Photo");
+    expect(html).not.toContain("You&#x27;re using an example photo");
+    expect(html).not.toContain("Add Body Photo");
   });
 });
