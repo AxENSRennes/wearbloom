@@ -350,8 +350,8 @@ export function PaywallScreen({
           className="mt-3 text-center text-text-secondary"
         >
           {isExpiredSubscriber
-            ? `${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`
-            : `Then ${String(product?.displayPrice ?? "\u2026")}/week. Cancel anytime.`}
+            ? `${product?.displayPrice ?? "\u2026"}/week. Cancel anytime.`
+            : `Then ${product?.displayPrice ?? "\u2026"}/week. Cancel anytime.`}
         </ThemedText>
 
         {/* Restore purchases */}

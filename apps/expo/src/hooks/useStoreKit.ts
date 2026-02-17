@@ -11,9 +11,9 @@ const WEB_STOREKIT_UNAVAILABLE_ERROR = new Error(
   "IN_APP_PURCHASES_NOT_SUPPORTED_ON_WEB",
 );
 
-type StoreKitProduct = Record<string, unknown>;
+type StoreKitProduct = Record<string, unknown> & { displayPrice?: string };
 
-type StoreKitAdapter = {
+interface StoreKitAdapter {
   useIAP: (options: {
     onPurchaseSuccess?: (purchase: Purchase) => void;
     onPurchaseError?: (error: ExpoPurchaseError) => void;
@@ -32,7 +32,7 @@ type StoreKitAdapter = {
     restorePurchases: () => Promise<void>;
   };
   getAvailablePurchases: () => Promise<{ purchaseToken?: string | null }[]>;
-};
+}
 
 const webStoreKitAdapter: StoreKitAdapter = {
   useIAP: () => ({
