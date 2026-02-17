@@ -1,15 +1,57 @@
 import type { ExpoPurchaseError, Purchase } from "expo-iap";
 import { useCallback, useEffect, useState } from "react";
-import {
-  getAvailablePurchases as fetchPurchasesFromStore,
-  useIAP,
-} from "expo-iap";
+import { Platform } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 
 import { queryClient, trpc } from "~/utils/api";
 
 const SUBSCRIPTION_SKU = "com.wearbloom.weekly";
 type ProductLoadState = "idle" | "loading" | "ready" | "error";
+const WEB_STOREKIT_UNAVAILABLE_ERROR = new Error(
+  "IN_APP_PURCHASES_NOT_SUPPORTED_ON_WEB",
+);
+
+type StoreKitProduct = Record<string, unknown>;
+
+type StoreKitAdapter = {
+  useIAP: (options: {
+    onPurchaseSuccess?: (purchase: Purchase) => void;
+    onPurchaseError?: (error: ExpoPurchaseError) => void;
+  }) => {
+    connected: boolean;
+    subscriptions: StoreKitProduct[];
+    fetchProducts: (input: { skus: string[]; type: "subs" }) => Promise<void>;
+    requestPurchase: (input: {
+      request: { apple: { sku: string; appAccountToken: string } };
+      type: "subs";
+    }) => Promise<void>;
+    finishTransaction: (input: {
+      purchase: Purchase;
+      isConsumable: boolean;
+    }) => Promise<void>;
+    restorePurchases: () => Promise<void>;
+  };
+  getAvailablePurchases: () => Promise<{ purchaseToken?: string | null }[]>;
+};
+
+const webStoreKitAdapter: StoreKitAdapter = {
+  useIAP: () => ({
+    connected: false,
+    subscriptions: [],
+    fetchProducts: () => Promise.resolve(),
+    requestPurchase: () => Promise.resolve(),
+    finishTransaction: () => Promise.resolve(),
+    restorePurchases: () => Promise.resolve(),
+  }),
+  getAvailablePurchases: () => Promise.resolve([]),
+};
+
+function getStoreKitAdapter() {
+  if (Platform.OS === "web") return webStoreKitAdapter;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- expo-iap is native-only, so we load it lazily off web.
+  return require("expo-iap") as StoreKitAdapter;
+}
 
 function toError(value: unknown) {
   if (value instanceof Error) return value;
@@ -17,6 +59,8 @@ function toError(value: unknown) {
 }
 
 export function useStoreKit({ userId }: { userId: string }) {
+  const isWeb = Platform.OS === "web";
+  const storeKitAdapter = getStoreKitAdapter();
   const {
     connected,
     subscriptions,
@@ -24,7 +68,7 @@ export function useStoreKit({ userId }: { userId: string }) {
     requestPurchase,
     finishTransaction,
     restorePurchases,
-  } = useIAP({
+  } = storeKitAdapter.useIAP({
     onPurchaseSuccess: (purchase) => {
       void handlePurchaseComplete(purchase);
     },
@@ -55,7 +99,7 @@ export function useStoreKit({ userId }: { userId: string }) {
   );
 
   const retryProductFetch = useCallback(async () => {
-    if (!connected) return;
+    if (!connected || isWeb) return;
 
     setProductLoadState("loading");
     setProductLoadError(null);
@@ -66,16 +110,16 @@ export function useStoreKit({ userId }: { userId: string }) {
       setProductLoadState("error");
       setProductLoadError(toError(error));
     }
-  }, [connected, fetchProducts]);
+  }, [connected, fetchProducts, isWeb]);
 
   // Fetch subscription product when StoreKit connection becomes available
   useEffect(() => {
-    if (!connected || productLoadState !== "idle") return;
+    if (!connected || productLoadState !== "idle" || isWeb) return;
     const timeoutId = setTimeout(() => {
       void retryProductFetch();
     }, 0);
     return () => clearTimeout(timeoutId);
-  }, [connected, productLoadState, retryProductFetch]);
+  }, [connected, isWeb, productLoadState, retryProductFetch]);
 
   async function handlePurchaseComplete(purchase: Purchase) {
     // Server validates the transaction via JWS token.
@@ -105,7 +149,7 @@ export function useStoreKit({ userId }: { userId: string }) {
   const restore = useCallback(async () => {
     // Sync with Apple then fetch available purchases (root API returns data)
     await restorePurchases();
-    const purchases = await fetchPurchasesFromStore();
+    const purchases = await storeKitAdapter.getAvailablePurchases();
     if (purchases.length === 0) return { restored: 0 };
 
     const result = await restoreMutation.mutateAsync({
@@ -119,13 +163,17 @@ export function useStoreKit({ userId }: { userId: string }) {
     });
 
     return result;
-  }, [restorePurchases, restoreMutation]);
+  }, [restorePurchases, restoreMutation, storeKitAdapter]);
 
   return {
     connected,
     isReady: connected && productLoadState === "ready",
-    productLoadState: connected ? productLoadState : "idle",
-    productLoadError: connected ? productLoadError : null,
+    productLoadState: isWeb ? "error" : connected ? productLoadState : "idle",
+    productLoadError: isWeb
+      ? WEB_STOREKIT_UNAVAILABLE_ERROR
+      : connected
+        ? productLoadError
+        : null,
     retryProductFetch,
     product: subscriptions[0] ?? null,
     purchase,

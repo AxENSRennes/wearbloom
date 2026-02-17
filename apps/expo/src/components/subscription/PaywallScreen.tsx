@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { ErrorCode } from "expo-iap";
 import { Check, CircleCheck, X } from "lucide-react-native";
 
 import {
@@ -50,6 +49,12 @@ const BENEFITS = [
   "New AI models as added",
 ] as const;
 
+function isUserCancelledPurchaseError(error: { code?: unknown } | null) {
+  if (!error || typeof error.code !== "string") return false;
+  const normalizedCode = error.code.toLowerCase();
+  return normalizedCode.includes("cancel");
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -94,7 +99,7 @@ export function PaywallScreen({
   // Watch for purchase errors (decline / error)
   useEffect(() => {
     if (!purchaseError) return;
-    if (purchaseError.code === ErrorCode.UserCancelled) {
+    if (isUserCancelledPurchaseError(purchaseError)) {
       setViewState("declined");
     } else {
       setViewState("error");
