@@ -90,26 +90,30 @@ export const bgRemovalStatusEnum = pgEnum(
   BG_REMOVAL_STATUSES,
 );
 
-export const garments = pgTable("garments", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  category: garmentCategory().notNull(),
-  imagePath: t.text().notNull(),
-  cutoutPath: t.text(),
-  bgRemovalStatus: bgRemovalStatusEnum().default("pending").notNull(),
-  mimeType: t.text().notNull(),
-  width: t.integer(),
-  height: t.integer(),
-  fileSize: t.integer(),
-  createdAt: t.timestamp().defaultNow().notNull(),
-  updatedAt: t.timestamp().defaultNow().notNull(),
-}));
+export const garments = pgTable(
+  "garments",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    category: garmentCategory().notNull(),
+    imagePath: t.text().notNull(),
+    cutoutPath: t.text(),
+    bgRemovalStatus: bgRemovalStatusEnum().default("pending").notNull(),
+    mimeType: t.text().notNull(),
+    width: t.integer(),
+    height: t.integer(),
+    fileSize: t.integer(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t.timestamp().defaultNow().notNull(),
+  }),
+  (table) => [index("garments_user_id_idx").on(table.userId)],
+);
 
 export const RENDER_STATUSES = [
   "pending",
@@ -127,55 +131,67 @@ export const TRYON_PROVIDERS = [
 export const renderStatus = pgEnum("render_status", RENDER_STATUSES);
 export const tryOnProviderEnum = pgEnum("try_on_provider", TRYON_PROVIDERS);
 
-export const tryOnRenders = pgTable("try_on_renders", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  garmentId: t
-    .text()
-    .notNull()
-    .references(() => garments.id, { onDelete: "cascade" }),
-  provider: tryOnProviderEnum().notNull(),
-  status: renderStatus().notNull().default("pending"),
-  jobId: t.text(),
-  resultPath: t.text(),
-  errorCode: t.text(),
-  creditConsumed: t.boolean().notNull().default(false),
-  createdAt: t.timestamp().defaultNow().notNull(),
-  updatedAt: t
-    .timestamp()
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-}));
+export const tryOnRenders = pgTable(
+  "try_on_renders",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    garmentId: t
+      .text()
+      .notNull()
+      .references(() => garments.id, { onDelete: "cascade" }),
+    provider: tryOnProviderEnum().notNull(),
+    status: renderStatus().notNull().default("pending"),
+    jobId: t.text(),
+    resultPath: t.text(),
+    errorCode: t.text(),
+    creditConsumed: t.boolean().notNull().default(false),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t
+      .timestamp()
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  }),
+  (table) => [
+    index("try_on_renders_job_id_idx").on(table.jobId),
+    index("try_on_renders_user_id_idx").on(table.userId),
+    index("try_on_renders_garment_id_idx").on(table.garmentId),
+  ],
+);
 
 export const FEEDBACK_RATINGS = ["thumbs_up", "thumbs_down"] as const;
 
 export const feedbackRating = pgEnum("feedback_rating", FEEDBACK_RATINGS);
 
-export const renderFeedback = pgTable("render_feedback", (t) => ({
-  id: t
-    .text()
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  renderId: t
-    .text()
-    .notNull()
-    .references(() => tryOnRenders.id, { onDelete: "cascade" })
-    .unique(),
-  userId: t
-    .text()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  rating: feedbackRating().notNull(),
-  category: t.text(),
-  createdAt: t.timestamp().defaultNow().notNull(),
-}));
+export const renderFeedback = pgTable(
+  "render_feedback",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    renderId: t
+      .text()
+      .notNull()
+      .references(() => tryOnRenders.id, { onDelete: "cascade" })
+      .unique(),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    rating: feedbackRating().notNull(),
+    category: t.text(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+  }),
+  (table) => [index("render_feedback_user_id_idx").on(table.userId)],
+);
 
 export const subscriptionStatus = pgEnum("subscription_status", [
   "trial",

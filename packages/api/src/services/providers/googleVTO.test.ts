@@ -130,20 +130,42 @@ describe("GoogleVTOProvider", () => {
     expect(result?.imageData).toEqual(Buffer.from(RESULT_BASE64, "base64"));
   });
 
-  test("getResult returns the stored result", async () => {
+  test("getResult is consume-once (returns null on second call)", async () => {
     const personImage = Buffer.from("person-image");
     const garmentImage = Buffer.from("garment-image");
 
     const { jobId } = await provider.submitRender(personImage, garmentImage);
     const result = await provider.getResult(jobId);
-
     expect(result).not.toBeNull();
+
+    const secondResult = await provider.getResult(jobId);
+    expect(secondResult).toBeNull();
   });
 
   test("getResult returns null for unknown jobId", async () => {
     const result = await provider.getResult("unknown-job-id");
 
     expect(result).toBeNull();
+  });
+
+  test("evicts oldest entry when store reaches capacity", async () => {
+    const personImage = Buffer.from("person-image");
+    const garmentImage = Buffer.from("garment-image");
+
+    // Fill store to capacity (100 entries)
+    const jobIds: string[] = [];
+    for (let i = 0; i < 101; i++) {
+      const { jobId } = await provider.submitRender(personImage, garmentImage);
+      jobIds.push(jobId);
+    }
+
+    // First entry should have been evicted
+    const firstResult = await provider.getResult(jobIds[0]!);
+    expect(firstResult).toBeNull();
+
+    // Last entry should still be available
+    const lastResult = await provider.getResult(jobIds[100]!);
+    expect(lastResult).not.toBeNull();
   });
 
   test("submitRender throws if GOOGLE_CLOUD_PROJECT is not configured", async () => {

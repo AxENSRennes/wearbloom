@@ -13,6 +13,8 @@ export type GoogleVTOFetcher = (
   init: RequestInit,
 ) => Promise<Response>;
 
+const MAX_RESULTS = 100;
+
 export class GoogleVTOProvider implements TryOnProvider {
   readonly name = "google_vto" as const;
   readonly supportedCategories: GarmentCategory[] = [
@@ -26,6 +28,7 @@ export class GoogleVTOProvider implements TryOnProvider {
   private readonly googleAccessToken: string;
   private readonly fetchFn: GoogleVTOFetcher;
   private readonly resultStore = new Map<string, TryOnResult>();
+  private readonly timeoutStore = new Map<string, Timer>();
 
   constructor(config: TryOnProviderConfig, fetchFn?: GoogleVTOFetcher) {
     this.googleCloudProject = config.googleCloudProject;
@@ -92,6 +95,19 @@ export class GoogleVTOProvider implements TryOnProvider {
     const jobId = createId();
     const imageData = Buffer.from(prediction.bytesBase64Encoded, "base64");
 
+    // Evict oldest entry if at capacity
+    if (this.resultStore.size >= MAX_RESULTS) {
+      const oldestKey = this.resultStore.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.resultStore.delete(oldestKey);
+        const oldTimeout = this.timeoutStore.get(oldestKey);
+        if (oldTimeout) {
+          clearTimeout(oldTimeout);
+          this.timeoutStore.delete(oldestKey);
+        }
+      }
+    }
+
     this.resultStore.set(jobId, {
       imageUrl: "",
       imageData,
@@ -99,18 +115,29 @@ export class GoogleVTOProvider implements TryOnProvider {
     });
 
     // Auto-cleanup after 5 minutes to prevent memory leaks
-    setTimeout(
+    const timeout = setTimeout(
       () => {
         this.resultStore.delete(jobId);
+        this.timeoutStore.delete(jobId);
       },
       5 * 60 * 1000,
     );
+    this.timeoutStore.set(jobId, timeout);
 
     return { jobId };
   }
 
   getResult(jobId: string): Promise<TryOnResult | null> {
-    return Promise.resolve(this.resultStore.get(jobId) ?? null);
+    const result = this.resultStore.get(jobId) ?? null;
+    if (result) {
+      this.resultStore.delete(jobId);
+      const timeout = this.timeoutStore.get(jobId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.timeoutStore.delete(jobId);
+      }
+    }
+    return Promise.resolve(result);
   }
 
   private async toBase64(image: string | Buffer): Promise<string> {

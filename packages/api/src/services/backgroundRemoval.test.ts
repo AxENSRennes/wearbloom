@@ -10,7 +10,7 @@ import { createBackgroundRemoval } from "./backgroundRemoval";
 // ---------------------------------------------------------------------------
 
 const mockRun = mock<(...args: unknown[]) => Promise<unknown>>(() =>
-  Promise.resolve("https://replicate-output.png"),
+  Promise.resolve("https://pbxt.replicate.delivery/output.png"),
 );
 
 void mock.module("replicate", () => ({
@@ -55,7 +55,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     // Reset the shared mockRun to default (success URL) for isolation
     mockRun.mockReset();
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
   });
 
@@ -70,7 +70,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     });
 
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
 
     fetchSpy = mockFetchImpl(() =>
@@ -85,7 +85,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     // Verify fetch was called with the URL returned by replicate.run
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const fetchCallArgs = fetchSpy.mock.calls[0] as unknown[];
-    expect(fetchCallArgs[0]).toBe("https://replicate-output.png");
+    expect(fetchCallArgs[0]).toBe("https://pbxt.replicate.delivery/output.png");
   });
 
   // -----------------------------------------------------------------------
@@ -122,7 +122,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     });
 
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
 
     fetchSpy = mockFetchImpl(() =>
@@ -194,7 +194,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     });
 
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
 
     fetchSpy = mockFetchImpl(() =>
@@ -314,7 +314,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     });
 
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
 
     fetchSpy = mockFetchImpl(() =>
@@ -344,7 +344,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
 
     // Success path without logger
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
@@ -375,7 +375,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     });
 
     mockRun.mockImplementation(() =>
-      Promise.resolve("https://replicate-output.png"),
+      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
     );
 
     fetchSpy = mockFetchImpl(() =>

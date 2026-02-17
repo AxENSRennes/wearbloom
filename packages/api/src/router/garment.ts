@@ -226,15 +226,19 @@ export const garmentRouter = {
       }
 
       try {
-        // 2. Delete filesystem first (prevent orphaned files)
-        await ctx.imageStorage.deleteGarmentFiles(userId, input.garmentId);
-
-        // 3. Delete DB record
+        // 2. Delete DB record first (source of truth)
         await ctx.db
           .delete(garments)
           .where(
             and(eq(garments.id, input.garmentId), eq(garments.userId, userId)),
           );
+
+        // 3. Best-effort FS cleanup
+        try {
+          await ctx.imageStorage.deleteGarmentFiles(userId, input.garmentId);
+        } catch {
+          // Orphaned files are acceptable — can be cleaned up later
+        }
 
         return { success: true as const };
       } catch {

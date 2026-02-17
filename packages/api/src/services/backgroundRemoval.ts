@@ -11,6 +11,7 @@ interface BackgroundRemovalOptions {
 }
 
 const BG_REMOVAL_TIMEOUT_MS = 30_000;
+const MAX_CUTOUT_SIZE = 20 * 1024 * 1024; // 20 MB
 
 export function createBackgroundRemoval({
   replicateApiToken,
@@ -61,6 +62,19 @@ export function createBackgroundRemoval({
           return null;
         }
 
+        // Validate output URL domain to prevent SSRF
+        const outputUrl = new URL(output);
+        if (
+          outputUrl.protocol !== "https:" ||
+          !outputUrl.hostname.endsWith(".replicate.delivery")
+        ) {
+          logger?.warn(
+            { url: output },
+            "Blocked background removal URL — domain not allowed",
+          );
+          return null;
+        }
+
         const fetchController = new AbortController();
         const fetchTimeout = setTimeout(
           () => fetchController.abort(),
@@ -70,6 +84,15 @@ export function createBackgroundRemoval({
           const response = await fetch(output, {
             signal: fetchController.signal,
           });
+
+          const contentLength = response.headers.get("content-length");
+          if (contentLength && parseInt(contentLength, 10) > MAX_CUTOUT_SIZE) {
+            logger?.warn(
+              { url: output, contentLength },
+              "Background removal result too large",
+            );
+            return null;
+          }
           if (!response.ok) {
             logger?.error(
               { status: response.status },

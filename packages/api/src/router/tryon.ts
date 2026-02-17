@@ -155,6 +155,30 @@ export const tryonRouter = {
             { category: garment.category },
           );
 
+          // Synchronous providers (GoogleVTO) return result immediately
+          const immediateResult = await ctx.tryOnProvider.getResult(jobId);
+          if (immediateResult?.imageData) {
+            const resultPath = await ctx.imageStorage.saveRenderResult(
+              userId,
+              renderRecord.id,
+              immediateResult.imageData,
+              immediateResult.contentType,
+            );
+            await ctx.db
+              .update(tryOnRenders)
+              .set({
+                jobId,
+                status: "completed",
+                resultPath,
+                creditConsumed: true,
+              })
+              .where(eq(tryOnRenders.id, renderRecord.id));
+            const creditSvc = createCreditService({ db: ctx.db });
+            await creditSvc.consumeCredit(userId);
+            return { renderId: renderRecord.id };
+          }
+
+          // Async providers (fal) — webhook will handle completion
           await ctx.db
             .update(tryOnRenders)
             .set({ jobId, status: "processing" })

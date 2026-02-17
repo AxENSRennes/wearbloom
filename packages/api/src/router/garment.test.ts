@@ -494,7 +494,7 @@ describe("garment.delete", () => {
     ).rejects.toThrow(/UNAUTHORIZED/);
   });
 
-  test("throws INTERNAL_SERVER_ERROR when deleteGarmentFiles fails", async () => {
+  test("succeeds even when deleteGarmentFiles fails (best-effort FS cleanup)", async () => {
     const { db } = await import("@acme/db/client");
     const existingGarment = { id: "garment-abc" };
     selectSpy = spyOn(db as never, "select").mockReturnValue(
@@ -511,10 +511,9 @@ describe("garment.delete", () => {
 
     const { caller } = await createAuthenticatedCaller(imageStorage);
 
-    await expect(
-      caller.garment.delete({ garmentId: "garment-abc" }),
-    ).rejects.toThrow(/GARMENT_DELETION_FAILED/);
-    // Verify DB delete was NOT called after FS failure
-    expect(deleteSpy).not.toHaveBeenCalled();
+    const result = await caller.garment.delete({ garmentId: "garment-abc" });
+    expect(result).toEqual({ success: true });
+    // DB delete is called first (source of truth)
+    expect(deleteSpy).toHaveBeenCalled();
   });
 });

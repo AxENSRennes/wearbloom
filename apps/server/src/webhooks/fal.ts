@@ -9,6 +9,8 @@ import { tryOnRenders } from "@acme/db/schema";
 
 const JWKS_URL = "https://rest.alpha.fal.ai/.well-known/jwks.json";
 const TIMESTAMP_TOLERANCE_SECONDS = 300; // 5 minutes
+const MAX_BODY_SIZE = 1 * 1024 * 1024; // 1 MB
+const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 interface FalWebhookDeps {
   db: typeof _dbInstance;
@@ -106,10 +108,18 @@ interface FalWebhookPayload {
 
 export function createFalWebhookHandler(deps: FalWebhookDeps) {
   return async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    // Read raw body
+    // Read raw body with size limit
     const chunks: Buffer[] = [];
+    let totalSize = 0;
     for await (const chunk of req) {
-      chunks.push(Buffer.from(chunk as Buffer));
+      const buf = Buffer.from(chunk as Buffer);
+      totalSize += buf.length;
+      if (totalSize > MAX_BODY_SIZE) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Request body too large" }));
+        return;
+      }
+      chunks.push(buf);
     }
     const rawBody = Buffer.concat(chunks).toString("utf-8");
 
@@ -211,8 +221,16 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
           throw new Error("Image URL domain not allowed");
         }
 
-        // Download the result image
+        // Download the result image with size check
         const imageResponse = await fetch(image.url);
+        const contentLength = imageResponse.headers.get("content-length");
+        if (contentLength && parseInt(contentLength, 10) > MAX_IMAGE_SIZE) {
+          deps.logger.warn(
+            { url: image.url, contentLength, renderId: render.id },
+            "Image too large",
+          );
+          throw new Error("Image exceeds maximum size");
+        }
         const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
         // Save to disk
