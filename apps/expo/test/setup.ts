@@ -1,5 +1,5 @@
-import { plugin } from "bun";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { plugin } from "bun";
 import { mock } from "bun:test";
 
 // Register DOM globals (document, window, HTMLElement, etc.) for behavioral tests
@@ -159,8 +159,17 @@ void mock.module("react-native", () => ({
   LayoutAnimation: {
     configureNext: mock(() => {}),
     create: (_duration: number, _type: unknown, _prop: unknown) => ({}),
-    Types: { easeInEaseOut: "easeInEaseOut", linear: "linear", spring: "spring" },
-    Properties: { opacity: "opacity", scaleX: "scaleX", scaleY: "scaleY", scaleXY: "scaleXY" },
+    Types: {
+      easeInEaseOut: "easeInEaseOut",
+      linear: "linear",
+      spring: "spring",
+    },
+    Properties: {
+      opacity: "opacity",
+      scaleX: "scaleX",
+      scaleY: "scaleY",
+      scaleXY: "scaleXY",
+    },
   },
   StyleSheet: {
     create: <T extends Record<string, unknown>>(styles: T): T => styles,
@@ -251,8 +260,7 @@ void mock.module("@gluestack-ui/utils/nativewind-utils", () => ({
       if (variants) {
         for (const [key, map] of Object.entries(variants)) {
           const val =
-            (props[key] as string | undefined) ??
-            defaultVariants?.[key];
+            (props[key] as string | undefined) ?? defaultVariants?.[key];
           if (val && map[val]) cls += " " + map[val];
         }
       }
@@ -354,7 +362,9 @@ const routerMock = {
   canGoBack: () => true,
 };
 
-const searchParamsRef: { current: Record<string, string> } = { current: { id: "mock-render-id" } };
+const searchParamsRef: { current: Record<string, string> } = {
+  current: { id: "mock-render-id" },
+};
 
 void mock.module("expo-router", () => ({
   useRouter: () => routerMock,
@@ -501,7 +511,8 @@ const MockButton = Object.assign(mockComponent("Button"), {
 });
 void mock.module("@acme/ui", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
-  tva: (config: Record<string, unknown>) => () => (config.base as string | undefined) ?? "",
+  tva: (config: Record<string, unknown>) => () =>
+    (config.base as string | undefined) ?? "",
   withStyleContext: () => (comp: unknown) => comp,
   useStyleContext: () => ({}),
   Button: MockButton,
@@ -569,7 +580,8 @@ function createMockTRPCProxy(): unknown {
   const handler: ProxyHandler<Record<string, unknown>> = {
     get(_target, prop) {
       if (prop === "queryOptions") return () => ({ queryKey: ["mock"] });
-      if (prop === "mutationOptions") return (opts?: Record<string, unknown>) => ({ ...opts });
+      if (prop === "mutationOptions")
+        return (opts?: Record<string, unknown>) => ({ ...opts });
       if (prop === "queryKey") return () => ["mock"];
       if (typeof prop === "string") return new Proxy({}, handler);
       return undefined;
@@ -592,7 +604,16 @@ void mock.module("superjson", () => ({
 void mock.module("react-native-gesture-handler", () => {
   function createChainableGesture() {
     const gesture: Record<string, unknown> = {};
-    const methods = ["onBegin", "onUpdate", "onEnd", "onStart", "onFinalize", "minDistance", "activeOffsetY", "failOffsetX"];
+    const methods = [
+      "onBegin",
+      "onUpdate",
+      "onEnd",
+      "onStart",
+      "onFinalize",
+      "minDistance",
+      "activeOffsetY",
+      "failOffsetX",
+    ];
     for (const method of methods) {
       gesture[method] = () => gesture;
     }
@@ -605,7 +626,7 @@ void mock.module("react-native-gesture-handler", () => {
       Pan: () => createChainableGesture(),
       Tap: () => createChainableGesture(),
     },
-      GestureDetector: mockComponent("GestureDetector"),
+    GestureDetector: mockComponent("GestureDetector"),
     Swipeable: mockComponent("Swipeable"),
     DrawerLayout: mockComponent("DrawerLayout"),
     State: {},
@@ -625,10 +646,20 @@ void mock.module("react-native-gesture-handler", () => {
 void mock.module("@gorhom/bottom-sheet", () => {
   const BottomSheet = React.forwardRef(
     (allProps: Record<string, unknown>, ref: React.Ref<unknown>) => {
-      const { children, onChange, backdropComponent, handleComponent, ...props } = allProps;
+      const {
+        children,
+        onChange,
+        backdropComponent,
+        handleComponent,
+        ...props
+      } = allProps;
       const onChangeFn = onChange as ((index: number) => void) | undefined;
-      const backdropFn = backdropComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
-      const handleFn = handleComponent as ((props: Record<string, unknown>) => React.ReactNode) | undefined;
+      const backdropFn = backdropComponent as
+        | ((props: Record<string, unknown>) => React.ReactNode)
+        | undefined;
+      const handleFn = handleComponent as
+        | ((props: Record<string, unknown>) => React.ReactNode)
+        | undefined;
       React.useImperativeHandle(ref, () => ({
         snapToIndex: mock((index: number) => onChangeFn?.(index)),
         close: mock(() => onChangeFn?.(-1)),
@@ -636,12 +667,19 @@ void mock.module("@gorhom/bottom-sheet", () => {
         collapse: mock(() => {}),
       }));
       const backdrop = backdropFn
-        ? backdropFn({ animatedIndex: { value: 0 }, animatedPosition: { value: 0 } })
+        ? backdropFn({
+            animatedIndex: { value: 0 },
+            animatedPosition: { value: 0 },
+          })
         : null;
-      const handle = handleFn
-        ? handleFn({})
-        : null;
-      return React.createElement("mock-BottomSheet", props, backdrop, handle, children as React.ReactNode);
+      const handle = handleFn ? handleFn({}) : null;
+      return React.createElement(
+        "mock-BottomSheet",
+        props,
+        backdrop,
+        handle,
+        children as React.ReactNode,
+      );
     },
   );
   BottomSheet.displayName = "BottomSheet";
@@ -650,13 +688,25 @@ void mock.module("@gorhom/bottom-sheet", () => {
     __esModule: true,
     default: BottomSheet,
     BottomSheetView: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement("mock-BottomSheetView", props, children as React.ReactNode),
+      React.createElement(
+        "mock-BottomSheetView",
+        props,
+        children as React.ReactNode,
+      ),
     BottomSheetBackdrop: (props: Record<string, unknown>) =>
       React.createElement("mock-BottomSheetBackdrop", props),
     BottomSheetScrollView: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement("mock-BottomSheetScrollView", props, children as React.ReactNode),
+      React.createElement(
+        "mock-BottomSheetScrollView",
+        props,
+        children as React.ReactNode,
+      ),
     BottomSheetFooter: ({ children, ...props }: Record<string, unknown>) =>
-      React.createElement("mock-BottomSheetFooter", props, children as React.ReactNode),
+      React.createElement(
+        "mock-BottomSheetFooter",
+        props,
+        children as React.ReactNode,
+      ),
     useBottomSheetSpringConfigs: (config: Record<string, unknown>) => config,
   };
 });
@@ -691,11 +741,19 @@ void mock.module("react-native-reanimated", () => {
       return ref.current;
     },
     useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
-    withSpring: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
+    withSpring: (
+      toValue: number,
+      _config?: unknown,
+      callback?: (finished: boolean) => void,
+    ) => {
       callback?.(true);
       return toValue;
     },
-    withTiming: (toValue: number, _config?: unknown, callback?: (finished: boolean) => void) => {
+    withTiming: (
+      toValue: number,
+      _config?: unknown,
+      callback?: (finished: boolean) => void,
+    ) => {
       callback?.(true);
       return toValue;
     },
@@ -711,7 +769,13 @@ void mock.module("react-native-reanimated", () => {
     },
     createAnimatedComponent: (comp: unknown) => comp,
     StyleSheet: {
-      absoluteFillObject: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
+      absoluteFillObject: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+      },
     },
     FadeIn: { duration: () => ({ delay: () => ({}) }) },
     FadeOut: { duration: () => ({}) },
@@ -743,7 +807,10 @@ void mock.module("@legendapp/list", () => ({
         ...rest
       } = props as {
         data?: unknown[];
-        renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
+        renderItem?: (info: {
+          item: unknown;
+          index: number;
+        }) => React.ReactNode;
         ListEmptyComponent?: React.ComponentType | React.ReactElement;
         ListHeaderComponent?: React.ComponentType | React.ReactElement;
         refreshing?: boolean;
@@ -752,15 +819,17 @@ void mock.module("@legendapp/list", () => ({
       };
 
       const hasItems = Array.isArray(data) && data.length > 0;
-      const items = hasItems && renderItem
-        ? data.map((item, index) => renderItem({ item, index }))
-        : null;
+      const items =
+        hasItems && renderItem
+          ? data.map((item, index) => renderItem({ item, index }))
+          : null;
 
-      const empty = !hasItems && ListEmptyComponent
-        ? typeof ListEmptyComponent === "function"
-          ? React.createElement(ListEmptyComponent)
-          : ListEmptyComponent
-        : null;
+      const empty =
+        !hasItems && ListEmptyComponent
+          ? typeof ListEmptyComponent === "function"
+            ? React.createElement(ListEmptyComponent)
+            : ListEmptyComponent
+          : null;
 
       const header = ListHeaderComponent
         ? typeof ListHeaderComponent === "function"
