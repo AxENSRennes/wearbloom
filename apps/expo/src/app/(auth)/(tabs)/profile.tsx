@@ -96,10 +96,7 @@ export default function ProfileScreen() {
               accessibilityRole="image"
               accessibilityLabel="Body photo placeholder"
             >
-              <User
-                size={48}
-                color={wearbloomTheme.colors["text-tertiary"]}
-              />
+              <User size={48} color={wearbloomTheme.colors["text-tertiary"]} />
             </View>
           )}
         </View>
@@ -128,10 +125,7 @@ export default function ProfileScreen() {
         {session?.user && (
           <View className="rounded-xl bg-surface p-4">
             <ThemedText variant="title">{session.user.name}</ThemedText>
-            <ThemedText
-              variant="caption"
-              className="mt-1 text-text-secondary"
-            >
+            <ThemedText variant="caption" className="mt-1 text-text-secondary">
               {session.user.email}
             </ThemedText>
           </View>

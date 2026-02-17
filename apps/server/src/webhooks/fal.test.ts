@@ -1,11 +1,11 @@
-import type http from "node:http";
 import { createHash } from "node:crypto";
+import type http from "node:http";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import pino from "pino";
 
 import type { db as _dbType } from "@acme/db/client";
 
-import { createFalWebhookHandler, _resetJwksCache } from "./fal";
+import { _resetJwksCache, createFalWebhookHandler } from "./fal";
 
 // Mock libsodium-wrappers
 mock.module("libsodium-wrappers", () => ({
@@ -17,7 +17,9 @@ mock.module("libsodium-wrappers", () => ({
 }));
 
 // Mock creditService — track consumeCredit calls
-const mockConsumeCredit = mock(() => Promise.resolve({ success: true, remaining: 2 }));
+const mockConsumeCredit = mock(() =>
+  Promise.resolve({ success: true, remaining: 2 }),
+);
 mock.module("@acme/api/services/creditService", () => ({
   createCreditService: mock(() => ({
     consumeCredit: mockConsumeCredit,
@@ -54,7 +56,10 @@ function createMockDb(renderRecord?: {
     update: mock(() => updateChain),
     _selectChain: selectChain,
     _updateChain: updateChain,
-  } as unknown as typeof _dbType & { _selectChain: typeof selectChain; _updateChain: typeof updateChain };
+  } as unknown as typeof _dbType & {
+    _selectChain: typeof selectChain;
+    _updateChain: typeof updateChain;
+  };
 }
 
 function createMockImageStorage() {
@@ -388,7 +393,14 @@ describe("fal webhook handler", () => {
       request_id: "fal-req-123",
       status: "OK",
       payload: {
-        images: [{ url: "https://cdn.fal.media/result.png", content_type: "image/png", width: 864, height: 1296 }],
+        images: [
+          {
+            url: "https://cdn.fal.media/result.png",
+            content_type: "image/png",
+            width: 864,
+            height: 1296,
+          },
+        ],
       },
     });
 

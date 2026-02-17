@@ -1,6 +1,5 @@
-import { describe, expect, test } from "bun:test";
-
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { describe, expect, test } from "bun:test";
 
 import { compressImage } from "./imageCompressor";
 

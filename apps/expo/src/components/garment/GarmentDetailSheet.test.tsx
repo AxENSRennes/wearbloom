@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
+
 import type { WardrobeItem } from "~/types/wardrobe";
+// ---------------------------------------------------------------------------
+// Import component under test (AFTER mocks via preload)
+// ---------------------------------------------------------------------------
+import { GarmentDetailSheet } from "./GarmentDetailSheet";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -27,11 +32,6 @@ const mockStockGarment: WardrobeItem = {
   isStock: true as const,
   imageSource: 42, // mock require() number
 };
-
-// ---------------------------------------------------------------------------
-// Import component under test (AFTER mocks via preload)
-// ---------------------------------------------------------------------------
-import { GarmentDetailSheet } from "./GarmentDetailSheet";
 
 describe("GarmentDetailSheet", () => {
   afterEach(() => {
@@ -165,7 +165,9 @@ describe("GarmentDetailSheet", () => {
       />,
     );
 
-    expect(html).toContain('accessibilityHint="Double tap to start virtual try-on"');
+    expect(html).toContain(
+      'accessibilityHint="Double tap to start virtual try-on"',
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -200,7 +202,9 @@ describe("GarmentDetailSheet", () => {
     );
 
     expect(html).toContain("disabled");
-    expect(html).toContain('accessibilityHint="Try-on is not available for this garment category"');
+    expect(html).toContain(
+      'accessibilityHint="Try-on is not available for this garment category"',
+    );
   });
 
   test('"Try On" button is enabled when garment category is in supportedCategories', () => {
@@ -218,7 +222,9 @@ describe("GarmentDetailSheet", () => {
     expect(buttonMatch).not.toBeNull();
     const buttonTag = buttonMatch?.[0] ?? "";
     expect(buttonTag).not.toContain("disabled");
-    expect(html).toContain('accessibilityHint="Double tap to start virtual try-on"');
+    expect(html).toContain(
+      'accessibilityHint="Double tap to start virtual try-on"',
+    );
   });
 
   test("unsupported message is shown when category is not supported", () => {
@@ -265,7 +271,9 @@ describe("GarmentDetailSheet", () => {
     expect(html).toContain("Try On");
     expect(html).toContain('label="Try On"');
     expect(html).toContain('variant="primary"');
-    expect(html).toContain('accessibilityHint="Double tap to start virtual try-on"');
+    expect(html).toContain(
+      'accessibilityHint="Double tap to start virtual try-on"',
+    );
   });
 
   // assertOnline behavior is tested in ~/utils/assertOnline.test.ts (5 tests)

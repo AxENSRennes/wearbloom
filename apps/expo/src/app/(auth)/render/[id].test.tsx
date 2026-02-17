@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { renderToStaticMarkup } from "react-dom/server";
-import * as reactQuery from "@tanstack/react-query";
 import * as reanimated from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as reactQuery from "@tanstack/react-query";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import * as acmeUI from "@acme/ui";
 
@@ -346,14 +346,21 @@ describe("RenderScreen", () => {
     renderToStaticMarkup(<RenderScreen />);
 
     expect(querySpy).toHaveBeenCalled();
-    const queryOpts = querySpy.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
+    const queryOpts = querySpy.mock.calls[0]?.[0] as unknown as Record<
+      string,
+      unknown
+    >;
     const refetchInterval = queryOpts.refetchInterval as (query: {
       state: { data?: { status?: string } };
     }) => number | false;
     expect(typeof refetchInterval).toBe("function");
 
-    expect(refetchInterval({ state: { data: { status: "completed" } } })).toBe(false);
-    expect(refetchInterval({ state: { data: { status: "failed" } } })).toBe(false);
+    expect(refetchInterval({ state: { data: { status: "completed" } } })).toBe(
+      false,
+    );
+    expect(refetchInterval({ state: { data: { status: "failed" } } })).toBe(
+      false,
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -499,14 +506,17 @@ describe("RenderScreen", () => {
     const showToastSpy = spyOn(acmeUI, "showToast");
 
     // Capture onSuccess from the second useMutation call (submitFeedback)
-    let submitFeedbackOnSuccess: ((result: { success: boolean; creditRefunded: boolean }) => void) | undefined;
+    let submitFeedbackOnSuccess:
+      | ((result: { success: boolean; creditRefunded: boolean }) => void)
+      | undefined;
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIndex = 0;
     mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
       // Second useMutation call is submitFeedback
       if (callIndex === 2 && typeof opts.onSuccess === "function") {
-        submitFeedbackOnSuccess = opts.onSuccess as typeof submitFeedbackOnSuccess;
+        submitFeedbackOnSuccess =
+          opts.onSuccess as typeof submitFeedbackOnSuccess;
       }
       return {
         mutate: mock(() => {}),
@@ -545,13 +555,16 @@ describe("RenderScreen", () => {
   test("shows thumbs_up success toast without credit refund message", () => {
     const showToastSpy = spyOn(acmeUI, "showToast");
 
-    let submitFeedbackOnSuccess: ((result: { success: boolean; creditRefunded: boolean }) => void) | undefined;
+    let submitFeedbackOnSuccess:
+      | ((result: { success: boolean; creditRefunded: boolean }) => void)
+      | undefined;
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIndex = 0;
     mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
       if (callIndex === 2 && typeof opts.onSuccess === "function") {
-        submitFeedbackOnSuccess = opts.onSuccess as typeof submitFeedbackOnSuccess;
+        submitFeedbackOnSuccess =
+          opts.onSuccess as typeof submitFeedbackOnSuccess;
       }
       return {
         mutate: mock(() => {}),

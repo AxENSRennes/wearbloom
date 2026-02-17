@@ -8,7 +8,12 @@ import { createImageHandler } from "./images";
 // Mock dependencies using DI
 const mockSession = {
   user: { id: "user-123", name: "Test User", email: "test@example.com" },
-  session: { id: "sess-123", token: "tok", expiresAt: new Date(), userId: "user-123" },
+  session: {
+    id: "sess-123",
+    token: "tok",
+    expiresAt: new Date(),
+    userId: "user-123",
+  },
 };
 
 function createMockAuth(session: typeof mockSession | null = mockSession) {
@@ -20,7 +25,12 @@ function createMockAuth(session: typeof mockSession | null = mockSession) {
 }
 
 interface MockDbOptions {
-  bodyPhoto?: { id: string; userId: string; filePath: string; mimeType: string } | null;
+  bodyPhoto?: {
+    id: string;
+    userId: string;
+    filePath: string;
+    mimeType: string;
+  } | null;
   garment?: {
     id: string;
     userId: string;
@@ -62,13 +72,14 @@ function createMockDb(options: MockDbOptions = {}) {
 
 function createMockImageStorage() {
   return {
-    streamFile: mock(() =>
-      new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode("image-bytes"));
-          controller.close();
-        },
-      }),
+    streamFile: mock(
+      () =>
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("image-bytes"));
+            controller.close();
+          },
+        }),
     ),
     getAbsolutePath: mock((p: string) => `/data/${p}`),
     saveBodyPhoto: mock(() => Promise.resolve("")),
@@ -102,67 +113,117 @@ describe("createImageHandler", () => {
     const auth = createMockAuth(null);
     const db = createMockDb();
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/img-123", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/img-123",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(401, { "Content-Type": "application/json" });
+    expect(res.writeHead).toHaveBeenCalledWith(401, {
+      "Content-Type": "application/json",
+    });
   });
 
   test("returns 400 when imageId is missing", async () => {
     const auth = createMockAuth(mockSession);
     const db = createMockDb();
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
     const req = { url: "/api/images/", headers: {} } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(400, { "Content-Type": "application/json" });
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
   });
 
   test("returns 404 when neither body photo nor garment found", async () => {
     const auth = createMockAuth(mockSession);
     const db = createMockDb({ bodyPhoto: null, garment: null });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/img-999", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/img-999",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(404, { "Content-Type": "application/json" });
+    expect(res.writeHead).toHaveBeenCalledWith(404, {
+      "Content-Type": "application/json",
+    });
   });
 
   test("returns 403 when user does not own the body photo", async () => {
     const auth = createMockAuth(mockSession);
-    const photo = { id: "img-other", userId: "other-user", filePath: "other/body/avatar.jpg", mimeType: "image/jpeg" };
+    const photo = {
+      id: "img-other",
+      userId: "other-user",
+      filePath: "other/body/avatar.jpg",
+      mimeType: "image/jpeg",
+    };
     const db = createMockDb({ bodyPhoto: photo });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/img-other", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/img-other",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(403, { "Content-Type": "application/json" });
+    expect(res.writeHead).toHaveBeenCalledWith(403, {
+      "Content-Type": "application/json",
+    });
   });
 
   test("returns 200 and streams body photo when authorized", async () => {
     const auth = createMockAuth(mockSession);
-    const photo = { id: "img-owned", userId: "user-123", filePath: "user-123/body/avatar.jpg", mimeType: "image/jpeg" };
+    const photo = {
+      id: "img-owned",
+      userId: "user-123",
+      filePath: "user-123/body/avatar.jpg",
+      mimeType: "image/jpeg",
+    };
     const db = createMockDb({ bodyPhoto: photo });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/img-owned", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/img-owned",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
@@ -172,7 +233,9 @@ describe("createImageHandler", () => {
       "Cache-Control": "private, max-age=3600",
       "X-Content-Type-Options": "nosniff",
     });
-    expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/body/avatar.jpg");
+    expect(imageStorage.streamFile).toHaveBeenCalledWith(
+      "user-123/body/avatar.jpg",
+    );
   });
 
   // --- Garment image tests ---
@@ -189,9 +252,16 @@ describe("createImageHandler", () => {
     };
     const db = createMockDb({ bodyPhoto: null, garment });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/garment-1", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/garment-1",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
@@ -201,7 +271,9 @@ describe("createImageHandler", () => {
       "Cache-Control": "private, max-age=3600",
       "X-Content-Type-Options": "nosniff",
     });
-    expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/garments/garment-1/original.jpg");
+    expect(imageStorage.streamFile).toHaveBeenCalledWith(
+      "user-123/garments/garment-1/original.jpg",
+    );
   });
 
   test("serves garment cutout image when bgRemovalStatus is completed", async () => {
@@ -216,9 +288,16 @@ describe("createImageHandler", () => {
     };
     const db = createMockDb({ bodyPhoto: null, garment });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/garment-2", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/garment-2",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
@@ -228,7 +307,9 @@ describe("createImageHandler", () => {
       "Cache-Control": "private, max-age=3600",
       "X-Content-Type-Options": "nosniff",
     });
-    expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/garments/garment-2/cutout.png");
+    expect(imageStorage.streamFile).toHaveBeenCalledWith(
+      "user-123/garments/garment-2/cutout.png",
+    );
   });
 
   test("returns 403 when user does not own the garment", async () => {
@@ -243,14 +324,23 @@ describe("createImageHandler", () => {
     };
     const db = createMockDb({ bodyPhoto: null, garment });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/garment-other", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/garment-other",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(403, { "Content-Type": "application/json" });
+    expect(res.writeHead).toHaveBeenCalledWith(403, {
+      "Content-Type": "application/json",
+    });
   });
 
   test("falls back to original image when cutoutPath is null even with completed status", async () => {
@@ -265,13 +355,22 @@ describe("createImageHandler", () => {
     };
     const db = createMockDb({ bodyPhoto: null, garment });
     const imageStorage = createMockImageStorage();
-    const handler = createImageHandler({ db: db as never, auth: auth as never, imageStorage });
+    const handler = createImageHandler({
+      db: db as never,
+      auth: auth as never,
+      imageStorage,
+    });
 
-    const req = { url: "/api/images/garment-3", headers: {} } as http.IncomingMessage;
+    const req = {
+      url: "/api/images/garment-3",
+      headers: {},
+    } as http.IncomingMessage;
     const res = createMockRes();
 
     await handler(req, res);
 
-    expect(imageStorage.streamFile).toHaveBeenCalledWith("user-123/garments/garment-3/original.jpg");
+    expect(imageStorage.streamFile).toHaveBeenCalledWith(
+      "user-123/garments/garment-3/original.jpg",
+    );
   });
 });

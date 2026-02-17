@@ -1,7 +1,7 @@
-import { describe, expect, mock, spyOn, test, afterEach } from "bun:test";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import * as NetInfo from "@react-native-community/netinfo";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { useNetworkStatus } from "./useNetworkStatus";
 
@@ -31,7 +31,9 @@ describe("useNetworkStatus", () => {
     let captured: ReturnType<typeof useNetworkStatus> | undefined;
     renderToStaticMarkup(
       React.createElement(TestComponent, {
-        onResult: (r) => { captured = r; },
+        onResult: (r) => {
+          captured = r;
+        },
       }),
     );
     expect(captured?.isConnected).toBe(true);
@@ -48,7 +50,9 @@ describe("useNetworkStatus", () => {
     let captured: ReturnType<typeof useNetworkStatus> | undefined;
     renderToStaticMarkup(
       React.createElement(TestComponent, {
-        onResult: (r) => { captured = r; },
+        onResult: (r) => {
+          captured = r;
+        },
       }),
     );
     expect(captured?.isConnected).toBe(false);
@@ -64,7 +68,9 @@ describe("useNetworkStatus", () => {
     let captured: ReturnType<typeof useNetworkStatus> | undefined;
     renderToStaticMarkup(
       React.createElement(TestComponent, {
-        onResult: (r) => { captured = r; },
+        onResult: (r) => {
+          captured = r;
+        },
       }),
     );
     expect(captured?.isConnected).toBe(true);
@@ -85,7 +91,9 @@ describe("useNetworkStatus", () => {
     let captured: ReturnType<typeof useNetworkStatus> | undefined;
     renderToStaticMarkup(
       React.createElement(TestComponent, {
-        onResult: (r) => { captured = r; },
+        onResult: (r) => {
+          captured = r;
+        },
         hookOptions: { onReconnect },
       }),
     );

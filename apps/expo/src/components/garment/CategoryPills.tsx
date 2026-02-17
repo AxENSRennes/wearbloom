@@ -1,12 +1,6 @@
+import type { LayoutChangeEvent } from "react-native";
 import { useCallback, useRef, useState } from "react";
-import {
-  
-  LayoutAnimation,
-  Pressable,
-  ScrollView,
-  Text
-} from "react-native";
-import type {LayoutChangeEvent} from "react-native";
+import { LayoutAnimation, Pressable, ScrollView, Text } from "react-native";
 
 import { cn } from "@acme/ui";
 
@@ -73,14 +67,17 @@ export function CategoryPills({
     >
       {categories.map((category, index) => {
         const isActive = category === selected;
-        const isUnsupported = unsupportedCategories?.includes(category) ?? false;
+        const isUnsupported =
+          unsupportedCategories?.includes(category) ?? false;
         return (
           <Pressable
             key={category}
             onPress={() => handleSelect(category, index)}
             onLayout={(e) => handlePillLayout(index, e)}
             accessibilityRole="button"
-            accessibilityLabel={isUnsupported ? `${category}, try-on not available` : category}
+            accessibilityLabel={
+              isUnsupported ? `${category}, try-on not available` : category
+            }
             accessibilityState={{ selected: isActive }}
             className={cn(
               "items-center justify-center rounded-full px-3 py-2",
@@ -97,7 +94,12 @@ export function CategoryPills({
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </Text>
             {isUnsupported && (
-              <Text className={cn("text-[9px]", isActive ? "text-white/70" : "text-text-tertiary")}>
+              <Text
+                className={cn(
+                  "text-[9px]",
+                  isActive ? "text-white/70" : "text-text-tertiary",
+                )}
+              >
                 No try-on
               </Text>
             )}

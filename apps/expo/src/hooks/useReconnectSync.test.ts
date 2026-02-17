@@ -1,7 +1,7 @@
-import { describe, expect, mock, spyOn, test, afterEach } from "bun:test";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import * as reactQuery from "@tanstack/react-query";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import * as networkStatusModule from "./useNetworkStatus";
 import { useReconnectSync } from "./useReconnectSync";
@@ -17,7 +17,10 @@ describe("useReconnectSync", () => {
   });
 
   test("calls useNetworkStatus with onReconnect callback", () => {
-    const networkSpy = spyOn(networkStatusModule, "useNetworkStatus").mockReturnValue({
+    const networkSpy = spyOn(
+      networkStatusModule,
+      "useNetworkStatus",
+    ).mockReturnValue({
       isConnected: true,
       isInternetReachable: true,
     });

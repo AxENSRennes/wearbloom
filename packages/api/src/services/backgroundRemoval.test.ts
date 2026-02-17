@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
+// Import the real implementation AFTER the module mock is in place
+import { createBackgroundRemoval } from "./backgroundRemoval";
+
 // ---------------------------------------------------------------------------
 // Mock the Replicate SDK (third-party, acceptable for mock.module)
 // mock.module is irreversible, so we use a shared mockRun that tests can
@@ -16,9 +19,6 @@ void mock.module("replicate", () => ({
     run = mockRun;
   },
 }));
-
-// Import the real implementation AFTER the module mock is in place
-import { createBackgroundRemoval } from "./backgroundRemoval";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,7 +41,9 @@ const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
 
 // Helper: Bun's fetch type includes a `preconnect` property that test mocks don't need
 function mockFetchImpl(impl: () => Promise<Response>) {
-  return spyOn(globalThis, "fetch").mockImplementation(impl as unknown as typeof fetch);
+  return spyOn(globalThis, "fetch").mockImplementation(
+    impl as unknown as typeof fetch,
+  );
 }
 
 describe("backgroundRemoval — createBackgroundRemoval", () => {
@@ -72,9 +74,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     );
 
     fetchSpy = mockFetchImpl(() =>
-      Promise.resolve(
-        new Response(PNG_BYTES, { status: 200 }),
-      ),
+      Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
     );
 
     const result = await service.removeBackground(Buffer.from("input-image"));
@@ -204,7 +204,8 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     await service.removeBackground(Buffer.from("input-image"));
 
     expect(logger!.info).toHaveBeenCalledTimes(1);
-    const infoCall = (logger!.info as ReturnType<typeof mock>).mock.calls[0] as unknown[];
+    const infoCall = (logger!.info as ReturnType<typeof mock>).mock
+      .calls[0] as unknown[];
     // First arg should be an object with durationMs
     expect(infoCall[0]).toHaveProperty("durationMs");
     expect(typeof (infoCall[0] as Record<string, unknown>).durationMs).toBe(
@@ -329,9 +330,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     expect(errorCall[0]).toHaveProperty("status");
     expect((errorCall[0] as Record<string, unknown>).status).toBe(500);
     // Second arg should be the message
-    expect(errorCall[1]).toBe(
-      "Failed to download background removal result",
-    );
+    expect(errorCall[1]).toBe("Failed to download background removal result");
   });
 
   // -----------------------------------------------------------------------

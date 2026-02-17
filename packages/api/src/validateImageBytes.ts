@@ -9,11 +9,7 @@ export function validateImageBytes(buffer: Buffer, declaredType: string): void {
     buffer[2] === 0x4e &&
     buffer[3] === 0x47;
 
-  const detectedType = jpegMagic
-    ? "image/jpeg"
-    : pngMagic
-      ? "image/png"
-      : null;
+  const detectedType = jpegMagic ? "image/jpeg" : pngMagic ? "image/png" : null;
 
   if (!detectedType || detectedType !== declaredType) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "INVALID_IMAGE_TYPE" });

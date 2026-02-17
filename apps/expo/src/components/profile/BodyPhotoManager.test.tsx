@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import * as rq from "@tanstack/react-query";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
 import { BodyPhotoManager } from "./BodyPhotoManager";

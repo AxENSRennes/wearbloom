@@ -8,7 +8,10 @@ import type {
   TryOnResult,
 } from "../tryOnProvider";
 
-export type GoogleVTOFetcher = (url: string, init: RequestInit) => Promise<Response>;
+export type GoogleVTOFetcher = (
+  url: string,
+  init: RequestInit,
+) => Promise<Response>;
 
 export class GoogleVTOProvider implements TryOnProvider {
   readonly name = "google_vto" as const;
@@ -24,10 +27,7 @@ export class GoogleVTOProvider implements TryOnProvider {
   private readonly fetchFn: GoogleVTOFetcher;
   private readonly resultStore = new Map<string, TryOnResult>();
 
-  constructor(
-    config: TryOnProviderConfig,
-    fetchFn?: GoogleVTOFetcher,
-  ) {
+  constructor(config: TryOnProviderConfig, fetchFn?: GoogleVTOFetcher) {
     this.googleCloudProject = config.googleCloudProject;
     this.googleCloudRegion = config.googleCloudRegion;
     this.googleAccessToken = config.googleAccessToken;
@@ -54,9 +54,7 @@ export class GoogleVTOProvider implements TryOnProvider {
       instances: [
         {
           personImage: { image: { bytesBase64Encoded: personBase64 } },
-          productImages: [
-            { image: { bytesBase64Encoded: garmentBase64 } },
-          ],
+          productImages: [{ image: { bytesBase64Encoded: garmentBase64 } }],
         },
       ],
       parameters: { sampleCount: 1 },
@@ -101,9 +99,12 @@ export class GoogleVTOProvider implements TryOnProvider {
     });
 
     // Auto-cleanup after 5 minutes to prevent memory leaks
-    setTimeout(() => {
-      this.resultStore.delete(jobId);
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        this.resultStore.delete(jobId);
+      },
+      5 * 60 * 1000,
+    );
 
     return { jobId };
   }

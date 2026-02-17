@@ -18,7 +18,10 @@ describe("EmptyState", () => {
 
   test("renders subtext when provided", () => {
     const html = renderToStaticMarkup(
-      <EmptyState headline="Your wardrobe is waiting" subtext="Add your first garment" />,
+      <EmptyState
+        headline="Your wardrobe is waiting"
+        subtext="Add your first garment"
+      />,
     );
 
     expect(html).toContain("Add your first garment");
@@ -85,11 +88,7 @@ describe("EmptyState", () => {
 
   test("uses secondary variant for CTA button", () => {
     const html = renderToStaticMarkup(
-      <EmptyState
-        headline="Test"
-        ctaLabel="Action"
-        onCtaPress={() => {}}
-      />,
+      <EmptyState headline="Test" ctaLabel="Action" onCtaPress={() => {}} />,
     );
 
     expect(html).toContain('variant="secondary"');

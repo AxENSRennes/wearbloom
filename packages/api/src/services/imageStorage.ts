@@ -2,7 +2,6 @@ import { createReadStream } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
-
 import type { Logger } from "pino";
 
 interface ImageStorageOptions {
@@ -56,10 +55,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       const absolutePath = safePath(filePath);
       try {
         await rm(absolutePath);
-        logger?.info(
-          { userId, filePath },
-          "Body photo deleted from disk",
-        );
+        logger?.info({ userId, filePath }, "Body photo deleted from disk");
       } catch (err) {
         logger?.error(
           { userId, filePath, err },
@@ -108,11 +104,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       fileData: Buffer,
       garmentId: string,
     ): Promise<string> {
-      const relativePath = join(
-        userId,
-        "garments",
-        `${garmentId}_cutout.png`,
-      );
+      const relativePath = join(userId, "garments", `${garmentId}_cutout.png`);
       const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });
@@ -126,16 +118,15 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       return relativePath;
     },
 
-    async deleteGarmentFiles(
-      userId: string,
-      garmentId: string,
-    ): Promise<void> {
+    async deleteGarmentFiles(userId: string, garmentId: string): Promise<void> {
       const patterns = [`${garmentId}_original`, `${garmentId}_cutout`];
 
       for (const pattern of patterns) {
         // Try common extensions
         for (const ext of [".jpg", ".png"]) {
-          const filePath = safePath(join(userId, "garments", `${pattern}${ext}`));
+          const filePath = safePath(
+            join(userId, "garments", `${pattern}${ext}`),
+          );
           try {
             await rm(filePath);
             logger?.info(
@@ -156,11 +147,7 @@ export function createImageStorage({ basePath, logger }: ImageStorageOptions) {
       mimeType: string,
     ): Promise<string> {
       const ext = MIME_EXT[mimeType] ?? ".png";
-      const relativePath = join(
-        userId,
-        "renders",
-        `${renderId}_result${ext}`,
-      );
+      const relativePath = join(userId, "renders", `${renderId}_result${ext}`);
       const absolutePath = safePath(relativePath);
 
       await mkdir(dirname(absolutePath), { recursive: true });

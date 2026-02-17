@@ -9,13 +9,13 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft } from "lucide-react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ArrowLeft } from "lucide-react-native";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
@@ -158,10 +158,7 @@ export default function RenderScreen() {
       }
     })
     .onEnd((event) => {
-      if (
-        event.velocityY > 500 ||
-        event.translationY > screenHeight * 0.25
-      ) {
+      if (event.velocityY > 500 || event.translationY > screenHeight * 0.25) {
         translateY.value = withSpring(screenHeight);
         dismissOpacity.value = withTiming(0, { duration: 200 });
         runOnJS(dismissModal)();
@@ -190,9 +187,7 @@ export default function RenderScreen() {
         <StatusBar style="light" />
         <RenderLoadingAnimation
           personImageUrl={
-            data?.personImageUrl
-              ? `${getBaseUrl()}${data.personImageUrl}`
-              : ""
+            data?.personImageUrl ? `${getBaseUrl()}${data.personImageUrl}` : ""
           }
           garmentImageUrl={
             data?.garmentImageUrl
@@ -209,9 +204,20 @@ export default function RenderScreen() {
   // --- FAILED STATE ---
   if (status === "failed") {
     return (
-      <View style={{ flex: 1, backgroundColor: "black", justifyContent: "center", alignItems: "center", padding: 24 }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "black",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 24,
+        }}
+      >
         <StatusBar style="light" />
-        <ThemedText variant="body" style={{ color: "white", textAlign: "center", marginBottom: 24 }}>
+        <ThemedText
+          variant="body"
+          style={{ color: "white", textAlign: "center", marginBottom: 24 }}
+        >
           This one didn't work. No render counted.
         </ThemedText>
         <Button
@@ -245,7 +251,12 @@ export default function RenderScreen() {
 
   return (
     <GestureDetector gesture={reducedMotion ? Gesture.Pan() : panGesture}>
-      <Animated.View style={[{ flex: 1, backgroundColor: "black" }, reducedMotion ? undefined : gestureAnimatedStyle]}>
+      <Animated.View
+        style={[
+          { flex: 1, backgroundColor: "black" },
+          reducedMotion ? undefined : gestureAnimatedStyle,
+        ]}
+      >
         <StatusBar style="light" />
 
         {/* Layer 1: Body photo (always visible) */}

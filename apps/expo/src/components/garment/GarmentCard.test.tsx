@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { GarmentCard } from "./GarmentCard";
-
 import type { StockGarment } from "~/constants/stockGarments";
+import { GarmentCard } from "./GarmentCard";
 
 const mockGarment = {
   id: "garment-123",
@@ -35,7 +34,11 @@ describe("GarmentCard", () => {
 
   test("renders garment image with expo-image", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain("mock-ExpoImage");
@@ -43,7 +46,11 @@ describe("GarmentCard", () => {
 
   test("image source URI includes garment ID", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     // The image source should contain the garment ID for the auth-gated endpoint
@@ -54,7 +61,11 @@ describe("GarmentCard", () => {
     const columnWidth = 194;
     const expectedHeight = Math.round(columnWidth * 1.2);
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={columnWidth} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={columnWidth}
+      />,
     );
 
     // The style should contain width and height matching 1:1.2 ratio
@@ -78,7 +89,11 @@ describe("GarmentCard", () => {
 
   test("accessibility label includes garment category", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityLabel="tops garment"');
@@ -86,7 +101,11 @@ describe("GarmentCard", () => {
 
   test("accessibility role is button", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityRole="button"');
@@ -94,7 +113,11 @@ describe("GarmentCard", () => {
 
   test("accessibility hint for VoiceOver", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityHint="Double tap to view details"');
@@ -102,7 +125,11 @@ describe("GarmentCard", () => {
 
   test("uses contentFit cover for edge-to-edge display", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('contentFit="cover"');
@@ -111,7 +138,11 @@ describe("GarmentCard", () => {
   test("renders different category in accessibility label", () => {
     const dressGarment = { ...mockGarment, category: "dresses" as const };
     const html = renderToStaticMarkup(
-      <GarmentCard garment={dressGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={dressGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityLabel="dresses garment"');
@@ -119,7 +150,11 @@ describe("GarmentCard", () => {
 
   test("has accessible prop set to true", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     // React SSR renders boolean true as empty attribute: accessible=""
@@ -131,7 +166,11 @@ describe("GarmentCard", () => {
   // -----------------------------------------------------------------------
   test("stock garment renders with local image source (not server URI)", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockStockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain("mock-ExpoImage");
@@ -141,7 +180,11 @@ describe("GarmentCard", () => {
 
   test("stock garment accessibility label includes 'stock'", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockStockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityLabel="stock dresses garment"');
@@ -150,7 +193,11 @@ describe("GarmentCard", () => {
   test("stock garment press callback is wired", () => {
     const onPress = mock(() => {});
     const element = (
-      <GarmentCard garment={mockStockGarment} onPress={onPress} columnWidth={194} />
+      <GarmentCard
+        garment={mockStockGarment}
+        onPress={onPress}
+        columnWidth={194}
+      />
     );
 
     expect(element.props.onPress).toBe(onPress);
@@ -178,7 +225,11 @@ describe("GarmentCard", () => {
 
   test("no crash when onLongPress is undefined (stock garment scenario)", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockStockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockStockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain("mock-Pressable");
@@ -199,7 +250,11 @@ describe("GarmentCard", () => {
 
   test("accessibility hint is default when onLongPress is not provided", () => {
     const html = renderToStaticMarkup(
-      <GarmentCard garment={mockGarment} onPress={() => {}} columnWidth={194} />,
+      <GarmentCard
+        garment={mockGarment}
+        onPress={() => {}}
+        columnWidth={194}
+      />,
     );
 
     expect(html).toContain('accessibilityHint="Double tap to view details"');

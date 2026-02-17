@@ -83,9 +83,7 @@ export interface TryOnProviderContext {
     garmentImage: string | Buffer,
     options?: { category?: string; mode?: string },
   ): Promise<{ jobId: string }>;
-  getResult(
-    jobId: string,
-  ): Promise<{
+  getResult(jobId: string): Promise<{
     imageUrl: string;
     imageData?: Buffer;
     contentType: string;
@@ -185,4 +183,3 @@ export const uploadProcedure = protectedProcedure.use(({ ctx, next }) => {
   }
   return next();
 });
-

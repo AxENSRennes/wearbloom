@@ -1,15 +1,20 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
-import { createTRPCContext } from "../trpc";
 import {
   createMockImageStorage,
   mockDbDelete,
   mockDbSelect,
 } from "../../test/helpers";
+import { createTRPCContext } from "../trpc";
 
 const mockSession = {
-  user: { id: "user-123", name: "Test User", email: "test@example.com", isAnonymous: false },
+  user: {
+    id: "user-123",
+    name: "Test User",
+    email: "test@example.com",
+    isAnonymous: false,
+  },
   session: {
     id: "sess-123",
     token: "tok-abc",
@@ -94,7 +99,10 @@ describe("user.uploadBodyPhoto", () => {
     const caller = appRouter.createCaller(ctx);
 
     const formData = new FormData();
-    formData.append("photo", new File(["data"], "photo.jpg", { type: "image/jpeg" }));
+    formData.append(
+      "photo",
+      new File(["data"], "photo.jpg", { type: "image/jpeg" }),
+    );
 
     await expect(caller.user.uploadBodyPhoto(formData)).rejects.toThrow(
       /UNAUTHORIZED/,
@@ -177,9 +185,7 @@ describe("user.deleteAccount", () => {
     });
     const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.user.deleteAccount()).rejects.toThrow(
-      /UNAUTHORIZED/,
-    );
+    await expect(caller.user.deleteAccount()).rejects.toThrow(/UNAUTHORIZED/);
   });
 });
 

@@ -15,7 +15,9 @@ describe("SkeletonGrid", () => {
   test("skeleton items have correct width and height attributes", () => {
     const columnWidth = 194;
     const expectedHeight = Math.round(columnWidth * 1.2);
-    const html = renderToStaticMarkup(<SkeletonGrid columnWidth={columnWidth} />);
+    const html = renderToStaticMarkup(
+      <SkeletonGrid columnWidth={columnWidth} />,
+    );
 
     // The ReanimatedView mock flattens style arrays, so dimensions appear in SSR output
     expect(html).toContain(`width:${columnWidth}px`);

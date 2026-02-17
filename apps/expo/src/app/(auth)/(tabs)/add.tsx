@@ -1,9 +1,9 @@
 import { useCallback, useReducer, useState } from "react";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { createId } from "@paralleldrive/cuid2";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, ImageIcon } from "lucide-react-native";
@@ -26,7 +26,13 @@ import { enqueueUpload } from "~/utils/uploadQueue";
  * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
  * packages/db/src/schema.ts and VALID_CATEGORIES in packages/api/src/router/garment.ts
  */
-const CATEGORIES = ["tops", "bottoms", "dresses", "shoes", "outerwear"] as const;
+const CATEGORIES = [
+  "tops",
+  "bottoms",
+  "dresses",
+  "shoes",
+  "outerwear",
+] as const;
 
 // ---------------------------------------------------------------------------
 // State machine
@@ -57,7 +63,10 @@ export type AddAction =
   | { type: "RETAKE" }
   | { type: "ADD_ANOTHER" };
 
-export function addGarmentReducer(state: AddState, action: AddAction): AddState {
+export function addGarmentReducer(
+  state: AddState,
+  action: AddAction,
+): AddState {
   switch (action.type) {
     case "PHOTO_SELECTED":
       return {
@@ -69,8 +78,7 @@ export function addGarmentReducer(state: AddState, action: AddAction): AddState 
     case "UPLOAD_START":
       return {
         step: "uploading",
-        imageUri:
-          state.step === "previewing" ? state.imageUri : "",
+        imageUri: state.step === "previewing" ? state.imageUri : "",
         width: state.step === "previewing" ? state.width : 0,
         height: state.step === "previewing" ? state.height : 0,
         category: action.category,
@@ -97,7 +105,9 @@ export function addGarmentReducer(state: AddState, action: AddAction): AddState 
 // ---------------------------------------------------------------------------
 
 export default function AddGarmentScreen() {
-  const [state, dispatch] = useReducer(addGarmentReducer, { step: "idle" } as AddState);
+  const [state, dispatch] = useReducer(addGarmentReducer, {
+    step: "idle",
+  } as AddState);
   const [selectedCategory, setSelectedCategory] = useState("tops");
   const [showActionSheet, setShowActionSheet] = useState(false);
   const router = useRouter();
@@ -108,9 +118,10 @@ export default function AddGarmentScreen() {
     trpc.tryon.getSupportedCategories.queryOptions(),
   );
   const supportedCategories = supportedCategoriesQuery.data ?? [];
-  const unsupportedCategories = supportedCategories.length > 0
-    ? CATEGORIES.filter((c) => !supportedCategories.includes(c))
-    : [];
+  const unsupportedCategories =
+    supportedCategories.length > 0
+      ? CATEGORIES.filter((c) => !supportedCategories.includes(c))
+      : [];
 
   const uploadMutation = useMutation(
     trpc.garment.upload.mutationOptions({
@@ -140,63 +151,59 @@ export default function AddGarmentScreen() {
     }),
   );
 
-  const handleCapture = useCallback(
-    async (source: "camera" | "gallery") => {
-      try {
-        let result: ImagePicker.ImagePickerResult;
+  const handleCapture = useCallback(async (source: "camera" | "gallery") => {
+    try {
+      let result: ImagePicker.ImagePickerResult;
 
-        if (source === "camera") {
-          const permission =
-            await ImagePicker.requestCameraPermissionsAsync();
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-          if (permission.status !== "granted") {
-            showToast({
-              message: "Camera permission is required to take a photo.",
-              variant: "error",
-            });
-            return;
-          }
-          result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ["images"],
-            quality: 1,
+      if (source === "camera") {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Camera permission is required to take a photo.",
+            variant: "error",
           });
-        } else {
-          const permission =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-          if (permission.status !== "granted") {
-            showToast({
-              message: "Photo library permission is required.",
-              variant: "error",
-            });
-            return;
-          }
-          result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            quality: 1,
-          });
+          return;
         }
-
-        if (result.canceled || !result.assets[0]) return;
-
-        const asset = result.assets[0];
-        const compressed = await compressImage(asset.uri);
-
-        dispatch({
-          type: "PHOTO_SELECTED",
-          uri: compressed.uri,
-          width: compressed.width,
-          height: compressed.height,
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          quality: 1,
         });
-      } catch {
-        showToast({
-          message: "Could not process the photo. Please try again.",
-          variant: "error",
+      } else {
+        const permission =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Photo library permission is required.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          quality: 1,
         });
       }
-    },
-    [],
-  );
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const compressed = await compressImage(asset.uri);
+
+      dispatch({
+        type: "PHOTO_SELECTED",
+        uri: compressed.uri,
+        width: compressed.width,
+        height: compressed.height,
+      });
+    } catch {
+      showToast({
+        message: "Could not process the photo. Please try again.",
+        variant: "error",
+      });
+    }
+  }, []);
 
   const handleSave = useCallback(() => {
     if (state.step !== "previewing") return;
@@ -211,7 +218,10 @@ export default function AddGarmentScreen() {
         queuedAt: new Date().toISOString(),
       });
       dispatch({ type: "ADD_ANOTHER" });
-      showToast({ message: "Saved for upload when back online", variant: "info" });
+      showToast({
+        message: "Saved for upload when back online",
+        variant: "info",
+      });
       return;
     }
 
@@ -345,14 +355,16 @@ export default function AddGarmentScreen() {
 
         {/* Photography tips */}
         <View className="mb-6 w-full rounded-xl bg-surface p-4">
-          <ThemedText variant="caption" className="mb-1 font-semibold text-text-primary">
+          <ThemedText
+            variant="caption"
+            className="mb-1 font-semibold text-text-primary"
+          >
             Tips for best results
           </ThemedText>
           <ThemedText variant="caption" className="text-text-secondary">
-            • Place garment flat on a plain surface{"\n"}
-            • Use good, even lighting{"\n"}
-            • Avoid wrinkles and shadows{"\n"}
-            • Capture the full garment in frame
+            • Place garment flat on a plain surface{"\n"}• Use good, even
+            lighting{"\n"}• Avoid wrinkles and shadows{"\n"}• Capture the full
+            garment in frame
           </ThemedText>
         </View>
 

@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
+import type { QueuedUpload } from "./uploadQueue";
+import { mmkvStorage } from "./mmkv";
 import {
   clearQueue,
   enqueueUpload,
   getQueueLength,
   processQueue,
 } from "./uploadQueue";
-import { mmkvStorage } from "./mmkv";
-
-import type { QueuedUpload } from "./uploadQueue";
 
 const mockPayload: QueuedUpload = {
   id: "test-upload-1",
@@ -97,7 +96,12 @@ describe("upload-queue", () => {
   test("getQueue filters out corrupted items missing required fields", () => {
     // Write corrupted data directly to MMKV — items missing width/height
     const corrupted = [
-      { id: "bad-1", imageUri: "file:///x.jpg", category: "tops", queuedAt: "2026-01-01T00:00:00Z" },
+      {
+        id: "bad-1",
+        imageUri: "file:///x.jpg",
+        category: "tops",
+        queuedAt: "2026-01-01T00:00:00Z",
+      },
       mockPayload,
       { id: "bad-2" },
       "not-an-object",
@@ -109,7 +113,10 @@ describe("upload-queue", () => {
   });
 
   test("getQueue returns empty array for non-array JSON", () => {
-    mmkvStorage.set("wearbloom:upload-queue", JSON.stringify({ not: "an array" }));
+    mmkvStorage.set(
+      "wearbloom:upload-queue",
+      JSON.stringify({ not: "an array" }),
+    );
 
     expect(getQueueLength()).toBe(0);
   });

@@ -1,7 +1,6 @@
 import type http from "node:http";
 
 import type { db as _dbInstance } from "@acme/db/client";
-
 import { eq } from "@acme/db";
 import { bodyPhotos, garments, tryOnRenders } from "@acme/db/schema";
 
@@ -15,9 +14,7 @@ interface ImageHandlerDeps {
   db: typeof _dbInstance;
   auth: {
     api: {
-      getSession: (opts: {
-        headers: Headers;
-      }) => Promise<{
+      getSession: (opts: { headers: Headers }) => Promise<{
         user: { id: string };
       } | null>;
     };
@@ -25,7 +22,11 @@ interface ImageHandlerDeps {
   imageStorage: ImageHandlerImageStorage;
 }
 
-export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps) {
+export function createImageHandler({
+  db,
+  auth,
+  imageStorage,
+}: ImageHandlerDeps) {
   return async (req: http.IncomingMessage, res: http.ServerResponse) => {
     // Handle render result images: /api/images/render/:renderId
     const renderMatch = req.url?.match(/\/api\/images\/render\/([^/?]+)/);
@@ -65,7 +66,9 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
         return;
       }
 
-      const mimeType = render.resultPath ? inferMimeType(render.resultPath) : "image/png";
+      const mimeType = render.resultPath
+        ? inferMimeType(render.resultPath)
+        : "image/png";
       return streamImage(res, imageStorage, render.resultPath, mimeType);
     }
 
@@ -140,8 +143,10 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
     }
 
     // Serve cutout if available, otherwise original
-    const useCutout = garment.bgRemovalStatus === "completed" && garment.cutoutPath;
-    const filePath = (useCutout ? garment.cutoutPath : garment.imagePath) ?? garment.imagePath;
+    const useCutout =
+      garment.bgRemovalStatus === "completed" && garment.cutoutPath;
+    const filePath =
+      (useCutout ? garment.cutoutPath : garment.imagePath) ?? garment.imagePath;
     const mimeType = useCutout ? "image/png" : garment.mimeType;
 
     return streamImage(res, imageStorage, filePath, mimeType);
@@ -149,7 +154,8 @@ export function createImageHandler({ db, auth, imageStorage }: ImageHandlerDeps)
 }
 
 function inferMimeType(filePath: string): string {
-  if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) return "image/jpeg";
+  if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg"))
+    return "image/jpeg";
   if (filePath.endsWith(".png")) return "image/png";
   return "image/png"; // default fallback
 }

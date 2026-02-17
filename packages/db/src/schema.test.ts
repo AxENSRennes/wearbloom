@@ -3,16 +3,16 @@ import { getTableColumns } from "drizzle-orm";
 
 import {
   BG_REMOVAL_STATUSES,
-  FEEDBACK_RATINGS,
-  GARMENT_CATEGORIES,
-  RENDER_STATUSES,
-  TRYON_PROVIDERS,
   bgRemovalStatusEnum,
+  FEEDBACK_RATINGS,
   feedbackRating,
+  GARMENT_CATEGORIES,
   garmentCategory,
   garments,
+  RENDER_STATUSES,
   renderFeedback,
   renderStatus,
+  TRYON_PROVIDERS,
   tryOnProviderEnum,
   tryOnRenders,
   users,
@@ -71,7 +71,13 @@ describe("garments schema", () => {
   });
 
   test("GARMENT_CATEGORIES has correct values", () => {
-    expect(GARMENT_CATEGORIES).toEqual(["tops", "bottoms", "dresses", "shoes", "outerwear"]);
+    expect(GARMENT_CATEGORIES).toEqual([
+      "tops",
+      "bottoms",
+      "dresses",
+      "shoes",
+      "outerwear",
+    ]);
   });
 
   test("bgRemovalStatusEnum has correct values", () => {
@@ -84,7 +90,12 @@ describe("garments schema", () => {
   });
 
   test("BG_REMOVAL_STATUSES has correct values", () => {
-    expect(BG_REMOVAL_STATUSES).toEqual(["pending", "completed", "failed", "skipped"]);
+    expect(BG_REMOVAL_STATUSES).toEqual([
+      "pending",
+      "completed",
+      "failed",
+      "skipped",
+    ]);
   });
 });
 

@@ -1,6 +1,5 @@
-import type { RouterOutputs } from "~/utils/api";
-
 import type { StockGarment } from "~/constants/stockGarments";
+import type { RouterOutputs } from "~/utils/api";
 
 export type PersonalGarment = RouterOutputs["garment"]["list"][number] & {
   isStock: false;

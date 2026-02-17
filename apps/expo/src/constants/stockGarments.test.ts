@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  getStockGarmentsByCategory,
-  STOCK_GARMENTS,
-} from "./stockGarments";
+import { getStockGarmentsByCategory, STOCK_GARMENTS } from "./stockGarments";
 
 describe("STOCK_GARMENTS", () => {
   test("has exactly 8 items", () => {

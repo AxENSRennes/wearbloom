@@ -1,12 +1,10 @@
-import type http from "node:http";
 import { createHash } from "node:crypto";
-
+import type http from "node:http";
 import type { Logger } from "pino";
 
 import type { db as _dbInstance } from "@acme/db/client";
-
-import { eq } from "@acme/db";
 import { createCreditService } from "@acme/api/services/creditService";
+import { eq } from "@acme/db";
 import { tryOnRenders } from "@acme/db/schema";
 
 const JWKS_URL = "https://rest.alpha.fal.ai/.well-known/jwks.json";
@@ -143,10 +141,7 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
     );
 
     if (!isValid) {
-      deps.logger.warn(
-        { requestId },
-        "Invalid fal.ai webhook signature",
-      );
+      deps.logger.warn({ requestId }, "Invalid fal.ai webhook signature");
       res.writeHead(401, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Invalid signature" }));
       return;
@@ -170,11 +165,13 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
       .where(eq(tryOnRenders.jobId, payload.request_id))
       .limit(1);
 
-    const render = renderResults[0] as {
-      id: string;
-      userId: string;
-      status: string;
-    } | undefined;
+    const render = renderResults[0] as
+      | {
+          id: string;
+          userId: string;
+          status: string;
+        }
+      | undefined;
 
     if (!render) {
       deps.logger.warn(
@@ -203,8 +200,14 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
       try {
         // Validate image URL domain to prevent SSRF
         const imageUrl = new URL(image.url);
-        if (imageUrl.protocol !== "https:" || !imageUrl.hostname.endsWith(".fal.media")) {
-          deps.logger.warn({ url: image.url, renderId: render.id }, "Blocked image URL — domain not allowed");
+        if (
+          imageUrl.protocol !== "https:" ||
+          !imageUrl.hostname.endsWith(".fal.media")
+        ) {
+          deps.logger.warn(
+            { url: image.url, renderId: render.id },
+            "Blocked image URL — domain not allowed",
+          );
           throw new Error("Image URL domain not allowed");
         }
 
@@ -246,8 +249,7 @@ export function createFalWebhookHandler(deps: FalWebhookDeps) {
       }
     } else {
       // Error
-      const errorMessage =
-        payload.error ?? "Unknown error from fal.ai";
+      const errorMessage = payload.error ?? "Unknown error from fal.ai";
       deps.logger.error(
         { renderId: render.id, error: errorMessage },
         "Render failed via webhook",

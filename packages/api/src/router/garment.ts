@@ -1,6 +1,6 @@
 import type { TRPCRouterRecord } from "@trpc/server";
-import { TRPCError } from "@trpc/server";
 import { createId } from "@paralleldrive/cuid2";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
 import { and, desc, eq } from "@acme/db";
@@ -76,8 +76,7 @@ export const garmentRouter = {
 
       const widthStr = formData.get("width");
       const heightStr = formData.get("height");
-      const width =
-        typeof widthStr === "string" ? Number(widthStr) : undefined;
+      const width = typeof widthStr === "string" ? Number(widthStr) : undefined;
       const height =
         typeof heightStr === "string" ? Number(heightStr) : undefined;
 
@@ -181,10 +180,12 @@ export const garmentRouter = {
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      const whereClause =
-        input?.category
-          ? and(eq(garments.userId, userId), eq(garments.category, input.category))
-          : eq(garments.userId, userId);
+      const whereClause = input?.category
+        ? and(
+            eq(garments.userId, userId),
+            eq(garments.category, input.category),
+          )
+        : eq(garments.userId, userId);
 
       const results = await ctx.db
         .select()
@@ -204,12 +205,17 @@ export const garmentRouter = {
       const results = await ctx.db
         .select({ id: garments.id })
         .from(garments)
-        .where(and(eq(garments.id, input.garmentId), eq(garments.userId, userId)))
+        .where(
+          and(eq(garments.id, input.garmentId), eq(garments.userId, userId)),
+        )
         .limit(1);
 
       const garment = results[0];
       if (!garment) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "GARMENT_NOT_FOUND" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "GARMENT_NOT_FOUND",
+        });
       }
 
       if (!ctx.imageStorage) {
@@ -247,7 +253,9 @@ export const garmentRouter = {
       const results = await ctx.db
         .select()
         .from(garments)
-        .where(and(eq(garments.id, input.garmentId), eq(garments.userId, userId)))
+        .where(
+          and(eq(garments.id, input.garmentId), eq(garments.userId, userId)),
+        )
         .limit(1);
 
       const garment = results[0];

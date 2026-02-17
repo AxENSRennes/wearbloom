@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
+import { describe, expect, test } from "bun:test";
 
 import { validateImageBytes } from "./validateImageBytes";
 

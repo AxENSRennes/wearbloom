@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import pino from "pino";
 
 import type { AppleIapDeps } from "@acme/api";
+import type { TryOnProvider } from "@acme/api/services/tryOnProvider";
 import {
   appRouter,
   createAnonymousCleanupService,
@@ -14,8 +15,6 @@ import { createBackgroundRemoval } from "@acme/api/services/backgroundRemoval";
 import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
 import { db } from "@acme/db/client";
-
-import type { TryOnProvider } from "@acme/api/services/tryOnProvider";
 
 import { env } from "./env";
 import { createImageHandler } from "./routes/images";
@@ -126,7 +125,10 @@ try {
     "TryOnProvider initialized",
   );
 } catch (err) {
-  logger.warn({ err }, "TryOnProvider initialization failed — try-on features disabled");
+  logger.warn(
+    { err },
+    "TryOnProvider initialization failed — try-on features disabled",
+  );
 }
 
 const imageHandler = createImageHandler({ db, auth, imageStorage });
@@ -273,4 +275,7 @@ logger.info(
   { port: env.PORT, path: "/api/webhooks/apple" },
   "Apple webhook available",
 );
-logger.info({ port: env.PORT, path: "/api/images/*" }, "Image routes available");
+logger.info(
+  { port: env.PORT, path: "/api/images/*" },
+  "Image routes available",
+);

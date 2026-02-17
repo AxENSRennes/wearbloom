@@ -1,10 +1,4 @@
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 
 import { wearbloomTheme } from "./gluestack-config";
@@ -88,16 +82,16 @@ function AlertDialog({
         disabled={isLoading}
       >
         <View
-          className="mx-6 w-full max-w-sm rounded-2xl bg-background p-6"
+          className="bg-background mx-6 w-full max-w-sm rounded-2xl p-6"
           onStartShouldSetResponder={() => true}
         >
           {/* Header */}
-          <Text className="mb-2 text-lg font-semibold text-text-primary">
+          <Text className="text-text-primary mb-2 text-lg font-semibold">
             {title}
           </Text>
 
           {/* Body */}
-          <Text className="mb-6 text-sm leading-5 text-text-secondary">
+          <Text className="text-text-secondary mb-6 text-sm leading-5">
             {message}
           </Text>
 
@@ -116,9 +110,16 @@ function AlertDialog({
               accessibilityState={{ disabled: isLoading, busy: isLoading }}
             >
               {isLoading ? (
-                <ActivityIndicator color={wearbloomTheme.colors.background} size="small" />
+                <ActivityIndicator
+                  color={wearbloomTheme.colors.background}
+                  size="small"
+                />
               ) : (
-                <Text className={alertDialogButtonTextStyle({ variant: buttonVariant })}>
+                <Text
+                  className={alertDialogButtonTextStyle({
+                    variant: buttonVariant,
+                  })}
+                >
                   {confirmLabel}
                 </Text>
               )}
@@ -132,7 +133,9 @@ function AlertDialog({
               accessibilityRole="button"
               accessibilityLabel={cancelLabel}
             >
-              <Text className={alertDialogButtonTextStyle({ variant: "cancel" })}>
+              <Text
+                className={alertDialogButtonTextStyle({ variant: "cancel" })}
+              >
                 {cancelLabel}
               </Text>
             </Pressable>

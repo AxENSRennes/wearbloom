@@ -176,12 +176,12 @@ describe("GoogleVTOProvider", () => {
       parameters: { sampleCount: number };
     };
 
-    expect(
-      body.instances[0]?.personImage.image.bytesBase64Encoded,
-    ).toBe(personImage.toString("base64"));
-    expect(
-      body.instances[0]?.productImages[0]?.image.bytesBase64Encoded,
-    ).toBe(garmentImage.toString("base64"));
+    expect(body.instances[0]?.personImage.image.bytesBase64Encoded).toBe(
+      personImage.toString("base64"),
+    );
+    expect(body.instances[0]?.productImages[0]?.image.bytesBase64Encoded).toBe(
+      garmentImage.toString("base64"),
+    );
     expect(body.parameters.sampleCount).toBe(1);
   });
 });

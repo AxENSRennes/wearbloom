@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance, TryOnProviderContext } from "../trpc";
-import { createTRPCContext, renderLimiter } from "../trpc";
 import {
   createMockImageStorage,
   mockDbInsert,
   mockDbSelect,
   mockDbUpdate,
 } from "../../test/helpers";
+import { createTRPCContext, renderLimiter } from "../trpc";
 
 function mockDbTransaction(db: Record<string, unknown>) {
   const txUpdateChain = mockDbUpdate();
@@ -16,10 +16,9 @@ function mockDbTransaction(db: Record<string, unknown>) {
     // creditService.refundCredit uses these
     select: mock(() => mockDbSelect([])),
   };
-  const origTransaction = Object.getOwnPropertyDescriptor(
-    Object.getPrototypeOf(db),
-    "transaction",
-  ) ?? Object.getOwnPropertyDescriptor(db, "transaction");
+  const origTransaction =
+    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(db), "transaction") ??
+    Object.getOwnPropertyDescriptor(db, "transaction");
   Object.defineProperty(db, "transaction", {
     value: mock(async (fn: (tx: unknown) => Promise<void>) => {
       await fn(tx);
@@ -49,7 +48,12 @@ function mockDbInsertUnique() {
 }
 
 const mockSession = {
-  user: { id: "user-123", name: "Test User", email: "test@example.com", isAnonymous: false },
+  user: {
+    id: "user-123",
+    name: "Test User",
+    email: "test@example.com",
+    isAnonymous: false,
+  },
   session: {
     id: "sess-123",
     token: "tok-abc",
@@ -557,9 +561,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -586,9 +588,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -616,9 +616,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
     updateSpy = spyOn(db as never, "update").mockReturnValue(
       mockDbUpdate() as never,
     );
@@ -684,9 +682,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -712,9 +708,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-99" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-99" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -740,9 +734,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({
@@ -768,9 +760,7 @@ describe("tryon.getRenderStatus", () => {
           },
         ]) as never,
       )
-      .mockReturnValueOnce(
-        mockDbSelect([{ id: "bp-1" }]) as never,
-      );
+      .mockReturnValueOnce(mockDbSelect([{ id: "bp-1" }]) as never);
 
     const { caller } = await createAuthenticatedCaller();
     const result = await caller.tryon.getRenderStatus({

@@ -8,9 +8,7 @@ function createMockFalClient(): FalClient {
   return {
     config: mock(() => {}),
     queue: {
-      submit: mock(() =>
-        Promise.resolve({ request_id: "mock-request-id" }),
-      ),
+      submit: mock(() => Promise.resolve({ request_id: "mock-request-id" })),
       result: mock(() =>
         Promise.resolve({
           images: [
@@ -25,9 +23,7 @@ function createMockFalClient(): FalClient {
       ),
     },
     storage: {
-      upload: mock(() =>
-        Promise.resolve("https://fal.media/mock-upload.jpg"),
-      ),
+      upload: mock(() => Promise.resolve("https://fal.media/mock-upload.jpg")),
     },
   };
 }

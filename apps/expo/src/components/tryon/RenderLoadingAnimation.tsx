@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ActivityIndicator, Dimensions, View } from "react-native";
 import Animated, {
   Easing,
@@ -9,7 +10,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Image } from "expo-image";
-import { useEffect } from "react";
 
 import { ThemedText } from "@acme/ui";
 
@@ -78,8 +78,7 @@ export function RenderLoadingAnimation({
     backgroundColor: "rgba(255,255,255,0.15)",
   }));
 
-  const showGarmentThumbnail =
-    elapsedMs >= 3000 && garmentImageUrl !== null;
+  const showGarmentThumbnail = elapsedMs >= 3000 && garmentImageUrl !== null;
 
   useEffect(() => {
     if (showGarmentThumbnail && !reducedMotion) {
@@ -105,21 +104,18 @@ export function RenderLoadingAnimation({
         {showGarmentThumbnail && (
           <View
             testID="garment-thumbnail"
-            className="absolute top-20 right-5 w-16 h-16 rounded-xl overflow-hidden"
+            className="absolute right-5 top-20 h-16 w-16 overflow-hidden rounded-xl"
           >
             <Image
               source={{ uri: garmentImageUrl, headers: imageHeaders }}
-              className="w-16 h-16"
+              className="h-16 w-16"
               contentFit="cover"
             />
           </View>
         )}
         <View className="absolute inset-0 items-center justify-center">
           <ActivityIndicator size="large" color="white" />
-          <ThemedText
-            variant="body"
-            className="text-white/70 text-[13px] mt-3"
-          >
+          <ThemedText variant="body" className="mt-3 text-[13px] text-white/70">
             {getProgressText(elapsedMs)}
           </ThemedText>
         </View>
@@ -168,18 +164,15 @@ export function RenderLoadingAnimation({
         >
           <Image
             source={{ uri: garmentImageUrl, headers: imageHeaders }}
-            className="w-16 h-16"
+            className="h-16 w-16"
             contentFit="cover"
           />
         </Animated.View>
       )}
 
       {/* Progress text — bottom center */}
-      <View className="absolute bottom-20 inset-x-0 items-center">
-        <ThemedText
-          variant="body"
-          className="text-white/70 text-[13px]"
-        >
+      <View className="absolute inset-x-0 bottom-20 items-center">
+        <ThemedText variant="body" className="text-[13px] text-white/70">
           {getProgressText(elapsedMs)}
         </ThemedText>
       </View>

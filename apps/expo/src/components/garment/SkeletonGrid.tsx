@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { View } from "react-native";
 import Animated, {
   Easing,
@@ -8,7 +9,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { useEffect } from "react";
 
 interface SkeletonGridProps {
   columnWidth: number;
@@ -37,7 +37,10 @@ export function SkeletonGrid({ columnWidth }: SkeletonGridProps) {
     opacity: reducedMotion ? 0.5 : opacity.value,
   }));
 
-  const rows = Array.from({ length: SKELETON_COUNT / NUM_COLUMNS }, (_, rowIndex) => rowIndex);
+  const rows = Array.from(
+    { length: SKELETON_COUNT / NUM_COLUMNS },
+    (_, rowIndex) => rowIndex,
+  );
 
   return (
     <View className="flex-1">
@@ -52,7 +55,10 @@ export function SkeletonGrid({ columnWidth }: SkeletonGridProps) {
             <Animated.View
               key={colIndex}
               data-testid="skeleton-item"
-              style={[{ width: columnWidth, height: itemHeight }, animatedStyle]}
+              style={[
+                { width: columnWidth, height: itemHeight },
+                animatedStyle,
+              ]}
               className="bg-surface"
             />
           ))}

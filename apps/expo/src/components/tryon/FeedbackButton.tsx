@@ -9,7 +9,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Check, MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react-native";
+import {
+  Check,
+  MessageCircle,
+  ThumbsDown,
+  ThumbsUp,
+} from "lucide-react-native";
 
 import { ThemedText } from "@acme/ui";
 
@@ -21,10 +26,7 @@ type FeedbackState =
   | "dismissed";
 
 interface FeedbackButtonProps {
-  onSubmit: (
-    rating: "thumbs_up" | "thumbs_down",
-    category?: string,
-  ) => void;
+  onSubmit: (rating: "thumbs_up" | "thumbs_down", category?: string) => void;
   onDismiss: () => void;
   isSubmitting: boolean;
 }
@@ -104,7 +106,10 @@ export function FeedbackButton({
       // eslint-disable-next-line react-hooks/immutability
       expandWidth.value = EXPANDED_WIDTH;
     } else {
-      expandWidth.value = withSpring(EXPANDED_WIDTH, { damping: 15, stiffness: 300 });
+      expandWidth.value = withSpring(EXPANDED_WIDTH, {
+        damping: 15,
+        stiffness: 300,
+      });
     }
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -120,7 +125,10 @@ export function FeedbackButton({
       // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
       expandWidth.value = COLLAPSED_WIDTH;
     } else {
-      expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });
+      expandWidth.value = withSpring(COLLAPSED_WIDTH, {
+        damping: 15,
+        stiffness: 300,
+      });
     }
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -129,7 +137,14 @@ export function FeedbackButton({
     confirmTimer.current = setTimeout(() => {
       animateDismiss();
     }, CONFIRM_DISMISS_MS);
-  }, [isSubmitting, resetAutoHide, onSubmit, animateDismiss, reducedMotion, expandWidth]);
+  }, [
+    isSubmitting,
+    resetAutoHide,
+    onSubmit,
+    animateDismiss,
+    reducedMotion,
+    expandWidth,
+  ]);
 
   const handleThumbsDown = useCallback(() => {
     if (isSubmitting) return;
@@ -140,7 +155,10 @@ export function FeedbackButton({
       // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
       expandWidth.value = CATEGORY_PICKER_WIDTH;
     } else {
-      expandWidth.value = withSpring(CATEGORY_PICKER_WIDTH, { damping: 15, stiffness: 300 });
+      expandWidth.value = withSpring(CATEGORY_PICKER_WIDTH, {
+        damping: 15,
+        stiffness: 300,
+      });
     }
   }, [isSubmitting, resetAutoHide, reducedMotion, expandWidth]);
 
@@ -154,7 +172,10 @@ export function FeedbackButton({
         // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
         expandWidth.value = COLLAPSED_WIDTH;
       } else {
-        expandWidth.value = withSpring(COLLAPSED_WIDTH, { damping: 15, stiffness: 300 });
+        expandWidth.value = withSpring(COLLAPSED_WIDTH, {
+          damping: 15,
+          stiffness: 300,
+        });
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -176,12 +197,8 @@ export function FeedbackButton({
   const renderContent = () => {
     if (state === "confirmed") {
       return (
-        <View className="w-11 h-11 items-center justify-center">
-          <Check
-            size={20}
-            color="white"
-            testID="feedback-icon-confirmed"
-          />
+        <View className="h-11 w-11 items-center justify-center">
+          <Check size={20} color="white" testID="feedback-icon-confirmed" />
         </View>
       );
     }
@@ -197,7 +214,7 @@ export function FeedbackButton({
               disabled={isSubmitting}
               accessibilityLabel={cat.label}
               accessibilityRole="button"
-              className="px-2.5 py-1.5 rounded-[14px] bg-white/20"
+              className="rounded-[14px] bg-white/20 px-2.5 py-1.5"
             >
               <ThemedText variant="caption" className="text-white">
                 {cat.label}
@@ -210,14 +227,14 @@ export function FeedbackButton({
 
     if (state === "expanded") {
       return (
-        <View className="flex-row items-center gap-4 px-4 h-11">
+        <View className="h-11 flex-row items-center gap-4 px-4">
           <Pressable
             testID="feedback-thumbs-up"
             onPress={handleThumbsUp}
             disabled={isSubmitting}
             accessibilityLabel="Good result"
             accessibilityRole="button"
-            className="w-8 h-8 items-center justify-center"
+            className="h-8 w-8 items-center justify-center"
           >
             <ThumbsUp size={20} color="white" />
           </Pressable>
@@ -227,7 +244,7 @@ export function FeedbackButton({
             disabled={isSubmitting}
             accessibilityLabel="Bad result"
             accessibilityRole="button"
-            className="w-8 h-8 items-center justify-center"
+            className="h-8 w-8 items-center justify-center"
           >
             <ThumbsDown size={20} color="white" />
           </Pressable>
@@ -243,11 +260,11 @@ export function FeedbackButton({
         accessibilityLabel="Rate this render"
         accessibilityRole="button"
         accessibilityHint="Double tap to rate quality"
-        className="w-11 h-11 items-center justify-center"
+        className="h-11 w-11 items-center justify-center"
       >
         <View
           testID="feedback-icon-collapsed"
-          className="w-8 h-8 rounded-full items-center justify-center"
+          className="h-8 w-8 items-center justify-center rounded-full"
         >
           <MessageCircle size={20} color="white" />
         </View>

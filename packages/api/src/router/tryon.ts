@@ -3,7 +3,12 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
 import { and, count, eq, gt } from "@acme/db";
-import { bodyPhotos, garments, renderFeedback, tryOnRenders } from "@acme/db/schema";
+import {
+  bodyPhotos,
+  garments,
+  renderFeedback,
+  tryOnRenders,
+} from "@acme/db/schema";
 
 import { createCreditService } from "../services/creditService";
 import { protectedProcedure, publicProcedure, renderProcedure } from "../trpc";
@@ -69,7 +74,9 @@ export const tryonRouter = {
           category: garments.category,
         })
         .from(garments)
-        .where(and(eq(garments.id, input.garmentId), eq(garments.userId, userId)))
+        .where(
+          and(eq(garments.id, input.garmentId), eq(garments.userId, userId)),
+        )
         .limit(1);
 
       const garment = garmentResult[0];
@@ -107,7 +114,10 @@ export const tryonRouter = {
         .values({
           userId,
           garmentId: input.garmentId,
-          provider: ctx.tryOnProvider.name as "fal_fashn" | "fal_nano_banana" | "google_vto",
+          provider: ctx.tryOnProvider.name as
+            | "fal_fashn"
+            | "fal_nano_banana"
+            | "google_vto",
           status: "pending",
         })
         .returning({ id: tryOnRenders.id });

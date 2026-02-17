@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import * as reactQuery from "@tanstack/react-query";
 import * as NetInfo from "@react-native-community/netinfo";
+import * as reactQuery from "@tanstack/react-query";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { showToast } from "@acme/ui";
 
@@ -476,7 +476,10 @@ describe("WardrobeScreen", () => {
     expect(onSuccess).toBeDefined();
     onSuccess();
 
-    expect(showToast).toHaveBeenCalledWith({ message: "Garment deleted", variant: "success" });
+    expect(showToast).toHaveBeenCalledWith({
+      message: "Garment deleted",
+      variant: "success",
+    });
   });
 
   test("useMutation is called with onError that shows error toast", () => {
@@ -498,7 +501,10 @@ describe("WardrobeScreen", () => {
     expect(onError).toBeDefined();
     onError();
 
-    expect(showToast).toHaveBeenCalledWith({ message: "Couldn't delete. Try again.", variant: "error" });
+    expect(showToast).toHaveBeenCalledWith({
+      message: "Couldn't delete. Try again.",
+      variant: "error",
+    });
   });
 
   test("personal garment cards render while stock garments have 'stock' accessibility label", () => {
@@ -547,7 +553,10 @@ describe("WardrobeScreen", () => {
     const useCallbackSpy = spyOn(React, "useCallback");
     // Pass through useCallback (safe in SSR — no re-renders)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    useCallbackSpy.mockImplementation((<T extends (...args: any[]) => any>(fn: T) => fn) as typeof React.useCallback);
+    useCallbackSpy.mockImplementation(
+      (<T extends (...args: any[]) => any>(fn: T) =>
+        fn) as typeof React.useCallback,
+    );
 
     const mutationSpy = spyOn(reactQuery, "useMutation");
     let callIdx = 0;

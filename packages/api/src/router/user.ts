@@ -28,8 +28,7 @@ export const userRouter = {
 
       const widthStr = formData.get("width");
       const heightStr = formData.get("height");
-      const width =
-        typeof widthStr === "string" ? Number(widthStr) : undefined;
+      const width = typeof widthStr === "string" ? Number(widthStr) : undefined;
       const height =
         typeof heightStr === "string" ? Number(heightStr) : undefined;
 

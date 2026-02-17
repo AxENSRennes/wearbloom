@@ -1,10 +1,19 @@
 /// <reference lib="dom" />
-import { afterEach, beforeEach, describe, expect, jest, mock, spyOn, test } from "bun:test";
 import type { Root } from "react-dom/client";
 import { act } from "react";
+import * as Haptics from "expo-haptics";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  mock,
+  spyOn,
+  test,
+} from "bun:test";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import * as Haptics from "expo-haptics";
 
 import { FeedbackButton } from "./FeedbackButton";
 
@@ -177,10 +186,7 @@ function getReactProps(el: Element): Record<string, unknown> {
  * React lowercases custom element attribute names in the DOM, so
  * `testID="foo"` becomes `testid="foo"`.
  */
-function queryByTestId(
-  container: HTMLElement,
-  testId: string,
-): Element | null {
+function queryByTestId(container: HTMLElement, testId: string): Element | null {
   return container.querySelector(`[testid="${testId}"]`);
 }
 

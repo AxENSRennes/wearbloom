@@ -39,12 +39,12 @@ function ActionSheet({ isOpen, onClose, items }: ActionSheetProps) {
         accessibilityLabel="Close"
       >
         <View
-          className="rounded-t-xl bg-background pb-8"
+          className="bg-background rounded-t-xl pb-8"
           onStartShouldSetResponder={() => true}
         >
           {/* Drag indicator */}
           <View className="items-center py-3">
-            <View className="h-1 w-10 rounded-full bg-border" />
+            <View className="bg-border h-1 w-10 rounded-full" />
           </View>
 
           {/* Items */}
@@ -61,10 +61,8 @@ function ActionSheet({ isOpen, onClose, items }: ActionSheetProps) {
             >
               {({ pressed }) => (
                 <View className={actionSheetItemStyle({ isPressed: pressed })}>
-                  {item.icon ? (
-                    <View className="mr-3">{item.icon}</View>
-                  ) : null}
-                  <Text className="text-base font-medium text-text-primary">
+                  {item.icon ? <View className="mr-3">{item.icon}</View> : null}
+                  <Text className="text-text-primary text-base font-medium">
                     {item.label}
                   </Text>
                 </View>
@@ -80,7 +78,7 @@ function ActionSheet({ isOpen, onClose, items }: ActionSheetProps) {
             accessibilityRole="button"
             accessibilityLabel="Cancel"
           >
-            <Text className="text-base font-medium text-text-secondary">
+            <Text className="text-text-secondary text-base font-medium">
               Cancel
             </Text>
           </Pressable>

@@ -23,7 +23,12 @@ interface GarmentCardProps {
 
 const PLACEHOLDER_BLURHASH = "L6PZfSi_.AyE_3t7t7R**0o#DgR4";
 
-export function GarmentCard({ garment, onPress, onLongPress, columnWidth }: GarmentCardProps) {
+export function GarmentCard({
+  garment,
+  onPress,
+  onLongPress,
+  columnWidth,
+}: GarmentCardProps) {
   const scale = useSharedValue(1);
   const reducedMotion = useReducedMotion();
 

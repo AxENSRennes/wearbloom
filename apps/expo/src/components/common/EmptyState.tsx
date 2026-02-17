@@ -9,7 +9,12 @@ interface EmptyStateProps {
   onCtaPress?: () => void;
 }
 
-export function EmptyState({ headline, subtext, ctaLabel, onCtaPress }: EmptyStateProps) {
+export function EmptyState({
+  headline,
+  subtext,
+  ctaLabel,
+  onCtaPress,
+}: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center px-8">
       <ThemedText variant="heading">{headline}</ThemedText>

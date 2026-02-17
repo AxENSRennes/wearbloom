@@ -5,7 +5,6 @@ import type {
   TryOnProviderConfig,
   TryOnResult,
 } from "../tryOnProvider";
-
 import type { FalClient } from "./falFashn";
 
 export class FalNanoBananaProvider implements TryOnProvider {
@@ -22,10 +21,7 @@ export class FalNanoBananaProvider implements TryOnProvider {
   private readonly webhookUrl: string;
   private readonly modelId: string;
 
-  constructor(
-    config: TryOnProviderConfig,
-    falClient?: FalClient,
-  ) {
+  constructor(config: TryOnProviderConfig, falClient?: FalClient) {
     this.webhookUrl = config.webhookUrl;
     this.modelId = config.nanoBananaModelId;
     this.falKey = config.falKey;

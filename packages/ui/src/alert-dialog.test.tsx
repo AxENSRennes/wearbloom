@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { createElement } from "react";
+import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
@@ -35,7 +35,10 @@ describe("alertDialogButtonStyle", () => {
   });
 
   test("isDisabled true includes opacity-40", () => {
-    const cls = alertDialogButtonStyle({ variant: "destructive", isDisabled: true });
+    const cls = alertDialogButtonStyle({
+      variant: "destructive",
+      isDisabled: true,
+    });
     expect(cls).toContain("opacity-40");
   });
 });

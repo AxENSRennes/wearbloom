@@ -1,6 +1,6 @@
+import * as reanimated from "react-native-reanimated";
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import * as reanimated from "react-native-reanimated";
 
 import { RenderLoadingAnimation } from "./RenderLoadingAnimation";
 

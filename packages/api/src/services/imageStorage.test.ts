@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { createImageStorage } from "./imageStorage";
 
@@ -57,9 +57,9 @@ describe("createImageStorage", () => {
 
   describe("deleteUserDirectory", () => {
     test("rejects path traversal in userId", async () => {
-      await expect(
-        storage.deleteUserDirectory("../../etc"),
-      ).rejects.toThrow("Path traversal detected");
+      await expect(storage.deleteUserDirectory("../../etc")).rejects.toThrow(
+        "Path traversal detected",
+      );
     });
 
     test("removes user directory and all contents", async () => {
@@ -83,13 +83,23 @@ describe("createImageStorage", () => {
   describe("saveGarmentPhoto", () => {
     test("rejects path traversal in userId", async () => {
       await expect(
-        storage.saveGarmentPhoto("../../etc", Buffer.from("data"), "image/jpeg", "garment-1"),
+        storage.saveGarmentPhoto(
+          "../../etc",
+          Buffer.from("data"),
+          "image/jpeg",
+          "garment-1",
+        ),
       ).rejects.toThrow("Path traversal detected");
     });
 
     test("rejects path traversal in garmentId", async () => {
       await expect(
-        storage.saveGarmentPhoto("user-123", Buffer.from("data"), "image/jpeg", "../../../../etc/passwd"),
+        storage.saveGarmentPhoto(
+          "user-123",
+          Buffer.from("data"),
+          "image/jpeg",
+          "../../../../etc/passwd",
+        ),
       ).rejects.toThrow("Path traversal detected");
     });
 
@@ -102,7 +112,9 @@ describe("createImageStorage", () => {
         "garment-abc",
       );
 
-      expect(filePath).toBe(join("user-123", "garments", "garment-abc_original.jpg"));
+      expect(filePath).toBe(
+        join("user-123", "garments", "garment-abc_original.jpg"),
+      );
 
       const absolutePath = storage.getAbsolutePath(filePath);
       const written = await readFile(absolutePath);
@@ -132,7 +144,9 @@ describe("createImageStorage", () => {
         "garment-abc",
       );
 
-      expect(filePath).toBe(join("user-123", "garments", "garment-abc_cutout.png"));
+      expect(filePath).toBe(
+        join("user-123", "garments", "garment-abc_cutout.png"),
+      );
 
       const absolutePath = storage.getAbsolutePath(filePath);
       const written = await readFile(absolutePath);
@@ -143,13 +157,23 @@ describe("createImageStorage", () => {
   describe("saveRenderResult", () => {
     test("rejects path traversal in userId", async () => {
       await expect(
-        storage.saveRenderResult("../../etc", "render-1", Buffer.from("data"), "image/png"),
+        storage.saveRenderResult(
+          "../../etc",
+          "render-1",
+          Buffer.from("data"),
+          "image/png",
+        ),
       ).rejects.toThrow("Path traversal detected");
     });
 
     test("rejects path traversal in renderId", async () => {
       await expect(
-        storage.saveRenderResult("user-123", "../../../../etc/passwd", Buffer.from("data"), "image/png"),
+        storage.saveRenderResult(
+          "user-123",
+          "../../../../etc/passwd",
+          Buffer.from("data"),
+          "image/png",
+        ),
       ).rejects.toThrow("Path traversal detected");
     });
 
@@ -290,9 +314,9 @@ describe("createImageStorage", () => {
     });
 
     test("rejects path traversal with encoded sequences", () => {
-      expect(() =>
-        storage.streamFile("user-123/../../etc/passwd"),
-      ).toThrow("Path traversal detected");
+      expect(() => storage.streamFile("user-123/../../etc/passwd")).toThrow(
+        "Path traversal detected",
+      );
     });
   });
 

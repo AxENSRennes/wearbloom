@@ -1,25 +1,25 @@
+import type BottomSheet from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
-import type BottomSheet from "@gorhom/bottom-sheet";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
 import type { CategoryFilter } from "~/constants/categories";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
-import { isStockGarment } from "~/types/wardrobe";
-import { useNetworkStatus } from "~/hooks/useNetworkStatus";
-import { trpc } from "~/utils/api";
-import { CategoryPills } from "~/components/garment/CategoryPills";
 import { EmptyState } from "~/components/common/EmptyState";
+import { CategoryPills } from "~/components/garment/CategoryPills";
 import { GarmentCard } from "~/components/garment/GarmentCard";
 import { GarmentDetailSheet } from "~/components/garment/GarmentDetailSheet";
 import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
+import { useNetworkStatus } from "~/hooks/useNetworkStatus";
+import { isStockGarment } from "~/types/wardrobe";
+import { trpc } from "~/utils/api";
 
 const GUTTER = 2;
 const NUM_COLUMNS = 2;
@@ -29,9 +29,13 @@ const ITEM_HEIGHT = Math.round(COLUMN_WIDTH * 1.2);
 const CATEGORY_PILLS_HEIGHT = 60;
 
 export default function WardrobeScreen() {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
-  const [garmentToDelete, setGarmentToDelete] = useState<PersonalGarment | null>(null);
-  const [selectedGarment, setSelectedGarment] = useState<WardrobeItem | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryFilter>("all");
+  const [garmentToDelete, setGarmentToDelete] =
+    useState<PersonalGarment | null>(null);
+  const [selectedGarment, setSelectedGarment] = useState<WardrobeItem | null>(
+    null,
+  );
   const bottomSheetRef = useRef<BottomSheet>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -47,7 +51,9 @@ export default function WardrobeScreen() {
     trpc.garment.delete.mutationOptions({
       onSuccess: () => {
         setGarmentToDelete(null);
-        void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
+        void queryClient.invalidateQueries({
+          queryKey: trpc.garment.list.queryKey(),
+        });
         showToast({ message: "Garment deleted", variant: "success" });
       },
       onError: () => {
@@ -63,7 +69,13 @@ export default function WardrobeScreen() {
     }
   }, [garmentToDelete, deleteMutation]);
 
-  const { data: garments, isLoading, isFetching, isError, error: _error } = useQuery(
+  const {
+    data: garments,
+    isLoading,
+    isFetching,
+    isError,
+    error: _error,
+  } = useQuery(
     trpc.garment.list.queryOptions(
       selectedCategory === "all" ? undefined : { category: selectedCategory },
     ),
@@ -80,7 +92,9 @@ export default function WardrobeScreen() {
       return;
     }
     setIsManualRefresh(true);
-    void queryClient.invalidateQueries({ queryKey: trpc.garment.list.queryKey() });
+    void queryClient.invalidateQueries({
+      queryKey: trpc.garment.list.queryKey(),
+    });
   }, [queryClient, isConnected]);
 
   // Reset manual refresh flag when fetch completes
@@ -117,9 +131,15 @@ export default function WardrobeScreen() {
           },
           onError: (err) => {
             if (err.message === "INVALID_CATEGORY") {
-              showToast({ message: "Try-on not available for this category.", variant: "error" });
+              showToast({
+                message: "Try-on not available for this category.",
+                variant: "error",
+              });
             } else if (err.message === "RENDER_FAILED") {
-              showToast({ message: "Render failed. Try again.", variant: "error" });
+              showToast({
+                message: "Render failed. Try again.",
+                variant: "error",
+              });
             } else {
               showToast({ message: "Something went wrong.", variant: "error" });
             }
@@ -144,9 +164,7 @@ export default function WardrobeScreen() {
         garment={item}
         onPress={() => setSelectedGarment(item)}
         onLongPress={
-          !isStockGarment(item)
-            ? () => setGarmentToDelete(item)
-            : undefined
+          !isStockGarment(item) ? () => setGarmentToDelete(item) : undefined
         }
         columnWidth={COLUMN_WIDTH}
       />
@@ -172,11 +190,19 @@ export default function WardrobeScreen() {
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
         <View className="flex-1 items-center justify-center p-4">
           <ThemedText variant="heading">Something went wrong</ThemedText>
-          <ThemedText variant="body" className="mt-2 text-center text-text-secondary">
-            We couldn't load your wardrobe. Please check your connection and try again.
+          <ThemedText
+            variant="body"
+            className="mt-2 text-center text-text-secondary"
+          >
+            We couldn't load your wardrobe. Please check your connection and try
+            again.
           </ThemedText>
           <View className="mt-6">
-            <Button variant="secondary" label="Try again" onPress={handleRefresh} />
+            <Button
+              variant="secondary"
+              label="Try again"
+              onPress={handleRefresh}
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -187,7 +213,7 @@ export default function WardrobeScreen() {
     <>
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
         {/* Sticky CategoryPills header */}
-        <View className="absolute top-0 right-0 left-0 z-10 bg-white/90 px-4 py-2">
+        <View className="absolute left-0 right-0 top-0 z-10 bg-white/90 px-4 py-2">
           <CategoryPills
             categories={ALL_CATEGORIES}
             selected={selectedCategory}

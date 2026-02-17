@@ -48,10 +48,7 @@ export class FalFashnProvider implements TryOnProvider {
   private readonly falKey: string;
   private readonly webhookUrl: string;
 
-  constructor(
-    config: TryOnProviderConfig,
-    falClient?: FalClient,
-  ) {
+  constructor(config: TryOnProviderConfig, falClient?: FalClient) {
     this.webhookUrl = config.webhookUrl;
     this.falKey = config.falKey;
 

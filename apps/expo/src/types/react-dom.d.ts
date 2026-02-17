@@ -3,9 +3,7 @@
 // which conflicts with the RN-only tsconfig (lib: ["ES2022"], no "dom").
 
 declare module "react-dom/server" {
-  export function renderToStaticMarkup(
-    element: React.ReactElement,
-  ): string;
+  export function renderToStaticMarkup(element: React.ReactElement): string;
   export function renderToString(element: React.ReactElement): string;
 }
 

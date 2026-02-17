@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import * as rq from "@tanstack/react-query";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import ProfileScreen from "./profile";
 

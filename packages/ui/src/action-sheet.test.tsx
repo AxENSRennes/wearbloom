@@ -1,11 +1,13 @@
-import { describe, expect, mock, test } from "bun:test";
 import React from "react";
+import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { ActionSheetProps } from "./action-sheet";
 import { ActionSheet } from "./action-sheet";
 
-function render(props: Partial<ActionSheetProps> & { items?: ActionSheetProps["items"] }) {
+function render(
+  props: Partial<ActionSheetProps> & { items?: ActionSheetProps["items"] },
+) {
   return renderToStaticMarkup(
     React.createElement(ActionSheet, {
       isOpen: true,
@@ -60,9 +62,7 @@ describe("ActionSheet", () => {
 
   test("renders item icons when provided", () => {
     const icon = React.createElement("mock-CameraIcon", null, null);
-    const items = [
-      { label: "Take Photo", icon, onPress: mock(() => {}) },
-    ];
+    const items = [{ label: "Take Photo", icon, onPress: mock(() => {}) }];
     const html = render({ items });
     expect(html).toContain("mock-CameraIcon");
     // Icon wrapper View has mr-3 class
@@ -70,9 +70,7 @@ describe("ActionSheet", () => {
   });
 
   test("does not render icon wrapper when icon not provided", () => {
-    const items = [
-      { label: "Take Photo", onPress: mock(() => {}) },
-    ];
+    const items = [{ label: "Take Photo", onPress: mock(() => {}) }];
     const html = render({ items });
     // No icon wrapper with mr-3 class should be present
     expect(html).not.toContain("mr-3");

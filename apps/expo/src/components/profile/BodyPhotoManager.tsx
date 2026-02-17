@@ -132,10 +132,7 @@ export function BodyPhotoManager() {
               accessibilityRole="image"
               accessibilityLabel="Body photo placeholder"
             >
-              <User
-                size={64}
-                color={wearbloomTheme.colors["text-tertiary"]}
-              />
+              <User size={64} color={wearbloomTheme.colors["text-tertiary"]} />
             </View>
             <ThemedText variant="heading" className="mb-2 text-center">
               Add Your Body Photo

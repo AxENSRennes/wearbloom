@@ -249,7 +249,10 @@ export function StepSeeTheMagic({
 
             {/* Progress text — visible only during loading */}
             {isRendering && (
-              <ThemedText variant="caption" className="mt-4 text-text-secondary">
+              <ThemedText
+                variant="caption"
+                className="mt-4 text-text-secondary"
+              >
                 {progressText}
               </ThemedText>
             )}

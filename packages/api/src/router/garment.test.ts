@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import type { AuthInstance, BackgroundRemoval } from "../trpc";
-import { createTRPCContext } from "../trpc";
 import {
   createMockImageStorage,
   mockDbDelete,
@@ -9,12 +8,18 @@ import {
   mockDbSelect,
   mockDbUpdate,
 } from "../../test/helpers";
+import { createTRPCContext } from "../trpc";
 
 /** JPEG stub with valid magic bytes (0xFF 0xD8 0xFF) */
 const JPEG_STUB = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00]);
 
 const mockSession = {
-  user: { id: "user-123", name: "Test User", email: "test@example.com", isAnonymous: false },
+  user: {
+    id: "user-123",
+    name: "Test User",
+    email: "test@example.com",
+    isAnonymous: false,
+  },
   session: {
     id: "sess-123",
     token: "tok-abc",
@@ -37,15 +42,15 @@ function createMockAuth(
 
 function createMockBackgroundRemoval(): BackgroundRemoval {
   return {
-    removeBackground: mock(() =>
-      Promise.resolve(Buffer.from("mock-cutout")),
-    ),
+    removeBackground: mock(() => Promise.resolve(Buffer.from("mock-cutout"))),
   };
 }
 
 async function createAuthenticatedCaller(
   imageStorage = createMockImageStorage(),
-  backgroundRemoval: BackgroundRemoval | undefined = createMockBackgroundRemoval(),
+  backgroundRemoval:
+    | BackgroundRemoval
+    | undefined = createMockBackgroundRemoval(),
   session: typeof mockSession | null = mockSession,
 ) {
   const { appRouter } = await import("../root");
@@ -245,7 +250,6 @@ describe("garment.upload", () => {
 
     expect(imageStorage.saveGarmentPhoto).toHaveBeenCalled();
   });
-
 });
 
 describe("garment.list", () => {
@@ -441,7 +445,10 @@ describe("garment.delete", () => {
     const { caller, imageStorage } = await createAuthenticatedCaller();
     await caller.garment.delete({ garmentId: "garment-xyz" });
 
-    expect(imageStorage.deleteGarmentFiles).toHaveBeenCalledWith("user-123", "garment-xyz");
+    expect(imageStorage.deleteGarmentFiles).toHaveBeenCalledWith(
+      "user-123",
+      "garment-xyz",
+    );
   });
 
   test("throws NOT_FOUND for non-existent garment", async () => {

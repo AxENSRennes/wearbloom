@@ -1,5 +1,5 @@
-import { describe, expect, mock, test, afterEach, spyOn } from "bun:test";
 import NetInfo from "@react-native-community/netinfo";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { showToast } from "@acme/ui";
 
