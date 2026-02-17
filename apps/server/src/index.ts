@@ -24,6 +24,7 @@ import { createFalWebhookHandler } from "./webhooks/fal";
 
 const logger = pino({ name: "wearbloom-server" });
 const localAuthUrl = `http://localhost:${env.PORT}`;
+const TRPC_ENDPOINT_PREFIX = "/api/trpc";
 
 const auth = initAuth({
   baseUrl: env.BETTER_AUTH_BASE_URL ?? localAuthUrl,
@@ -184,8 +185,46 @@ const cleanupService = createAnonymousCleanupService({ db, logger });
 let lastCleanupTime = 0;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+function getDevCorsOrigin(origin: string | undefined) {
+  if (env.NODE_ENV === "production" || !origin) {
+    return null;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    const isLocalhost =
+      parsedOrigin.hostname === "localhost" ||
+      parsedOrigin.hostname === "127.0.0.1";
+
+    return isLocalhost ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
 const server = http.createServer((req, res) => {
   void (async () => {
+    const corsOrigin = getDevCorsOrigin(req.headers.origin);
+    if (corsOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "content-type, authorization, x-trpc-source",
+      );
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+      );
+      res.setHeader("Vary", "Origin");
+    }
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     if (req.url === "/health") {
       // Throttled fire-and-forget cleanup on health check
       const now = Date.now();
@@ -262,6 +301,10 @@ const server = http.createServer((req, res) => {
     if (req.url?.startsWith("/api/images/")) {
       void imageHandler(req, res);
       return;
+    }
+
+    if (req.url?.startsWith(TRPC_ENDPOINT_PREFIX)) {
+      req.url = req.url.slice(TRPC_ENDPOINT_PREFIX.length) || "/";
     }
 
     trpcHandler(req, res);

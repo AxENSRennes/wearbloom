@@ -2,7 +2,7 @@ import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 import type { PressableProps, TextProps, ViewProps } from "react-native";
 import React from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { createButton } from "@gluestack-ui/core";
+import { createButton } from "@gluestack-ui/core/lib/esm/index.jsx";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 
 import { wearbloomTheme } from "./gluestack-config";
