@@ -6,6 +6,36 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { useStockPhotoStatus } from "./useStockPhotoStatus";
 
+/* ------------------------------------------------------------------ */
+/* useState override via mock.module (irreversible, but transparent)   */
+/* ------------------------------------------------------------------ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _useStateOverride: ((initial: unknown) => any) | null = null;
+
+const OrigReact = await import("react");
+// Capture the original useState reference BEFORE mock.module replaces it
+const _origUseState = OrigReact.useState;
+
+mock.module("react", () => {
+  const wrapped = {
+    ...OrigReact,
+    // Override the named export
+    useState: (...args: unknown[]) => {
+      if (_useStateOverride) return _useStateOverride(args[0]);
+      return _origUseState(...(args as [unknown]));
+    },
+  };
+  // Also patch default.useState so React.useState works
+  wrapped.default = {
+    ...OrigReact.default,
+    useState: wrapped.useState,
+  };
+  return wrapped;
+});
+
+/* ------------------------------------------------------------------ */
+
 interface TestComponentProps {
   onResult: (result: ReturnType<typeof useStockPhotoStatus>) => void;
 }
@@ -18,6 +48,7 @@ function TestComponent({ onResult }: TestComponentProps) {
 
 describe("useStockPhotoStatus", () => {
   afterEach(async () => {
+    _useStateOverride = null;
     mock.restore();
     await AsyncStorage.clear();
   });
@@ -76,5 +107,60 @@ describe("useStockPhotoStatus", () => {
 
   test("exports hook as a function", () => {
     expect(typeof useStockPhotoStatus).toBe("function");
+  });
+
+  test("returns usedStockBodyPhoto: true when source is stock and no DB photo", () => {
+    let useStateCallCount = 0;
+    _useStateOverride = (initial: unknown) => {
+      useStateCallCount++;
+      // Call 1: source state - override to "stock"
+      if (useStateCallCount === 1) return ["stock", mock(() => {})];
+      // Call 2: sourceLoaded state - override to true
+      if (useStateCallCount === 2) return [true, mock(() => {})];
+      // Other useState calls (from other hooks): pass through
+      return [initial, mock(() => {})];
+    };
+
+    let captured: ReturnType<typeof useStockPhotoStatus> | undefined;
+    renderToStaticMarkup(
+      React.createElement(TestComponent, {
+        onResult: (r) => {
+          captured = r;
+        },
+      }),
+    );
+
+    expect(captured?.usedStockBodyPhoto).toBe(true);
+    expect(captured?.isLoading).toBe(false);
+  });
+
+  test("returns usedStockBodyPhoto: false when source is stock BUT DB photo exists", () => {
+    let useStateCallCount = 0;
+    _useStateOverride = (initial: unknown) => {
+      useStateCallCount++;
+      if (useStateCallCount === 1) return ["stock", mock(() => {})];
+      if (useStateCallCount === 2) return [true, mock(() => {})];
+      return [initial, mock(() => {})];
+    };
+
+    spyOn(rq, "useQuery").mockReturnValue({
+      data: { imageId: "photo-xyz", imageUrl: "/api/images/photo-xyz" },
+      isLoading: false,
+      isPending: false,
+      isError: false,
+      error: null,
+      refetch: () => Promise.resolve({} as never),
+    } as never);
+
+    let captured: ReturnType<typeof useStockPhotoStatus> | undefined;
+    renderToStaticMarkup(
+      React.createElement(TestComponent, {
+        onResult: (r) => {
+          captured = r;
+        },
+      }),
+    );
+
+    expect(captured?.usedStockBodyPhoto).toBe(false);
   });
 });

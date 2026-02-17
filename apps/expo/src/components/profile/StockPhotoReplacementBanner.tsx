@@ -11,11 +11,11 @@ export function StockPhotoReplacementBanner(): ReactElement {
   return (
     <View
       className="rounded-xl bg-accent-highlight-soft p-4"
-      accessibilityRole="button"
-      accessibilityLabel="You're using an example body photo. Tap to add your own."
+      accessibilityRole="summary"
+      accessibilityLabel="You're using an example body photo"
     >
       <View className="flex-row items-center gap-3">
-        <Camera size={24} color={wearbloomTheme.colors.primary} />
+        <Camera size={24} color={wearbloomTheme.colors.accent} />
         <View className="flex-1">
           <ThemedText variant="body" className="font-semibold">
             You&apos;re using an example photo

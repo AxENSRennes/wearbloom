@@ -23,10 +23,11 @@ import { createAppleWebhookHandler } from "./webhooks/apple";
 import { createFalWebhookHandler } from "./webhooks/fal";
 
 const logger = pino({ name: "wearbloom-server" });
+const localAuthUrl = `http://localhost:${env.PORT}`;
 
 const auth = initAuth({
-  baseUrl: `http://localhost:${env.PORT}`,
-  productionUrl: `http://localhost:${env.PORT}`,
+  baseUrl: env.BETTER_AUTH_BASE_URL ?? localAuthUrl,
+  productionUrl: env.BETTER_AUTH_PRODUCTION_URL ?? localAuthUrl,
   secret: env.BETTER_AUTH_SECRET,
   appleBundleId: env.APPLE_BUNDLE_ID,
   isDev: env.NODE_ENV !== "production",

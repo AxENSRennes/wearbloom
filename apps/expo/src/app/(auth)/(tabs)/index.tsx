@@ -299,7 +299,6 @@ export default function WardrobeScreen() {
         title="Hide stock garment?"
         message="You can restore it later from Settings."
         confirmLabel="Hide"
-        accessibilityLabel="Hide stock garment confirmation"
       />
       <GarmentDetailSheet
         ref={bottomSheetRef}

@@ -6,6 +6,8 @@ const serverSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(["development", "production"]).default("development"),
+  BETTER_AUTH_BASE_URL: z.url().optional(),
+  BETTER_AUTH_PRODUCTION_URL: z.url().optional(),
   IMAGES_DIR: z.string().default("/data/images"),
   REPLICATE_API_TOKEN: z.string().default(""),
   FAL_KEY: z.string().default(""),
@@ -28,9 +30,19 @@ const serverSchema = z.object({
   APPLE_APP_ID: z.coerce.number().optional(),
 });
 
+const productionAuthSchema = z.object({
+  BETTER_AUTH_BASE_URL: z.url(),
+  BETTER_AUTH_PRODUCTION_URL: z.url(),
+});
+
 const authEnvVars = authEnv();
+const parsedServerEnv = serverSchema.parse(process.env);
+
+if (parsedServerEnv.NODE_ENV === "production") {
+  productionAuthSchema.parse(parsedServerEnv);
+}
 
 export const env = {
-  ...serverSchema.parse(process.env),
+  ...parsedServerEnv,
   ...authEnvVars,
 };
