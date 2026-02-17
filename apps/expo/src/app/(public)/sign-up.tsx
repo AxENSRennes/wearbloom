@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Platform, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as AppleAuthentication from "expo-apple-authentication";
+import type { Href } from "expo-router";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
@@ -124,7 +125,7 @@ export default function SignUpScreen() {
         message: "Add your body photo to continue.",
         variant: "info",
       });
-      router.replace("/(auth)/body-photo");
+      router.replace("/(auth)/body-photo" as Href);
       return;
     }
 
@@ -132,7 +133,7 @@ export default function SignUpScreen() {
       message: "Welcome! Your wardrobe is ready.",
       variant: "success",
     });
-    router.replace("/(auth)/(tabs)");
+    router.replace("/(auth)/(tabs)" as Href);
   }
 
   const appleSignIn = useAppleSignIn(
@@ -317,7 +318,7 @@ export default function SignUpScreen() {
             <Button
               label="Already have an account? Sign in"
               variant="ghost"
-              onPress={() => router.replace("/(public)/sign-in")}
+              onPress={() => router.replace("/(public)/sign-in" as Href)}
               disabled={isLoading}
             />
           )}

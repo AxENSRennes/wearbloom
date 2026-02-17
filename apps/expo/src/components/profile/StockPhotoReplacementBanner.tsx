@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { View } from "react-native";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { Camera } from "lucide-react-native";
 
@@ -29,7 +30,7 @@ export function StockPhotoReplacementBanner(): ReactElement {
         <Button
           label="Add Your Photo"
           variant="secondary"
-          onPress={() => router.push("/(auth)/body-photo")}
+          onPress={() => router.push("/(auth)/body-photo" as Href)}
         />
       </View>
     </View>

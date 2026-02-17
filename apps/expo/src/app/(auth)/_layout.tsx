@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import type { Href } from "expo-router";
 import { Redirect, Stack } from "expo-router";
 
 import { Spinner } from "@acme/ui";
@@ -19,7 +20,7 @@ export default function AuthLayout() {
   }
 
   if (!session || session.user.isAnonymous) {
-    return <Redirect href="/(public)/sign-in" />;
+    return <Redirect href={"/(public)/sign-in" as Href} />;
   }
 
   return (

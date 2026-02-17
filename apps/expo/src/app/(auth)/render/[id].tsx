@@ -12,6 +12,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import type { Href } from "expo-router";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -56,7 +57,10 @@ export default function RenderScreen() {
   const requestRenderMutation = useMutation(
     trpc.tryon.requestRender.mutationOptions({
       onSuccess: (newData) => {
-        router.replace(`/render/${newData.renderId}`);
+        router.replace({
+          pathname: "/render/[id]",
+          params: { id: newData.renderId },
+        } as unknown as Href);
       },
     }),
   );

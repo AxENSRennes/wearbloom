@@ -174,7 +174,7 @@ describe("ProfileScreen", () => {
       hiddenIds: ["garment-1"],
       hideGarment: mock(() => Promise.resolve()),
       unhideGarment: mock(() => Promise.resolve()),
-      toggleShowStock: mock(() => Promise.resolve()),
+      toggleShowStock: mock(() => {}),
       unhideAll: mock(() => Promise.resolve()),
     });
 
@@ -188,7 +188,7 @@ describe("ProfileScreen", () => {
       hiddenIds: [],
       hideGarment: mock(() => Promise.resolve()),
       unhideGarment: mock(() => Promise.resolve()),
-      toggleShowStock: mock(() => Promise.resolve()),
+      toggleShowStock: mock(() => {}),
       unhideAll: mock(() => Promise.resolve()),
     });
 

@@ -258,7 +258,7 @@ describe("AddGarmentScreen — Story 3.5 integration", () => {
   test("uses tabs root route for Browse Wardrobe success navigation", async () => {
     const source = await Bun.file(import.meta.dir + "/add.tsx").text();
     expect(source).toContain('const WARDROBE_ROUTE = "/(auth)/(tabs)/"');
-    expect(source).toContain("router.push(WARDROBE_ROUTE)");
+    expect(source).toContain("router.push(WARDROBE_ROUTE as Href)");
     expect(source).not.toContain('/(auth)/(tabs)/home');
   });
 });

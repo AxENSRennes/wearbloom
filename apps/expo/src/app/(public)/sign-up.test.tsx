@@ -198,7 +198,7 @@ describe("SignUpScreen (onboarding context)", () => {
 
   test("contains fallback routing to body photo when onboarding photo persistence fails", async () => {
     const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
-    expect(source).toContain('router.replace("/(auth)/body-photo")');
+    expect(source).toContain('router.replace("/(auth)/body-photo"');
     expect(source).toContain("requiresBodyPhoto");
   });
 });

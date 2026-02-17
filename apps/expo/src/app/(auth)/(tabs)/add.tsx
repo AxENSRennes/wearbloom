@@ -3,6 +3,7 @@ import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { createId } from "@paralleldrive/cuid2";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -269,7 +270,7 @@ export default function AddGarmentScreen() {
               className="items-center justify-center py-3"
               accessibilityRole="button"
               accessibilityLabel="Browse wardrobe"
-              onPress={() => router.push(WARDROBE_ROUTE)}
+              onPress={() => router.push(WARDROBE_ROUTE as Href)}
             >
               <ThemedText variant="body" className="text-text-secondary">
                 Browse Wardrobe

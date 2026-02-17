@@ -11,8 +11,9 @@
     "ios": "expo run:ios",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "routes:types": "expo customize tsconfig.json",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm routes:types && tsc --noEmit"
   },
   "dependencies": {
     "@acme/ui": "workspace:*",
@@ -53,6 +54,7 @@
     "react": "catalog:react19",
     "react-dom": "catalog:react19",
     "react-native": "~0.81.5",
+    "react-native-css-interop": "0.1.22",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-mmkv": "^4.1.2",
     "react-native-reanimated": "~4.1.3",
@@ -72,6 +74,7 @@
     "@types/bun": "catalog:",
     "@types/react": "catalog:react19",
     "eslint": "catalog:",
+    "metro-cache": "^0.83.3",
     "prettier": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"

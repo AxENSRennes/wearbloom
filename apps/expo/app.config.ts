@@ -1,4 +1,3 @@
-import { withInfoPlist } from "@expo/config-plugins";
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 const APP_NAME = "Wearbloom";
@@ -7,8 +6,8 @@ const APP_SCHEME = "wearbloom";
 const APP_BUNDLE_ID = "com.axel.wearbloom";
 const API_URL = "https://api.wearbloom.app";
 
-export default ({ config, mode }: ConfigContext): ExpoConfig => {
-  const buildMode = process.env.NODE_ENV ?? mode;
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const buildMode = process.env.NODE_ENV ?? "development";
   const isProduction = buildMode === "production";
   const atsConfig = isProduction
     ? {
@@ -99,11 +98,6 @@ export default ({ config, mode }: ConfigContext): ExpoConfig => {
           },
         },
       ],
-      (expoConfig) =>
-        withInfoPlist(expoConfig, (modConfig) => {
-          modConfig.modResults.NSAppTransportSecurity = atsConfig;
-          return modConfig;
-        }),
     ],
   };
 };

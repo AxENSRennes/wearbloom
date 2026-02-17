@@ -70,15 +70,11 @@ export function useStoreKit({ userId }: { userId: string }) {
 
   // Fetch subscription product when StoreKit connection becomes available
   useEffect(() => {
-    if (!connected) {
-      setProductLoadState("idle");
-      setProductLoadError(null);
-      return;
-    }
-
-    if (productLoadState === "idle") {
+    if (!connected || productLoadState !== "idle") return;
+    const timeoutId = setTimeout(() => {
       void retryProductFetch();
-    }
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [connected, productLoadState, retryProductFetch]);
 
   async function handlePurchaseComplete(purchase: Purchase) {
@@ -127,9 +123,9 @@ export function useStoreKit({ userId }: { userId: string }) {
 
   return {
     connected,
-    isReady: productLoadState === "ready",
-    productLoadState,
-    productLoadError,
+    isReady: connected && productLoadState === "ready",
+    productLoadState: connected ? productLoadState : "idle",
+    productLoadError: connected ? productLoadError : null,
     retryProductFetch,
     product: subscriptions[0] ?? null,
     purchase,

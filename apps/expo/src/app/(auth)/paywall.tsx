@@ -1,3 +1,4 @@
+import type { Href } from "expo-router";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { PaywallScreen } from "~/components/subscription/PaywallScreen";
@@ -10,7 +11,7 @@ export default function PaywallRoute() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/(auth)/(tabs)/");
+      router.replace("/(auth)/(tabs)/" as Href);
     }
   };
 
@@ -18,7 +19,7 @@ export default function PaywallRoute() {
     router.replace({
       pathname: "/(auth)/(tabs)/",
       params: pendingGarmentId ? { pendingGarmentId } : undefined,
-    });
+    } as unknown as Href);
   };
 
   return (

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
@@ -28,7 +29,10 @@ export default function OnboardingScreen() {
   );
 
   const handleCreateAccount = useCallback(() => {
-    router.push("/(public)/sign-up?from=onboarding");
+    router.push({
+      pathname: "/(public)/sign-up",
+      params: { from: "onboarding" },
+    } as unknown as Href);
   }, [router]);
 
   const handleTryAnother = useCallback(() => {

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 
 import { useSubscriptionStatus } from "./useSubscriptionStatus";
@@ -15,7 +16,7 @@ export function usePaywallGuard() {
       router.push({
         pathname: "/(auth)/paywall",
         params: { garmentId },
-      });
+      } as unknown as Href);
       return false;
     },
     [canRender, isLoading, isSubscriber, router],

@@ -614,7 +614,7 @@ describe("WardrobeScreen", () => {
         if (
           (showToast as ReturnType<typeof mock>).mock.calls.some(
             (c: unknown[]) =>
-              (c[0] as Record<string, unknown>)?.message ===
+              (c[0] as Record<string, unknown> | undefined)?.message ===
               "Try-on not available for this category.",
           )
         ) {

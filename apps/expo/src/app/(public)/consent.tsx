@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { Href } from "expo-router";
 import { Stack, useRouter } from "expo-router";
 
 import { Button, ThemedPressable, ThemedText } from "@acme/ui";
@@ -11,7 +12,7 @@ export default function ConsentScreen() {
 
   const handleAccept = () => {
     setConsentAccepted();
-    router.replace("/");
+    router.replace("/" as Href);
   };
 
   return (
@@ -34,7 +35,7 @@ export default function ConsentScreen() {
           </ThemedText>
 
           <ThemedPressable
-            onPress={() => router.push("/(public)/privacy")}
+            onPress={() => router.push("/(public)/privacy" as Href)}
             accessible
             accessibilityRole="link"
             accessibilityLabel="Read our Privacy Policy"

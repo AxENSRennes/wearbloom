@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Platform, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as AppleAuthentication from "expo-apple-authentication";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
@@ -36,7 +37,7 @@ export default function SignInScreen() {
       } catch {
         // Non-critical — idempotent grant, credits may already exist
       }
-      router.replace("/(auth)/(tabs)");
+      router.replace("/(auth)/(tabs)" as Href);
     },
     onError: (error: Error) => {
       showToast({
@@ -167,7 +168,7 @@ export default function SignInScreen() {
           <Button
             label="Don't have an account? Create one"
             variant="ghost"
-            onPress={() => router.push("/(public)/sign-up")}
+            onPress={() => router.push("/(public)/sign-up" as Href)}
             disabled={isLoading}
           />
         </View>

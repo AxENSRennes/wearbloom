@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 
 import { cn, ThemedPressable, ThemedText } from "@acme/ui";
@@ -27,7 +28,7 @@ export function CreditCounter({ className }: CreditCounterProps) {
     return (
       <ThemedPressable
         onPress={() => {
-          router.push("/(auth)/paywall");
+          router.push("/(auth)/paywall" as Href);
         }}
         accessibilityRole="button"
         accessibilityLabel="Start free trial"

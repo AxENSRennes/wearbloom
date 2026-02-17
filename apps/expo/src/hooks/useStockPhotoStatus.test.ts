@@ -17,7 +17,7 @@ const OrigReact = await import("react");
 // Capture the original useState reference BEFORE mock.module replaces it
 const _origUseState = OrigReact.useState;
 
-mock.module("react", () => {
+void mock.module("react", () => {
   const wrapped = {
     ...OrigReact,
     // Override the named export

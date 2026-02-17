@@ -72,9 +72,9 @@ And in app logs/server logs:
 - Successful `verifyPurchase` and `restorePurchases`
 
 ### 4. Fix release quality gates (Build readiness)
-- [ ] Resolve Expo typed-route path errors from `pnpm typecheck`.
-- [ ] Resolve Expo lint failures from `pnpm lint`.
-- [ ] Keep tests passing after fixes.
+- [x] Resolve Expo typed-route path errors from `pnpm typecheck`.
+- [x] Resolve Expo lint failures from `pnpm lint`.
+- [x] Keep tests passing after fixes.
 
 Verification:
 ```bash
@@ -94,6 +94,6 @@ pnpm --filter @acme/expo test
 - [ ] All URLs resolve and return valid HTTPS responses.
 - [x] ATS global bypass removed for production.
 - [ ] IAP purchase + restore verified in TestFlight.
-- [ ] `pnpm typecheck` and `pnpm lint` pass.
-- [ ] Expo test suite passes.
+- [x] `pnpm typecheck` and `pnpm lint` pass.
+- [x] Expo test suite passes.
 - [ ] App Store Connect metadata and legal/privacy declarations are complete and consistent.

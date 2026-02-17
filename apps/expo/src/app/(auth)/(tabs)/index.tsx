@@ -1,4 +1,5 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
+import type { Href } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -140,7 +141,10 @@ export default function WardrobeScreen() {
         {
           onSuccess: (data) => {
             bottomSheetRef.current?.close();
-            router.push(`/render/${data.renderId}` as never);
+            router.push({
+              pathname: "/render/[id]",
+              params: { id: data.renderId },
+            } as unknown as Href);
           },
           onError: (err) => {
             if (err.message === "INSUFFICIENT_CREDITS") {
@@ -148,7 +152,7 @@ export default function WardrobeScreen() {
               router.push({
                 pathname: "/(auth)/paywall",
                 params: { garmentId },
-              });
+              } as unknown as Href);
             } else if (err.message === "INVALID_CATEGORY") {
               showToast({
                 message: "Try-on not available for this category.",

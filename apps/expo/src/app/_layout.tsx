@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import type { Href } from "expo-router";
 import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -67,8 +68,8 @@ export default function RootLayout() {
         }}
       >
         <ToastProvider>
-          {!consented && <Redirect href="/(public)/consent" />}
-          {showOnboardingRedirect && <Redirect href="/(onboarding)" />}
+          {!consented && <Redirect href={"/(public)/consent" as Href} />}
+          {showOnboardingRedirect && <Redirect href={"/(onboarding)" as Href} />}
           <Slot />
         </ToastProvider>
         <StatusBar style="dark" />

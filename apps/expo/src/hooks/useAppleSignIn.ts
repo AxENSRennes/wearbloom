@@ -1,4 +1,5 @@
 import * as AppleAuthentication from "expo-apple-authentication";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
@@ -60,7 +61,7 @@ export function useAppleSignIn(options?: {
       if (options?.onSuccess) {
         await options.onSuccess();
       } else {
-        router.replace("/(auth)/(tabs)");
+        router.replace("/(auth)/(tabs)" as Href);
       }
     },
     onError: (error: Error) => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -44,7 +45,7 @@ export default function ProfileScreen() {
     ...trpc.user.deleteAccount.mutationOptions(),
     onSuccess: async () => {
       await authClient.signOut();
-      router.replace("/(public)/sign-in");
+      router.replace("/(public)/sign-in" as Href);
     },
     onError: () => {
       showToast({
@@ -60,7 +61,7 @@ export default function ProfileScreen() {
       await authClient.signOut();
     },
     onSuccess: () => {
-      router.replace("/(public)/sign-in");
+      router.replace("/(public)/sign-in" as Href);
     },
     onError: (error: Error) => {
       showToast({
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
         ) : (
           <ThemedPressable
             className="mb-4 flex-row items-center justify-between rounded-xl bg-surface px-4 py-3"
-            onPress={() => router.push("/(auth)/body-photo")}
+            onPress={() => router.push("/(auth)/body-photo" as Href)}
             accessibilityRole="button"
             accessibilityLabel={
               hasBodyPhoto ? "Update Body Photo" : "Add Body Photo"
@@ -198,7 +199,7 @@ export default function ProfileScreen() {
           </ThemedText>
           <ThemedPressable
             className="flex-row items-center justify-between rounded-xl bg-surface px-4 py-3"
-            onPress={() => router.push("/(public)/privacy")}
+            onPress={() => router.push("/(public)/privacy" as Href)}
             accessibilityRole="link"
             accessibilityLabel="Privacy Policy"
           >
