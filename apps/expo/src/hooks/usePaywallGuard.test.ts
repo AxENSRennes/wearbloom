@@ -26,11 +26,11 @@ const routerMock = {
 // ---------------------------------------------------------------------------
 // Mock hooks
 // ---------------------------------------------------------------------------
-mock.module("~/hooks/useSubscriptionStatus", () => ({
+void mock.module("~/hooks/useSubscriptionStatus", () => ({
   useSubscriptionStatus: () => subscriptionStatusState,
 }));
 
-mock.module("expo-router", () => ({
+void mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",

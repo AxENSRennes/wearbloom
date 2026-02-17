@@ -16,7 +16,7 @@ const appleSignInResult = {
 
 const signInAsyncMock = mock(() => Promise.resolve(appleSignInResult));
 
-mock.module("expo-apple-authentication", () => ({
+void mock.module("expo-apple-authentication", () => ({
   signInAsync: signInAsyncMock,
   AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
   AppleAuthenticationButton: () => null,
@@ -28,11 +28,14 @@ mock.module("expo-apple-authentication", () => ({
 // Mock auth client
 // ---------------------------------------------------------------------------
 const socialSignInMock = mock(() =>
-  Promise.resolve({ data: { user: { id: "user-1" } }, error: null }),
+  Promise.resolve<{
+    data: { user: { id: string } } | null;
+    error: { message: string } | null;
+  }>({ data: { user: { id: "user-1" } }, error: null }),
 );
 const updateUserMock = mock(() => Promise.resolve({ data: null, error: null }));
 
-mock.module("~/utils/auth", () => ({
+void mock.module("~/utils/auth", () => ({
   authClient: {
     signIn: { social: socialSignInMock },
     updateUser: updateUserMock,
@@ -50,7 +53,7 @@ const routerMock = {
   canGoBack: () => true,
 };
 
-mock.module("expo-router", () => ({
+void mock.module("expo-router", () => ({
   useRouter: () => routerMock,
   router: routerMock,
   usePathname: () => "/",
@@ -61,7 +64,7 @@ mock.module("expo-router", () => ({
 // Mock showToast
 // ---------------------------------------------------------------------------
 const showToastMock = mock(() => {});
-mock.module("@acme/ui", () => ({
+void mock.module("@acme/ui", () => ({
   showToast: showToastMock,
 }));
 
@@ -76,7 +79,7 @@ let onSuccessCb: (() => Promise<void>) | undefined;
 let onErrorCb: ((error: Error) => void) | undefined;
 let mutationFnCapture: (() => Promise<unknown>) | undefined;
 
-mock.module("@tanstack/react-query", () => ({
+void mock.module("@tanstack/react-query", () => ({
   QueryClient: class MockQueryClient {},
   QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -134,7 +137,7 @@ function createTrpcProxy(): unknown {
   return new Proxy(() => {}, handler);
 }
 
-mock.module("~/utils/api", () => ({
+void mock.module("~/utils/api", () => ({
   trpc: createTrpcProxy(),
   queryClient: { invalidateQueries: mock(() => Promise.resolve()) },
 }));

@@ -1,10 +1,19 @@
 import { TRPCError } from "@trpc/server";
-import { describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import type { AppleIapDeps, AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
 
 const TEST_USER_ID = "user-credit-test";
+
+// Reset the in-memory mock DB store before each test for isolation
+beforeEach(async () => {
+  const mod = (await import("@acme/db/client")) as unknown as Record<
+    string,
+    unknown
+  >;
+  (mod.__mockDb as { __resetStore?: () => void } | undefined)?.__resetStore?.();
+});
 
 const mockSession = {
   user: { id: TEST_USER_ID, name: "Credit User", email: "credit@example.com" },

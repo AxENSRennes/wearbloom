@@ -15,7 +15,7 @@ const queryState = {
   refetch: mock(() => Promise.resolve()),
 };
 
-mock.module("@tanstack/react-query", () => ({
+void mock.module("@tanstack/react-query", () => ({
   QueryClient: class MockQueryClient {
     constructor() {}
   },
@@ -46,7 +46,7 @@ function createTrpcProxy(): unknown {
   return new Proxy(() => {}, handler);
 }
 
-mock.module("~/utils/api", () => ({
+void mock.module("~/utils/api", () => ({
   trpc: createTrpcProxy(),
   queryClient: { invalidateQueries: mock(() => Promise.resolve()) },
 }));
@@ -111,7 +111,7 @@ describe("useSubscription", () => {
   test("maps active subscription data correctly", () => {
     const expiresDate = new Date("2026-03-01T00:00:00Z");
     queryState.data = {
-      state: "active",
+      state: "subscribed",
       isSubscriber: true,
       rendersAllowed: true,
       isUnlimited: true,
@@ -121,7 +121,7 @@ describe("useSubscription", () => {
     };
     const result = runHook();
 
-    expect(result.state).toBe("active");
+    expect(result.state).toBe("subscribed");
     expect(result.isSubscriber).toBe(true);
     expect(result.rendersAllowed).toBe(true);
     expect(result.isUnlimited).toBe(true);

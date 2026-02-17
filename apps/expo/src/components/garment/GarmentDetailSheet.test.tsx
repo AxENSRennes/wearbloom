@@ -214,7 +214,7 @@ describe("GarmentDetailSheet", () => {
     );
 
     // Button should not have disabled attribute and should have standard accessibility hint
-    const buttonMatch = html.match(/<mock-Button[^>]*>/);
+    const buttonMatch = /<mock-Button[^>]*>/.exec(html);
     expect(buttonMatch).not.toBeNull();
     const buttonTag = buttonMatch?.[0] ?? "";
     expect(buttonTag).not.toContain("disabled");

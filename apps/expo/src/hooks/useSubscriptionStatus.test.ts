@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { useSubscriptionStatus } from "./useSubscriptionStatus";
 
 function mockUseQuery(data: Record<string, unknown> | null, isLoading = false) {
-  mock.module("@tanstack/react-query", () => ({
+  void mock.module("@tanstack/react-query", () => ({
     QueryClient: class {},
     QueryClientProvider: ({ children }: { children: unknown }) => children,
     useMutation: () => ({

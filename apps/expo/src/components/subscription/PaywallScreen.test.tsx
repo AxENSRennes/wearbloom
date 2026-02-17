@@ -38,16 +38,16 @@ const subscriptionState = {
 // ---------------------------------------------------------------------------
 // Mock hooks — MUST be before PaywallScreen import (irreversible)
 // ---------------------------------------------------------------------------
-mock.module("~/hooks/useStoreKit", () => ({
+void mock.module("~/hooks/useStoreKit", () => ({
   useStoreKit: () => storeKitState,
 }));
 
-mock.module("~/hooks/useSubscription", () => ({
+void mock.module("~/hooks/useSubscription", () => ({
   useSubscription: () => subscriptionState,
 }));
 
 // Mock auth with a session providing userId
-mock.module("~/utils/auth", () => ({
+void mock.module("~/utils/auth", () => ({
   authClient: {
     useSession: () => ({
       data: { user: { id: "test-user-id" } },

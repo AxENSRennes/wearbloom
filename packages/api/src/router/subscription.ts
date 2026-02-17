@@ -44,6 +44,11 @@ export const subscriptionRouter = {
     let state: SubscriptionStateName | "free_with_credits" | "free_no_credits";
     if (isSubscriber) {
       state = subState.state;
+    } else if (
+      subscription &&
+      (subState.state === "expired" || subState.state === "cancelled")
+    ) {
+      state = subState.state;
     } else if (balance.remaining > 0) {
       state = "free_with_credits";
     } else {

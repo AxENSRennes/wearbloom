@@ -14,7 +14,7 @@ function renderWithSubscription(
   } | null,
   isLoading = false,
 ) {
-  mock.module("@tanstack/react-query", () => ({
+  void mock.module("@tanstack/react-query", () => ({
     QueryClient: class {},
     QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),

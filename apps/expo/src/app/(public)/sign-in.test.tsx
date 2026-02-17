@@ -28,7 +28,7 @@ function resetMutationTracking() {
   onSuccessCallbacks.length = 0;
 }
 
-mock.module("@tanstack/react-query", () => ({
+void mock.module("@tanstack/react-query", () => ({
   QueryClient: class {},
   QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),
@@ -168,9 +168,9 @@ describe("SignInScreen credit grant behavior", () => {
     // Make the grantCredits.mutateAsync reject
     const grantCreditsMutation = useMutationCalls[0];
     assertDefined(grantCreditsMutation, "grantCreditsMutation should exist");
-    (
-      grantCreditsMutation.result.mutateAsync as ReturnType<typeof mock>
-    ).mockImplementation(() => Promise.reject(new Error("grant failed")));
+    grantCreditsMutation.result.mutateAsync.mockImplementation(() =>
+      Promise.reject(new Error("grant failed")),
+    );
 
     // Invoke onSuccess (simulating successful sign-in, but credit grant will fail)
     // This should NOT throw — the catch block is silent

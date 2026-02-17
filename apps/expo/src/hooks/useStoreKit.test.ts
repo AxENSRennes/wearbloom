@@ -17,9 +17,11 @@ const iapState = {
   restorePurchases: mock(() => Promise.resolve()),
 };
 
-const getAvailablePurchasesMock = mock(() => Promise.resolve([]));
+const getAvailablePurchasesMock = mock(() =>
+  Promise.resolve([] as { purchaseToken?: string | null }[]),
+);
 
-mock.module("expo-iap", () => ({
+void mock.module("expo-iap", () => ({
   useIAP: (opts?: {
     onPurchaseSuccess?: (purchase: unknown) => void;
     onPurchaseError?: (error: unknown) => void;
@@ -56,7 +58,7 @@ const restoreMutationState = {
 
 let mutationCallIndex = 0;
 
-mock.module("@tanstack/react-query", () => ({
+void mock.module("@tanstack/react-query", () => ({
   QueryClient: class MockQueryClient {
     constructor() {}
     invalidateQueries = invalidateQueriesMock;
@@ -96,7 +98,7 @@ function createTrpcProxy(): unknown {
 
 const trpcProxy = createTrpcProxy();
 
-mock.module("~/utils/api", () => ({
+void mock.module("~/utils/api", () => ({
   trpc: trpcProxy,
   queryClient: {
     invalidateQueries: invalidateQueriesMock,
@@ -167,7 +169,7 @@ describe("useStoreKit", () => {
     iapState.subscriptions = [mockProduct];
     const result = runHook();
 
-    expect(result.product).toEqual(mockProduct);
+    expect(result.product as unknown).toBe(mockProduct);
   });
 
   test("product is null when subscriptions array is empty", () => {
@@ -202,7 +204,7 @@ describe("useStoreKit", () => {
     const testError = new Error("Verification failed");
     verifyMutationState.error = testError;
     const result = runHook();
-    expect(result.verifyError).toBe(testError);
+    expect(result.verifyError as Error | null).toBe(testError);
   });
 
   test("onPurchaseSuccess calls verifyMutation.mutateAsync with purchaseToken", async () => {
