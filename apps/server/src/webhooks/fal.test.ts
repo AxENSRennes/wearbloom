@@ -151,7 +151,9 @@ beforeEach(() => {
     // Image download
     return Promise.resolve({
       ok: true,
-      headers: new Headers({ "content-length": "10" }),
+      headers: {
+        get: mock((_name: string) => null),
+      },
       arrayBuffer: () => Promise.resolve(Buffer.from("image-data")),
     } as unknown as Response);
   }) as unknown as typeof globalThis.fetch;
