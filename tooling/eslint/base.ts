@@ -2,6 +2,7 @@ import * as path from "node:path";
 import { includeIgnoreFile } from "@eslint/compat";
 import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
+import jestPlugin from "eslint-plugin-jest";
 import turboPlugin from "eslint-plugin-turbo";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
@@ -85,14 +86,39 @@ export const baseConfig = defineConfig(
       },
     },
   },
-  // Relax rules for test files not included in package tsconfigs
+  // Test file overrides — Bun's spyOn/mock return `any`, causing false positives
+  // on type-aware rules. Only these specific rules are relaxed; all other
+  // type-checking remains active in test files.
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "**/test/setup.ts"],
-    ...tseslint.configs.disableTypeChecked,
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/test/**/*.ts"],
+    plugins: {
+      jest: jestPlugin,
+    },
+    settings: {
+      jest: { globalPackage: "bun:test" },
+    },
     rules: {
-      ...tseslint.configs.disableTypeChecked.rules,
-      "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-require-imports": "off",
+      // jest-aware version understands expect(obj.method) patterns
+      "@typescript-eslint/unbound-method": "off",
+      "jest/unbound-method": "error",
+
+      // Bun spyOn/mock returns `any` — fires on .mockRestore(), assignments, etc.
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+
+      // Mocked functions may return sync values where originals were async
+      "@typescript-eslint/await-thenable": "off",
+      "@typescript-eslint/require-await": "off",
+
+      // Common test patterns: noop stubs and test assertions
+      "@typescript-eslint/no-empty-function": [
+        "error",
+        { allow: ["arrowFunctions", "methods", "constructors"] },
+      ],
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
 );

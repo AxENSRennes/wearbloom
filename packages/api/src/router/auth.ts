@@ -4,7 +4,8 @@ import { protectedProcedure, publicProcedure } from "../trpc";
 
 export const authRouter = {
   getSession: publicProcedure.query(({ ctx }) => {
-    return ctx.session;
+    if (!ctx.session) return null;
+    return { user: ctx.session.user };
   }),
   getEphemeralStatus: publicProcedure.query(({ ctx }) => {
     if (!ctx.session) {

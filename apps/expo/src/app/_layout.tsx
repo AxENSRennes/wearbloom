@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -6,13 +7,14 @@ import {
   DMSerifDisplay_400Regular,
   useFonts,
 } from "@expo-google-fonts/dm-serif-display";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
 import { ToastProvider } from "@acme/ui";
 
 import { queryClient } from "~/utils/api";
 import { hasAcceptedConsent } from "~/utils/consent-store";
 import { hasCompletedOnboarding } from "~/utils/onboardingState";
+import { clientPersister } from "~/utils/queryPersister";
 
 import "../styles.css";
 
@@ -54,13 +56,23 @@ export default function RootLayout() {
   const showOnboardingRedirect = consented && onboardingDone === false;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        {!consented && <Redirect href="/(public)/consent" />}
-        {showOnboardingRedirect && <Redirect href="/(onboarding)" />}
-        <Slot />
-      </ToastProvider>
-      <StatusBar style="dark" />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: clientPersister,
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => query.state.status === "success",
+          },
+        }}
+      >
+        <ToastProvider>
+          {!consented && <Redirect href="/(public)/consent" />}
+          {showOnboardingRedirect && <Redirect href="/(onboarding)" />}
+          <Slot />
+        </ToastProvider>
+        <StatusBar style="dark" />
+      </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

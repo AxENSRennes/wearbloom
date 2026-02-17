@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 
 import type { AuthInstance } from "../trpc";
 import { createTRPCContext } from "../trpc";
@@ -41,6 +41,10 @@ function createMockAuth(
   };
 }
 
+afterEach(() => {
+  mock.restore();
+});
+
 describe("auth.getSession", () => {
   test("returns session when authenticated", async () => {
     const { appRouter } = await import("../root");
@@ -53,7 +57,7 @@ describe("auth.getSession", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.getSession();
 
-    expect(result).toEqual(mockSession);
+    expect(result).toEqual({ user: mockSession.user });
     expect(result?.user.id).toBe("user-456");
     expect(result?.user.email).toBe("auth@example.com");
   });

@@ -22,7 +22,7 @@ describe("AuthLayout", () => {
     } as ReturnType<typeof authClient.useSession>);
 
     const html = render(createElement(AuthLayout));
-    expect(html).toContain("mock-Slot");
+    expect(html).toContain("mock-Stack");
   });
 
   test("redirects when no session", () => {

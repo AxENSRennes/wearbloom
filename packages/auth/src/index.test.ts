@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
 // Access the mock betterAuth from preload
-const { mockBetterAuth } = require("../test/setup") as {
+const { mockBetterAuth } = (await import("../test/setup")) as {
   mockBetterAuth: ReturnType<typeof mock>;
 };
 

@@ -48,6 +48,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-apple-authentication",
     "expo-iap",
     [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Allow Wearbloom to access your photos to set your body avatar.",
+        cameraPermission:
+          "Allow Wearbloom to use your camera to take a body photo.",
+      },
+    ],
+    [
       "expo-splash-screen",
       {
         backgroundColor: "#E4E4E7",

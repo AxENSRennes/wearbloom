@@ -102,6 +102,7 @@ interface ButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   className?: string;
+  accessibilityHint?: string;
 }
 
 const SPINNER_COLORS: Record<ButtonVariant, string> = {
@@ -117,6 +118,7 @@ export function Button({
   disabled = false,
   isLoading = false,
   className,
+  accessibilityHint,
 }: ButtonProps) {
   return (
     <GluestackButton
@@ -130,6 +132,7 @@ export function Button({
       accessible
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: disabled || isLoading, busy: isLoading }}
     >
       {isLoading ? (

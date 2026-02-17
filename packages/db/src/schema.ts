@@ -1,6 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { sql } from "drizzle-orm";
-import { check, index, pgEnum, pgTable } from "drizzle-orm/pg-core";
+import { check, index, pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
@@ -46,13 +46,135 @@ export const accounts = pgTable("accounts", (t) => ({
   updatedAt: t.timestamp().defaultNow().notNull(),
 }));
 
-export const verifications = pgTable("verifications", (t) => ({
-  id: t.text().primaryKey(),
-  identifier: t.text().notNull(),
-  value: t.text().notNull(),
-  expiresAt: t.timestamp().notNull(),
-  createdAt: t.timestamp(),
-  updatedAt: t.timestamp(),
+export const bodyPhotos = pgTable(
+  "body_photos",
+  (t) => ({
+    id: t
+      .text()
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    userId: t
+      .text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    filePath: t.text().notNull(),
+    mimeType: t.text().notNull(),
+    width: t.integer(),
+    height: t.integer(),
+    fileSize: t.integer(),
+    createdAt: t.timestamp().defaultNow().notNull(),
+    updatedAt: t.timestamp().defaultNow().notNull(),
+  }),
+  (table) => [unique().on(table.userId)],
+);
+
+export const GARMENT_CATEGORIES = [
+  "tops",
+  "bottoms",
+  "dresses",
+  "shoes",
+  "outerwear",
+] as const;
+
+export const garmentCategory = pgEnum("garment_category", GARMENT_CATEGORIES);
+
+export const BG_REMOVAL_STATUSES = [
+  "pending",
+  "completed",
+  "failed",
+  "skipped",
+] as const;
+
+export const bgRemovalStatusEnum = pgEnum(
+  "bg_removal_status",
+  BG_REMOVAL_STATUSES,
+);
+
+export const garments = pgTable("garments", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  category: garmentCategory().notNull(),
+  imagePath: t.text().notNull(),
+  cutoutPath: t.text(),
+  bgRemovalStatus: bgRemovalStatusEnum().default("pending").notNull(),
+  mimeType: t.text().notNull(),
+  width: t.integer(),
+  height: t.integer(),
+  fileSize: t.integer(),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t.timestamp().defaultNow().notNull(),
+}));
+
+export const RENDER_STATUSES = [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+] as const;
+
+export const TRYON_PROVIDERS = [
+  "fal_fashn",
+  "fal_nano_banana",
+  "google_vto",
+] as const;
+
+export const renderStatus = pgEnum("render_status", RENDER_STATUSES);
+export const tryOnProviderEnum = pgEnum("try_on_provider", TRYON_PROVIDERS);
+
+export const tryOnRenders = pgTable("try_on_renders", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  garmentId: t
+    .text()
+    .notNull()
+    .references(() => garments.id, { onDelete: "cascade" }),
+  provider: tryOnProviderEnum().notNull(),
+  status: renderStatus().notNull().default("pending"),
+  jobId: t.text(),
+  resultPath: t.text(),
+  errorCode: t.text(),
+  creditConsumed: t.boolean().notNull().default(false),
+  createdAt: t.timestamp().defaultNow().notNull(),
+  updatedAt: t
+    .timestamp()
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+}));
+
+export const FEEDBACK_RATINGS = ["thumbs_up", "thumbs_down"] as const;
+
+export const feedbackRating = pgEnum("feedback_rating", FEEDBACK_RATINGS);
+
+export const renderFeedback = pgTable("render_feedback", (t) => ({
+  id: t
+    .text()
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  renderId: t
+    .text()
+    .notNull()
+    .references(() => tryOnRenders.id, { onDelete: "cascade" })
+    .unique(),
+  userId: t
+    .text()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  rating: feedbackRating().notNull(),
+  category: t.text(),
+  createdAt: t.timestamp().defaultNow().notNull(),
 }));
 
 export const subscriptionStatus = pgEnum("subscription_status", [
@@ -123,3 +245,12 @@ export const credits = pgTable(
     ),
   ],
 );
+
+export const verifications = pgTable("verifications", (t) => ({
+  id: t.text().primaryKey(),
+  identifier: t.text().notNull(),
+  value: t.text().notNull(),
+  expiresAt: t.timestamp().notNull(),
+  createdAt: t.timestamp().notNull().defaultNow(),
+  updatedAt: t.timestamp().notNull().defaultNow(),
+}));

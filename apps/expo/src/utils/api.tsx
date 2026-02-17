@@ -11,7 +11,7 @@ import { getBaseUrl } from "./base-url";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // ...
+      gcTime: 1000 * 60 * 60 * 24, // 24h — must be >= persist maxAge
     },
   },
 });

@@ -1,12 +1,14 @@
 import { View } from "react-native";
-import { Redirect, Slot } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 
 import { Spinner } from "@acme/ui";
 
+import { useReconnectSync } from "~/hooks/useReconnectSync";
 import { authClient } from "~/utils/auth";
 
 export default function AuthLayout() {
   const { data: session, isPending } = authClient.useSession();
+  useReconnectSync();
 
   if (isPending) {
     return (
@@ -20,5 +22,18 @@ export default function AuthLayout() {
     return <Redirect href="/(public)/sign-in" />;
   }
 
-  return <Slot />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="body-photo" />
+      <Stack.Screen
+        name="render/[id]"
+        options={{
+          presentation: "fullScreenModal",
+          headerShown: false,
+          animation: "fade",
+        }}
+      />
+    </Stack>
+  );
 }

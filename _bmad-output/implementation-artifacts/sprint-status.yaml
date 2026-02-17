@@ -41,31 +41,31 @@ story_location: /home/axel/tryonfit/_bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Project Foundation & User Identity
-  epic-1: in-progress
+  epic-1: done
   1-1-initialize-monorepo-from-starter-template: done
   1-2-design-system-and-app-shell-navigation: done
   1-3-user-registration-and-authentication: done
   1-4-privacy-consent-and-policy-screen: done
-  1-5-body-avatar-photo-management: backlog
-  1-6-account-deletion: backlog
+  1-5-body-avatar-photo-management: done
+  1-6-account-deletion: done
   epic-1-retrospective: optional
 
   # Epic 2: Wardrobe Management
-  epic-2: backlog
-  2-1-add-garment-with-photo-capture: backlog
-  2-2-wardrobe-grid-and-category-browsing: backlog
-  2-3-stock-garment-library: backlog
-  2-4-remove-garment: backlog
-  2-5-offline-browsing-and-data-sync: backlog
+  epic-2: done
+  2-1-add-garment-with-photo-capture: done
+  2-2-wardrobe-grid-and-category-browsing: done
+  2-3-stock-garment-library: done
+  2-4-remove-garment: done
+  2-5-offline-browsing-and-data-sync: done
   epic-2-retrospective: optional
 
   # Epic 3: AI Virtual Try-On Experience
-  epic-3: backlog
-  3-1-garment-detail-bottom-sheet: backlog
-  3-2-ai-try-on-render-pipeline: backlog
-  3-3-render-result-and-loading-experience: backlog
-  3-4-render-retry-quality-feedback-and-credit-policy: backlog
-  3-5-garment-category-validation: backlog
+  epic-3: in-progress
+  3-1-garment-detail-bottom-sheet: done
+  3-2-ai-try-on-render-pipeline: done
+  3-3-render-result-and-loading-experience: done
+  3-4-render-retry-quality-feedback-and-credit-policy: done
+  3-5-garment-category-validation: review
   epic-3-retrospective: optional
 
   # Epic 4: Monetization & Subscription

@@ -9,6 +9,7 @@
     "./spinner": "./src/spinner.tsx",
     "./toast": "./src/toast.tsx",
     "./pressable": "./src/pressable.tsx",
+    "./alert-dialog": "./src/alert-dialog.tsx",
     "./gluestack-config": "./src/gluestack-config.ts"
   },
   "license": "MIT",
@@ -20,6 +21,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@gluestack-ui/actionsheet": "^0.2.53",
     "@gluestack-ui/core": "^3.0.12",
     "@gluestack-ui/utils": "^3.0.15",
     "tailwind-merge": "^3.3.1"
@@ -28,11 +30,14 @@
     "@acme/eslint-config": "workspace:*",
     "@acme/prettier-config": "workspace:*",
     "@acme/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:react19",
+    "@types/react-dom": "catalog:react19",
     "eslint": "catalog:",
     "nativewind": "~4.1.23",
     "prettier": "catalog:",
     "react": "catalog:react19",
+    "react-dom": "catalog:react19",
     "react-native": "*",
     "typescript": "catalog:"
   },

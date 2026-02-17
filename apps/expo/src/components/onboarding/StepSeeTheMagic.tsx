@@ -13,8 +13,9 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import { useMutation } from "@tanstack/react-query";
 
-import { Button, Spinner, ThemedText } from "@acme/ui";
+import { Button, showToast, Spinner, ThemedText } from "@acme/ui";
 
 import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
 import { mockRequestRender } from "~/services/mockRenderService";
@@ -39,9 +40,6 @@ export function StepSeeTheMagic({
   bodyPhotoUri,
   garmentUri,
 }: StepSeeTheMagicProps): ReactElement {
-  // TODO(Epic-3): Replace with TanStack Query mutation state
-  const [isRendering, setIsRendering] = useState(true);
-  const [resultUri, setResultUri] = useState<string | null>(null);
   const [progressText, setProgressText] = useState<string>(
     PROGRESS_TEXTS[0].text,
   );
@@ -55,6 +53,46 @@ export function StepSeeTheMagic({
   // Shimmer sweep during loading
   const shimmerTranslate = useSharedValue(-1);
 
+  // Auth + render mutation (H-1: TanStack Query, H-2: proper auth error handling)
+  const renderMutation = useMutation({
+    mutationFn: async () => {
+      const authResult = await authClient.signIn.anonymous();
+      if (authResult.error) {
+        throw new Error(authResult.error.message ?? "Anonymous sign-in failed");
+      }
+      return mockRequestRender(
+        bodyPhotoUri ?? "stock-body-01",
+        garmentUri ?? "stock-garment",
+      );
+    },
+    onSuccess: () => {
+      if (!reducedMotion) {
+        resultOpacity.value = withTiming(1, { duration: 500 });
+      } else {
+        resultOpacity.value = 1;
+      }
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    onError: () => {
+      showToast({
+        message: "Something went wrong. Try again.",
+        variant: "error",
+      });
+    },
+  });
+
+  // Derive loading/result state from mutation
+  const isRendering = !renderMutation.data && !renderMutation.isError;
+  const resultUri = renderMutation.data?.resultUri ?? null;
+
+  // Trigger on mount
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    renderMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pulsing scale animation
   useEffect(() => {
     if (!reducedMotion && isRendering) {
       scale.value = withRepeat(
@@ -113,44 +151,6 @@ export function StepSeeTheMagic({
 
     return () => clearInterval(interval);
   }, [isRendering]);
-
-  // Sign in anonymously and trigger mock render on mount
-  useEffect(() => {
-    const cancelledRef = { current: false };
-    startTimeRef.current = Date.now();
-
-    void (async () => {
-      // Sign in anonymously if not already signed in
-      try {
-        await authClient.signIn.anonymous();
-      } catch {
-        // Already signed in or auth unavailable — proceed with render
-      }
-      // TODO(Epic-3): Gate render behind successful anonymous session
-
-      const result = await mockRequestRender(
-        bodyPhotoUri ?? "stock-body-01",
-        garmentUri ?? "stock-garment",
-      );
-      if (!cancelledRef.current) {
-        setResultUri(result.resultUri);
-        setIsRendering(false);
-        // Cross-fade the result image in (or instant swap for reduced motion)
-        if (!reducedMotion) {
-          resultOpacity.value = withTiming(1, { duration: 500 });
-        } else {
-          resultOpacity.value = 1;
-        }
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-    })();
-
-    return () => {
-      cancelledRef.current = true;
-    };
-    // Only run on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleCreateAccount = useCallback(() => {
     onCreateAccount();
@@ -249,7 +249,7 @@ export function StepSeeTheMagic({
 
             {/* Progress text — visible only during loading */}
             {isRendering && (
-              <ThemedText variant="caption" className="mt-4 text-white/70">
+              <ThemedText variant="caption" className="mt-4 text-text-secondary">
                 {progressText}
               </ThemedText>
             )}

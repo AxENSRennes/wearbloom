@@ -10,10 +10,17 @@ function mockComponent(name: string) {
   const comp = React.forwardRef(
     (props: Record<string, unknown>, ref: unknown) => {
       const { children, ...rest } = props;
+      // Support render-prop children (e.g. Pressable's ({ pressed }) => ...)
+      const resolved =
+        typeof children === "function"
+          ? (children as (state: { pressed: boolean }) => React.ReactNode)({
+              pressed: false,
+            })
+          : children;
       return React.createElement(
         `mock-${name}`,
         { ...rest, ref },
-        children as React.ReactNode,
+        resolved as React.ReactNode,
       );
     },
   );
@@ -24,7 +31,7 @@ function mockComponent(name: string) {
 // @gluestack-ui/core has a package.json main pointing to .js but actual
 // files are .jsx — Bun cannot resolve it. Mock createButton to return a
 // minimal compound component for unit-testing purposes.
-mock.module("@gluestack-ui/core", () => {
+void mock.module("@gluestack-ui/core", () => {
   return {
     createButton: (_styledComponents: Record<string, unknown>) => {
       const Comp = React.forwardRef(
@@ -58,10 +65,11 @@ mock.module("@gluestack-ui/core", () => {
   };
 });
 
-mock.module("react-native", () => ({
+void mock.module("react-native", () => ({
   View: mockComponent("View"),
   Text: mockComponent("Text"),
   Pressable: mockComponent("Pressable"),
+  Modal: mockComponent("Modal"),
   ActivityIndicator: mockComponent("ActivityIndicator"),
   Animated: {
     Value: class AnimatedValue {

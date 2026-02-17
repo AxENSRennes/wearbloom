@@ -36,6 +36,12 @@ export type { ThemedPressableProps } from "./pressable";
 
 export { ToastProvider, showToast } from "./toast";
 
+export { AlertDialog, alertDialogButtonStyle, alertDialogButtonTextStyle } from "./alert-dialog";
+export type { AlertDialogProps } from "./alert-dialog";
+
+export { ActionSheet } from "./action-sheet";
+export type { ActionSheetProps, ActionSheetItem } from "./action-sheet";
+
 // ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------

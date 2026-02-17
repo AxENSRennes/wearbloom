@@ -9,11 +9,19 @@ import {
   createAnonymousCleanupService,
   createTRPCContext,
 } from "@acme/api";
+import { RateLimiter } from "@acme/api/rateLimit";
+import { createBackgroundRemoval } from "@acme/api/services/backgroundRemoval";
+import { createImageStorage } from "@acme/api/services/imageStorage";
 import { initAuth } from "@acme/auth";
 import { db } from "@acme/db/client";
 
+import type { TryOnProvider } from "@acme/api/services/tryOnProvider";
+
 import { env } from "./env";
+import { createImageHandler } from "./routes/images";
+import { nodeHeadersToHeaders } from "./utils/headers";
 import { createAppleWebhookHandler } from "./webhooks/apple";
+import { createFalWebhookHandler } from "./webhooks/fal";
 
 const logger = pino({ name: "wearbloom-server" });
 
@@ -86,20 +94,51 @@ if (env.APPLE_IAP_KEY_ID && env.APPLE_IAP_ISSUER_ID && env.APPLE_IAP_KEY_PATH) {
   );
 }
 
-function nodeHeadersToHeaders(nodeHeaders: http.IncomingHttpHeaders): Headers {
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(nodeHeaders)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const v of value) {
-        headers.append(key, v);
-      }
-    } else {
-      headers.set(key, value);
-    }
-  }
-  return headers;
+const imageStorage = createImageStorage({
+  basePath: env.IMAGES_DIR,
+  logger,
+});
+
+const backgroundRemoval = env.REPLICATE_API_TOKEN
+  ? createBackgroundRemoval({
+      replicateApiToken: env.REPLICATE_API_TOKEN,
+      logger,
+    })
+  : undefined;
+
+// Initialize TryOnProvider
+let tryOnProvider: TryOnProvider | undefined;
+try {
+  const { createTryOnProvider } = await import(
+    "@acme/api/services/tryOnProvider"
+  );
+  tryOnProvider = createTryOnProvider(env.ACTIVE_TRYON_PROVIDER, {
+    falKey: env.FAL_KEY,
+    webhookUrl: env.FAL_WEBHOOK_URL,
+    nanoBananaModelId: env.FAL_NANO_BANANA_MODEL_ID,
+    googleCloudProject: env.GOOGLE_CLOUD_PROJECT,
+    googleCloudRegion: env.GOOGLE_CLOUD_REGION,
+    googleAccessToken: env.GOOGLE_ACCESS_TOKEN,
+    renderTimeoutMs: env.RENDER_TIMEOUT_MS,
+  });
+  logger.info(
+    { provider: env.ACTIVE_TRYON_PROVIDER },
+    "TryOnProvider initialized",
+  );
+} catch (err) {
+  logger.warn({ err }, "TryOnProvider initialization failed — try-on features disabled");
 }
+
+const imageHandler = createImageHandler({ db, auth, imageStorage });
+
+const falWebhookHandler = createFalWebhookHandler({
+  db,
+  imageStorage,
+  logger,
+});
+
+// Rate limiter for auth routes — IP-based (audit S10-1)
+const authLimiter = new RateLimiter(30, 60_000); // 30 req/min per IP
 
 const MAX_BODY_SIZE = 65536; // 64KB — generous for Apple JWS payloads
 
@@ -126,6 +165,10 @@ const trpcHandler = createHTTPHandler({
       auth,
       freeCreditsCount: env.FREE_CREDITS_COUNT,
       appleIap,
+      imageStorage,
+      backgroundRemoval,
+      tryOnProvider,
+      renderTimeoutMs: env.RENDER_TIMEOUT_MS,
       anonymousConfig: {
         sessionTtlHours: env.ANONYMOUS_SESSION_TTL_HOURS,
         maxRenders: env.ANONYMOUS_MAX_RENDERS,
@@ -197,8 +240,24 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    if (req.url?.startsWith("/api/webhooks/fal") && req.method === "POST") {
+      void falWebhookHandler(req, res);
+      return;
+    }
+
     if (req.url?.startsWith("/api/auth")) {
+      const ip = req.socket.remoteAddress ?? "unknown";
+      if (!authLimiter.check(ip)) {
+        res.writeHead(429, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Too many requests" }));
+        return;
+      }
       void authHandler(req, res);
+      return;
+    }
+
+    if (req.url?.startsWith("/api/images/")) {
+      void imageHandler(req, res);
       return;
     }
 
@@ -214,3 +273,4 @@ logger.info(
   { port: env.PORT, path: "/api/webhooks/apple" },
   "Apple webhook available",
 );
+logger.info({ port: env.PORT, path: "/api/images/*" }, "Image routes available");

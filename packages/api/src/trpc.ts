@@ -4,6 +4,8 @@ import { ZodError } from "zod/v4";
 
 import { db } from "@acme/db/client";
 
+import { RateLimiter } from "./rateLimit";
+
 export interface AuthInstance {
   api: {
     getSession: (opts: { headers: Headers }) => Promise<{
@@ -41,6 +43,57 @@ export interface AppleIapDeps {
   };
 }
 
+export interface ImageStorage {
+  saveBodyPhoto(
+    userId: string,
+    fileData: Buffer,
+    mimeType: string,
+  ): Promise<string>;
+  deleteBodyPhoto(userId: string, filePath: string): Promise<void>;
+  deleteUserDirectory(userId: string): Promise<void>;
+  getAbsolutePath(filePath: string): string;
+  streamFile(filePath: string): ReadableStream;
+  saveGarmentPhoto(
+    userId: string,
+    fileData: Buffer,
+    mimeType: string,
+    garmentId: string,
+  ): Promise<string>;
+  saveCutoutPhoto(
+    userId: string,
+    fileData: Buffer,
+    garmentId: string,
+  ): Promise<string>;
+  deleteGarmentFiles(userId: string, garmentId: string): Promise<void>;
+  saveRenderResult(
+    userId: string,
+    renderId: string,
+    imageData: Buffer,
+    mimeType: string,
+  ): Promise<string>;
+}
+
+export interface BackgroundRemoval {
+  removeBackground(imageBuffer: Buffer): Promise<Buffer | null>;
+}
+
+export interface TryOnProviderContext {
+  submitRender(
+    personImage: string | Buffer,
+    garmentImage: string | Buffer,
+    options?: { category?: string; mode?: string },
+  ): Promise<{ jobId: string }>;
+  getResult(
+    jobId: string,
+  ): Promise<{
+    imageUrl: string;
+    imageData?: Buffer;
+    contentType: string;
+  } | null>;
+  readonly name: string;
+  readonly supportedCategories: readonly string[];
+}
+
 export interface AnonymousConfig {
   sessionTtlHours: number;
   maxRenders: number;
@@ -51,6 +104,10 @@ export const createTRPCContext = async (opts: {
   auth: AuthInstance;
   freeCreditsCount?: number;
   appleIap?: AppleIapDeps;
+  imageStorage?: ImageStorage;
+  backgroundRemoval?: BackgroundRemoval;
+  tryOnProvider?: TryOnProviderContext;
+  renderTimeoutMs?: number;
   anonymousConfig?: AnonymousConfig;
 }) => {
   const session = await opts.auth.api.getSession({ headers: opts.headers });
@@ -61,6 +118,10 @@ export const createTRPCContext = async (opts: {
     headers: opts.headers,
     freeCreditsCount: opts.freeCreditsCount ?? 3,
     appleIap: opts.appleIap,
+    imageStorage: opts.imageStorage,
+    backgroundRemoval: opts.backgroundRemoval,
+    tryOnProvider: opts.tryOnProvider,
+    renderTimeoutMs: opts.renderTimeoutMs,
     anonymousConfig: opts.anonymousConfig,
   };
 };
@@ -97,36 +158,31 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   });
 });
 
-const enforceEphemeralLimits = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+// ---------------------------------------------------------------------------
+// Rate-limited procedures (audit S10-1)
+// ---------------------------------------------------------------------------
+export const renderLimiter = new RateLimiter(10, 60_000); // 10 req/min per user
+export const uploadLimiter = new RateLimiter(20, 60_000); // 20 req/min per user
+
+/** For AI render requests — most expensive operation. */
+export const renderProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!renderLimiter.check(ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "RATE_LIMIT_EXCEEDED",
+    });
   }
-
-  if (ctx.session.user.isAnonymous) {
-    const ttlHours = ctx.anonymousConfig?.sessionTtlHours ?? 24;
-    const ttlMs = ttlHours * 60 * 60 * 1000;
-    const sessionAge =
-      Date.now() - new Date(ctx.session.session.createdAt).getTime();
-
-    if (sessionAge > ttlMs) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "ANONYMOUS_SESSION_EXPIRED",
-      });
-    }
-
-    // TODO: Enable when renders table exists (Story 3.2)
-    // Check render usage:
-    // const existingRenders = await ctx.db.select().from(renders).where(eq(renders.userId, ctx.session.user.id));
-    // const maxRenders = ctx.anonymousConfig?.maxRenders ?? 1;
-    // if (existingRenders.length >= maxRenders) {
-    //   throw new TRPCError({ code: "FORBIDDEN", message: "ANONYMOUS_LIMIT_REACHED" });
-    // }
-  }
-
-  return next({
-    ctx: { session: { ...ctx.session, user: ctx.session.user } },
-  });
+  return next();
 });
 
-export const ephemeralProcedure = t.procedure.use(enforceEphemeralLimits);
+/** For file uploads (garment photos, body photos). */
+export const uploadProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!uploadLimiter.check(ctx.session.user.id)) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "RATE_LIMIT_EXCEEDED",
+    });
+  }
+  return next();
+});
+
