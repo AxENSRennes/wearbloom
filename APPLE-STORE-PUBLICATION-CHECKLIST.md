@@ -36,17 +36,36 @@ NODE_ENV=development pnpm --filter @acme/expo exec expo config --type introspect
 ```
 
 ### 3. Ensure Apple IAP is fully configured end-to-end (Blocker)
-- [ ] Provide server env vars: `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_PATH`, `APPLE_APP_ID`.
-- [ ] Provision required cert files used by verifier:
+- [ ] Set IAP server env vars: `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_PATH`.
+- [ ] Set app identity vars: `APPLE_BUNDLE_ID` and `APPLE_APP_ID` (required for production verification).
+- [ ] Restart server and confirm logs include `Apple IAP configured and ready` (and do not include `Apple IAP not configured`).
+- [ ] Ensure `APPLE_IAP_KEY_PATH` points to an existing `.p8` key readable by the server process.
+- [ ] Ensure `./certs` contains:
   - `AppleRootCA-G3.cer`
   - `AppleComputerRootCertificate.cer`
   - `AppleIncRootCertificate.cer`
-- [ ] Ensure webhook endpoint is live and reachable from Apple (`/api/webhooks/apple`).
-- [ ] Validate purchase + restore flow on TestFlight/Sandbox user.
+- [ ] Confirm `POST /api/webhooks/apple` is reachable over HTTPS.
+- [ ] Confirm webhook probe does not return `503` with `APPLE_IAP_NOT_CONFIGURED`.
+- [ ] Complete one TestFlight/Sandbox purchase for `com.wearbloom.weekly`.
+- [ ] Run restore flow from app and confirm subscription updates are processed.
 
 Verification:
 ```bash
-curl -I https://api.wearbloom.app/health
+# 1) Files exist
+test -f "$APPLE_IAP_KEY_PATH"
+test -f ./certs/AppleRootCA-G3.cer
+test -f ./certs/AppleComputerRootCertificate.cer
+test -f ./certs/AppleIncRootCertificate.cer
+
+# 2) Server reachable
+curl -i https://api.wearbloom.app/health
+
+# 3) Apple webhook route is live and IAP is configured
+# Expected: HTTP 400 with {"error":"MISSING_SIGNED_PAYLOAD"}
+# Not expected: HTTP 503 with {"error":"APPLE_IAP_NOT_CONFIGURED"}
+curl -i -X POST https://api.wearbloom.app/api/webhooks/apple \
+  -H "content-type: application/json" \
+  -d '{}'
 ```
 And in app logs/server logs:
 - No `APPLE_IAP_NOT_CONFIGURED`
