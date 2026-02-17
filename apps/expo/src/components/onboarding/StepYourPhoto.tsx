@@ -9,7 +9,11 @@ import * as ImagePicker from "expo-image-picker";
 import { Button, showToast, ThemedText } from "@acme/ui";
 
 import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
-import { setOnboardingBodyPhotoSource } from "~/utils/onboardingState";
+import {
+  clearOnboardingOwnBodyPhotoUri,
+  setOnboardingBodyPhotoSource,
+  setOnboardingOwnBodyPhotoUri,
+} from "~/utils/onboardingState";
 
 export interface StepYourPhotoProps {
   onPhotoSelected: (uri: string, isStock: boolean) => void;
@@ -26,9 +30,11 @@ export function StepYourPhoto({
   const handleUsePhoto = useCallback(() => {
     if (isUsingStock) {
       void setOnboardingBodyPhotoSource("stock");
+      void clearOnboardingOwnBodyPhotoUri();
       onPhotoSelected("stock-body-01", true);
     } else if (selectedUri) {
       void setOnboardingBodyPhotoSource("own");
+      void setOnboardingOwnBodyPhotoUri(selectedUri);
       onPhotoSelected(selectedUri, false);
     }
   }, [onPhotoSelected, selectedUri, isUsingStock]);
@@ -56,6 +62,7 @@ export function StepYourPhoto({
       setSelectedUri(uri);
       setIsUsingStock(false);
       void setOnboardingBodyPhotoSource("own");
+      void setOnboardingOwnBodyPhotoUri(uri);
       onPhotoSelected(uri, false);
     }
   }, [onPhotoSelected]);
@@ -83,6 +90,7 @@ export function StepYourPhoto({
       setSelectedUri(uri);
       setIsUsingStock(false);
       void setOnboardingBodyPhotoSource("own");
+      void setOnboardingOwnBodyPhotoUri(uri);
       onPhotoSelected(uri, false);
     }
   }, [onPhotoSelected]);

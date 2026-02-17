@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 
-import { cn, ThemedText } from "@acme/ui";
+import { cn, ThemedPressable, ThemedText } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
 
@@ -9,6 +10,7 @@ interface CreditCounterProps {
 }
 
 export function CreditCounter({ className }: CreditCounterProps) {
+  const router = useRouter();
   const { data, isLoading } = useQuery(
     trpc.subscription.getSubscriptionStatus.queryOptions(),
   );
@@ -21,24 +23,31 @@ export function CreditCounter({ className }: CreditCounterProps) {
     return null;
   }
 
-  const label =
-    data.creditsRemaining > 0
-      ? `${data.creditsRemaining} free render${data.creditsRemaining !== 1 ? "s" : ""} left`
-      : "Start free trial";
-
-  const a11yLabel =
-    data.creditsRemaining > 0
-      ? `${data.creditsRemaining} free renders remaining`
-      : "Start free trial";
+  if (data.creditsRemaining === 0) {
+    return (
+      <ThemedPressable
+        onPress={() => {
+          router.push("/(auth)/paywall");
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Start free trial"
+        accessibilityHint="Opens subscription options"
+      >
+        <ThemedText variant="caption" className={cn("text-accent", className)}>
+          Start free trial
+        </ThemedText>
+      </ThemedPressable>
+    );
+  }
 
   return (
     <ThemedText
       variant="caption"
       className={cn("text-text-secondary", className)}
       accessible
-      accessibilityLabel={a11yLabel}
+      accessibilityLabel={`${data.creditsRemaining} free renders remaining`}
     >
-      {label}
+      {`${data.creditsRemaining} free render${data.creditsRemaining !== 1 ? "s" : ""} left`}
     </ThemedText>
   );
 }

@@ -2,10 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
+  clearOnboardingOwnBodyPhotoUri,
   getOnboardingBodyPhotoSource,
+  getOnboardingOwnBodyPhotoUri,
   hasCompletedOnboarding,
   markOnboardingComplete,
   setOnboardingBodyPhotoSource,
+  setOnboardingOwnBodyPhotoUri,
 } from "./onboardingState";
 
 describe("onboardingState", () => {
@@ -58,5 +61,29 @@ describe("onboardingBodyPhotoSource", () => {
     expect(await getOnboardingBodyPhotoSource()).toBe("stock");
     await setOnboardingBodyPhotoSource("own");
     expect(await getOnboardingBodyPhotoSource()).toBe("own");
+  });
+});
+
+describe("onboardingOwnBodyPhotoUri", () => {
+  afterEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  test("getOnboardingOwnBodyPhotoUri returns null when not set", async () => {
+    const result = await getOnboardingOwnBodyPhotoUri();
+    expect(result).toBeNull();
+  });
+
+  test("setOnboardingOwnBodyPhotoUri stores uri", async () => {
+    await setOnboardingOwnBodyPhotoUri("file:///tmp/body.jpg");
+    const result = await getOnboardingOwnBodyPhotoUri();
+    expect(result).toBe("file:///tmp/body.jpg");
+  });
+
+  test("clearOnboardingOwnBodyPhotoUri removes stored uri", async () => {
+    await setOnboardingOwnBodyPhotoUri("file:///tmp/body.jpg");
+    await clearOnboardingOwnBodyPhotoUri();
+    const result = await getOnboardingOwnBodyPhotoUri();
+    expect(result).toBeNull();
   });
 });

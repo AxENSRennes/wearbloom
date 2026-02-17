@@ -770,4 +770,11 @@ describe("WardrobeScreen", () => {
 
     expect(html).not.toContain("Offline");
   });
+
+  test("wires paywall guard before requesting render", async () => {
+    const source = await Bun.file(import.meta.dir + "/index.tsx").text();
+    expect(source).toContain("usePaywallGuard");
+    expect(source).toContain("guardRender(garmentId)");
+    expect(source).toContain('pathname: "/(auth)/paywall"');
+  });
 });

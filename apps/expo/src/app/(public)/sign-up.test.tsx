@@ -189,11 +189,17 @@ describe("SignUpScreen (onboarding context)", () => {
 
   test("passes onboarding completion callback to Apple Sign-In hook", async () => {
     const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
-    // useAppleSignIn should receive onSuccess with markOnboardingComplete for onboarding context
+    // useAppleSignIn should receive onboarding onSuccess callback
     const hookCallIndex = source.indexOf("useAppleSignIn(");
     const hookSection = source.substring(hookCallIndex, hookCallIndex + 300);
-    expect(hookSection).toContain("markOnboardingComplete");
+    expect(hookSection).toContain("completeSignUpFlow");
     expect(hookSection).toContain("onSuccess");
+  });
+
+  test("contains fallback routing to body photo when onboarding photo persistence fails", async () => {
+    const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
+    expect(source).toContain('router.replace("/(auth)/body-photo")');
+    expect(source).toContain("requiresBodyPhoto");
   });
 });
 

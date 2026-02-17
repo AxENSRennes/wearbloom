@@ -64,6 +64,7 @@ describe("usePaywallGuard", () => {
     subscriptionStatusState.isSubscriber = false;
     subscriptionStatusState.creditsRemaining = 3;
     subscriptionStatusState.state = "free_with_credits";
+    subscriptionStatusState.isLoading = false;
     routerMock.push.mockClear();
   });
 
@@ -91,5 +92,15 @@ describe("usePaywallGuard", () => {
       pathname: "/(auth)/paywall",
       params: { garmentId: "garment-42" },
     });
+  });
+
+  test("guardRender returns true while subscription status is loading", () => {
+    subscriptionStatusState.isLoading = true;
+    subscriptionStatusState.canRender = false;
+    subscriptionStatusState.isSubscriber = false;
+
+    const { guardRender } = runHook();
+    expect(guardRender("garment-42")).toBe(true);
+    expect(routerMock.push).not.toHaveBeenCalled();
   });
 });

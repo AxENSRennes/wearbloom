@@ -5,10 +5,11 @@ import { useSubscriptionStatus } from "./useSubscriptionStatus";
 
 export function usePaywallGuard() {
   const router = useRouter();
-  const { canRender, isSubscriber } = useSubscriptionStatus();
+  const { canRender, isSubscriber, isLoading } = useSubscriptionStatus();
 
   const guardRender = useCallback(
     (garmentId: string): boolean => {
+      if (isLoading) return true;
       if (canRender || isSubscriber) return true;
 
       router.push({
@@ -17,7 +18,7 @@ export function usePaywallGuard() {
       });
       return false;
     },
-    [canRender, isSubscriber, router],
+    [canRender, isLoading, isSubscriber, router],
   );
 
   return { guardRender };

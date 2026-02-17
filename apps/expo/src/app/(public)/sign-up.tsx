@@ -10,7 +10,13 @@ import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
-import { markOnboardingComplete } from "~/utils/onboardingState";
+import { compressImage } from "~/utils/imageCompressor";
+import {
+  clearOnboardingOwnBodyPhotoUri,
+  getOnboardingBodyPhotoSource,
+  getOnboardingOwnBodyPhotoUri,
+  markOnboardingComplete,
+} from "~/utils/onboardingState";
 
 const PLACEHOLDER_COLOR = wearbloomTheme.colors["text-tertiary"];
 
@@ -41,24 +47,7 @@ export default function SignUpScreen() {
       return result.data;
     },
     onSuccess: async () => {
-      if (isFromOnboarding) {
-        await markOnboardingComplete();
-        // TODO(Story-1.5): Associate onboarding body photo with user profile after body avatar management is implemented
-        // TODO(Epic-2): Stock garments should appear in wardrobe grid after wardrobe management is implemented
-      }
-      try {
-        await grantCredits.mutateAsync();
-      } catch {
-        showToast({
-          message: "Credits will be granted later",
-          variant: "info",
-        });
-      }
-      showToast({
-        message: "Welcome! Your wardrobe is ready.",
-        variant: "success",
-      });
-      router.replace("/(auth)/(tabs)");
+      await completeSignUpFlow();
     },
     onError: (error: Error) => {
       const msg = error.message;
@@ -80,16 +69,77 @@ export default function SignUpScreen() {
     },
   });
 
+  const uploadBodyPhoto = useMutation(
+    trpc.user.uploadBodyPhoto.mutationOptions(),
+  );
+
+  async function completeSignUpFlow(options?: { skipCreditGrant?: boolean }) {
+    let requiresBodyPhoto = false;
+
+    if (isFromOnboarding) {
+      const source = await getOnboardingBodyPhotoSource();
+      if (source === "own") {
+        const onboardingPhotoUri = await getOnboardingOwnBodyPhotoUri();
+        if (!onboardingPhotoUri) {
+          requiresBodyPhoto = true;
+          await clearOnboardingOwnBodyPhotoUri();
+        } else {
+          try {
+            const compressed = await compressImage(onboardingPhotoUri);
+            const formData = new FormData();
+            formData.append("photo", {
+              uri: compressed.uri,
+              type: "image/jpeg",
+              name: "body-avatar.jpg",
+            } as unknown as Blob);
+            formData.append("width", String(compressed.width));
+            formData.append("height", String(compressed.height));
+            await uploadBodyPhoto.mutateAsync(formData);
+            await clearOnboardingOwnBodyPhotoUri();
+          } catch {
+            requiresBodyPhoto = true;
+            await clearOnboardingOwnBodyPhotoUri();
+          }
+        }
+      } else {
+        await clearOnboardingOwnBodyPhotoUri();
+      }
+
+      await markOnboardingComplete();
+    }
+
+    if (!options?.skipCreditGrant) {
+      try {
+        await grantCredits.mutateAsync();
+      } catch {
+        showToast({
+          message: "Credits will be granted later",
+          variant: "info",
+        });
+      }
+    }
+
+    if (requiresBodyPhoto) {
+      showToast({
+        message: "Add your body photo to continue.",
+        variant: "info",
+      });
+      router.replace("/(auth)/body-photo");
+      return;
+    }
+
+    showToast({
+      message: "Welcome! Your wardrobe is ready.",
+      variant: "success",
+    });
+    router.replace("/(auth)/(tabs)");
+  }
+
   const appleSignIn = useAppleSignIn(
     isFromOnboarding
       ? {
           onSuccess: async () => {
-            await markOnboardingComplete();
-            showToast({
-              message: "Welcome! Your wardrobe is ready.",
-              variant: "success",
-            });
-            router.replace("/(auth)/(tabs)");
+            await completeSignUpFlow({ skipCreditGrant: true });
           },
         }
       : undefined,

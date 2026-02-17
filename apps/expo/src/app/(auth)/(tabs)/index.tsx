@@ -20,6 +20,7 @@ import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
+import { usePaywallGuard } from "~/hooks/usePaywallGuard";
 import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
 import { isStockGarment } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
@@ -45,6 +46,7 @@ export default function WardrobeScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isConnected } = useNetworkStatus();
+  const { guardRender } = usePaywallGuard();
   const { hiddenIds, showStock, hideGarment } = useStockGarmentPreferences();
   const [isManualRefresh, setIsManualRefresh] = useState(false);
 
@@ -128,6 +130,11 @@ export default function WardrobeScreen() {
 
   const handleTryOn = useCallback(
     (garmentId: string) => {
+      if (!guardRender(garmentId)) {
+        bottomSheetRef.current?.close();
+        return;
+      }
+
       requestRenderMutation.mutate(
         { garmentId },
         {
@@ -136,7 +143,13 @@ export default function WardrobeScreen() {
             router.push(`/render/${data.renderId}` as never);
           },
           onError: (err) => {
-            if (err.message === "INVALID_CATEGORY") {
+            if (err.message === "INSUFFICIENT_CREDITS") {
+              bottomSheetRef.current?.close();
+              router.push({
+                pathname: "/(auth)/paywall",
+                params: { garmentId },
+              });
+            } else if (err.message === "INVALID_CATEGORY") {
               showToast({
                 message: "Try-on not available for this category.",
                 variant: "error",
@@ -153,7 +166,7 @@ export default function WardrobeScreen() {
         },
       );
     },
-    [requestRenderMutation, router],
+    [guardRender, requestRenderMutation, router],
   );
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {

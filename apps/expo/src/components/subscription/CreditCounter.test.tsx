@@ -77,5 +77,6 @@ describe("CreditCounter", () => {
       canRender: false,
     });
     expect(html).toContain("Start free trial");
+    expect(html).toContain('accessibilityRole="button"');
   });
 });
