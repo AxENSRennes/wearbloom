@@ -21,7 +21,8 @@ describe("ConsentScreen", () => {
   test("renders data usage explanation text", () => {
     const html = render(createElement(ConsentScreen));
     expect(html).toContain("We collect your photos and wardrobe data");
-    expect(html).toContain("never shared with third parties");
+    expect(html).toContain("shared only with essential providers");
+    expect(html).toContain("not used for advertising or marketing");
   });
 
   test("renders privacy policy link text", () => {

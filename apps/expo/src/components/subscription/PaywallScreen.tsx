@@ -25,6 +25,7 @@ import { authClient } from "~/utils/auth";
 type ViewState = "ready" | "success" | "declined" | "error";
 type DisplayState =
   | "loading"
+  | "productError"
   | "ready"
   | "processing"
   | "restoring"
@@ -69,6 +70,9 @@ export function PaywallScreen({
     isRestoring,
     product,
     isReady,
+    productLoadState,
+    productLoadError,
+    retryProductFetch,
     purchaseError,
     verifyError,
   } = useStoreKit({ userId });
@@ -123,7 +127,8 @@ export function PaywallScreen({
     __testDisplayState ??
     (() => {
       if (viewState !== "ready") return viewState;
-      if (!isReady) return "loading";
+      if (productLoadState === "error") return "productError";
+      if (!isReady || productLoadState === "loading") return "loading";
       if (isPurchasing) return "processing";
       if (isRestoring) return "restoring";
       return "ready";
@@ -177,6 +182,11 @@ export function PaywallScreen({
     setViewState("ready");
   }, []);
 
+  const handleRetryProducts = useCallback(async () => {
+    setViewState("ready");
+    await retryProductFetch();
+  }, [retryProductFetch]);
+
   // -------------------------------------------------------------------------
   // Loading state
   // -------------------------------------------------------------------------
@@ -185,6 +195,38 @@ export function PaywallScreen({
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 items-center justify-center">
           <Spinner />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Product load error — retry prompt
+  // -------------------------------------------------------------------------
+  if (displayState === "productError") {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <CloseButton onClose={onClose} />
+        <View className="flex-1 items-center justify-center gap-4 p-6">
+          <ThemedText variant="body" className="text-center text-error">
+            Couldn't load App Store products
+          </ThemedText>
+          <ThemedText
+            variant="caption"
+            className="text-center text-text-secondary"
+          >
+            {productLoadError?.message ??
+              "Try again in a moment or restore an existing subscription."}
+          </ThemedText>
+          <View className="w-full gap-3">
+            <Button label="Retry" onPress={() => void handleRetryProducts()} />
+            <Button
+              label="Restore Purchases"
+              variant="secondary"
+              onPress={() => void handleRestore()}
+            />
+            <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
+          </View>
         </View>
       </SafeAreaView>
     );

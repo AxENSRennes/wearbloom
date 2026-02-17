@@ -28,7 +28,9 @@ export default function ConsentScreen() {
             className="text-center text-text-secondary"
           >
             We collect your photos and wardrobe data to power AI try-on. Your
-            data is stored securely and never shared with third parties.
+            data is stored securely, shared only with essential providers
+            (AI processing and Apple billing), and not used for advertising or
+            marketing.
           </ThemedText>
 
           <ThemedPressable

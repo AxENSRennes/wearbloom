@@ -33,6 +33,7 @@ const CATEGORIES = [
   "shoes",
   "outerwear",
 ] as const;
+const WARDROBE_ROUTE = "/(auth)/(tabs)/" as const;
 
 // ---------------------------------------------------------------------------
 // State machine
@@ -268,7 +269,7 @@ export default function AddGarmentScreen() {
               className="items-center justify-center py-3"
               accessibilityRole="button"
               accessibilityLabel="Browse wardrobe"
-              onPress={() => router.push("/(auth)/(tabs)/home")}
+              onPress={() => router.push(WARDROBE_ROUTE)}
             >
               <ThemedText variant="body" className="text-text-secondary">
                 Browse Wardrobe

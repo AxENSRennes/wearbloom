@@ -9,6 +9,12 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient, trpc } from "~/utils/api";
 
 const SUBSCRIPTION_SKU = "com.wearbloom.weekly";
+type ProductLoadState = "idle" | "loading" | "ready" | "error";
+
+function toError(value: unknown) {
+  if (value instanceof Error) return value;
+  return new Error("STOREKIT_PRODUCTS_UNAVAILABLE");
+}
 
 export function useStoreKit({ userId }: { userId: string }) {
   const {
@@ -27,7 +33,9 @@ export function useStoreKit({ userId }: { userId: string }) {
     },
   });
 
-  const [isReady, setIsReady] = useState(false);
+  const [productLoadState, setProductLoadState] =
+    useState<ProductLoadState>("idle");
+  const [productLoadError, setProductLoadError] = useState<Error | null>(null);
   const [purchaseError, setPurchaseError] = useState<ExpoPurchaseError | null>(
     null,
   );
@@ -46,17 +54,32 @@ export function useStoreKit({ userId }: { userId: string }) {
     trpc.subscription.restorePurchases.mutationOptions(),
   );
 
-  // Fetch subscription product on connect
-  useEffect(() => {
-    if (connected && !isReady) {
-      fetchProducts({ skus: [SUBSCRIPTION_SKU], type: "subs" })
-        .then(() => setIsReady(true))
-        .catch(() => {
-          // Product not configured yet in App Store Connect
-          setIsReady(false);
-        });
+  const retryProductFetch = useCallback(async () => {
+    if (!connected) return;
+
+    setProductLoadState("loading");
+    setProductLoadError(null);
+    try {
+      await fetchProducts({ skus: [SUBSCRIPTION_SKU], type: "subs" });
+      setProductLoadState("ready");
+    } catch (error) {
+      setProductLoadState("error");
+      setProductLoadError(toError(error));
     }
-  }, [connected, isReady, fetchProducts]);
+  }, [connected, fetchProducts]);
+
+  // Fetch subscription product when StoreKit connection becomes available
+  useEffect(() => {
+    if (!connected) {
+      setProductLoadState("idle");
+      setProductLoadError(null);
+      return;
+    }
+
+    if (productLoadState === "idle") {
+      void retryProductFetch();
+    }
+  }, [connected, productLoadState, retryProductFetch]);
 
   async function handlePurchaseComplete(purchase: Purchase) {
     // Server validates the transaction via JWS token.
@@ -104,7 +127,10 @@ export function useStoreKit({ userId }: { userId: string }) {
 
   return {
     connected,
-    isReady,
+    isReady: productLoadState === "ready",
+    productLoadState,
+    productLoadError,
+    retryProductFetch,
     product: subscriptions[0] ?? null,
     purchase,
     restore,

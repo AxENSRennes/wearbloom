@@ -26,6 +26,9 @@ const storeKitState = {
     ],
   } as Record<string, unknown> | null,
   isReady: true,
+  productLoadState: "ready" as "idle" | "loading" | "ready" | "error",
+  productLoadError: null as Error | null,
+  retryProductFetch: mock(() => Promise.resolve()),
   connected: true,
   purchaseError: null as { code: string; message: string } | null,
   verifyError: null as Error | null,
@@ -79,6 +82,9 @@ function resetMocks() {
     ],
   };
   storeKitState.isReady = true;
+  storeKitState.productLoadState = "ready";
+  storeKitState.productLoadError = null;
+  storeKitState.retryProductFetch = mock(() => Promise.resolve());
   storeKitState.connected = true;
   storeKitState.purchaseError = null;
   storeKitState.verifyError = null;
@@ -161,9 +167,21 @@ describe("PaywallScreen", () => {
   // --- Loading state ---
 
   test("shows loading state when product not ready", () => {
-    storeKitState.isReady = false;
+    storeKitState.productLoadState = "loading";
     const html = render();
     // Should not show the full paywall content
+    expect(html).not.toContain("Unlimited Try-Ons");
+  });
+
+  test("shows retry UI when StoreKit products fail to load", () => {
+    storeKitState.productLoadState = "error";
+    storeKitState.productLoadError = new Error("Product fetch failed");
+
+    const html = render();
+
+    expect(html).toContain("load App Store products");
+    expect(html).toContain("Retry");
+    expect(html).toContain("Restore Purchases");
     expect(html).not.toContain("Unlimited Try-Ons");
   });
 

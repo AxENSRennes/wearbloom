@@ -161,6 +161,8 @@ describe("useStoreKit", () => {
 
     expect(result.connected).toBe(false);
     expect(result.isReady).toBe(false);
+    expect(result.productLoadState).toBe("idle");
+    expect(result.productLoadError).toBeNull();
     expect(result.product).toBeNull();
     expect(result.isPurchasing).toBe(false);
     expect(result.isRestoring).toBe(false);
@@ -300,5 +302,27 @@ describe("useStoreKit", () => {
     expect(restoreMutateAsync).toHaveBeenCalledWith({
       signedTransactions: ["valid-token"],
     });
+  });
+
+  test("retryProductFetch requests subscription SKU", async () => {
+    iapState.connected = true;
+    const result = runHook();
+
+    await result.retryProductFetch();
+
+    expect(iapState.fetchProducts).toHaveBeenCalledWith({
+      skus: ["com.wearbloom.weekly"],
+      type: "subs",
+    });
+  });
+
+  test("retryProductFetch does not throw when fetchProducts fails", async () => {
+    iapState.connected = true;
+    iapState.fetchProducts.mockImplementation(() =>
+      Promise.reject(new Error("network down")),
+    );
+    const result = runHook();
+
+    await expect(result.retryProductFetch()).resolves.toBeUndefined();
   });
 });
