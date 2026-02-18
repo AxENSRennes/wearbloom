@@ -87,9 +87,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Dokploy redeploy
+      - name: Trigger Dokploy deploy
         run: |
-          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/trpc/application.redeploy" \
-            -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
+          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/application.deploy" \
+            -H "accept: application/json" \
             -H "Content-Type: application/json" \
-            -d '{"json":{"applicationId":"${{ secrets.DOKPLOY_APP_ID }}"}}'
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -d '{"applicationId":"${{ secrets.DOKPLOY_APP_ID }}"}'
