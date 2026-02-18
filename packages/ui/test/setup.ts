@@ -31,7 +31,7 @@ function mockComponent(name: string) {
 // @gluestack-ui/core has a package.json main pointing to .js but actual
 // files are .jsx — Bun cannot resolve it. Mock createButton to return a
 // minimal compound component for unit-testing purposes.
-void mock.module("@gluestack-ui/core", () => {
+const gluestackCoreMock = () => {
   return {
     createButton: (_styledComponents: Record<string, unknown>) => {
       const Comp = React.forwardRef(
@@ -63,7 +63,10 @@ void mock.module("@gluestack-ui/core", () => {
       });
     },
   };
-});
+};
+
+void mock.module("@gluestack-ui/core", gluestackCoreMock);
+void mock.module("@gluestack-ui/core/lib/esm/index.jsx", gluestackCoreMock);
 
 void mock.module("react-native", () => ({
   View: mockComponent("View"),
