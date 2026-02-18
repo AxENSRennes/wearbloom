@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 const DEFAULT_PRODUCTION_API_URL = "https://api.wearbloom.app";
@@ -20,11 +21,22 @@ function getConfiguredApiUrl() {
 export const getBaseUrl = () => {
   const configuredApiUrl = getConfiguredApiUrl();
   const debuggerHost = Constants.expoConfig?.hostUri;
-  const localhost = debuggerHost?.split(":")[0];
+  const hostFromExpo = debuggerHost?.split(":")[0];
 
   // Dev client / Expo Go: keep local server default when available.
-  if (__DEV__ && localhost) {
-    return `http://${localhost}:3000`;
+  if (__DEV__) {
+    if (Platform.OS === "web") {
+      const location = Reflect.get(globalThis, "location") as
+        | Pick<Location, "hostname" | "protocol">
+        | undefined;
+      const hostname = location?.hostname;
+      if (hostname) {
+        return `${location.protocol}//${hostname}:3000`;
+      }
+    }
+    if (hostFromExpo) {
+      return `http://${hostFromExpo}:3000`;
+    }
   }
 
   // Standalone/TestFlight or explicit config.

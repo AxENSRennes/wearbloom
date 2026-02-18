@@ -10,8 +10,8 @@ import { setConsentAccepted } from "~/utils/consent-store";
 export default function ConsentScreen() {
   const router = useRouter();
 
-  const handleAccept = () => {
-    setConsentAccepted();
+  const handleAccept = async () => {
+    await setConsentAccepted();
     router.replace("/" as Href);
   };
 

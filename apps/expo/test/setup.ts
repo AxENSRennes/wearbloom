@@ -104,7 +104,11 @@ const store = new Map<string, string>();
 
 mockModuleWithResolve("expo-secure-store", () => ({
   getItem: (key: string) => store.get(key) ?? null,
+  getItemAsync: async (key: string) => store.get(key) ?? null,
   setItem: (key: string, value: string) => {
+    store.set(key, value);
+  },
+  setItemAsync: async (key: string, value: string) => {
     store.set(key, value);
   },
   deleteItemAsync: async (key: string) => {
