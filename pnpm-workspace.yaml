@@ -35,6 +35,7 @@ onlyBuiltDependencies:
 
 overrides:
   "@types/minimatch": 5.1.2
+  react-native-svg: 15.12.1
 
 publicHoistPattern:
   - "@ianvs/prettier-plugin-sort-imports"
