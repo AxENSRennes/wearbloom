@@ -89,4 +89,7 @@ jobs:
 
       - name: Trigger Dokploy redeploy
         run: |
-          curl -sf "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
+          curl -sf -X POST "${{ secrets.DOKPLOY_URL }}/api/trpc/application.redeploy" \
+            -H "Authorization: Bearer ${{ secrets.DOKPLOY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"json":{"applicationId":"${{ secrets.DOKPLOY_APP_ID }}"}}'
