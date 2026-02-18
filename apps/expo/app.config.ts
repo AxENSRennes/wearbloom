@@ -36,10 +36,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     newArchEnabled: true,
     assetBundlePatterns: ["**/*"],
-    extra: {
-      ...config.extra,
-      apiUrl: API_URL,
-    },
     ios: {
       ...config.ios,
       bundleIdentifier: APP_BUNDLE_ID,
@@ -61,11 +57,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       edgeToEdgeEnabled: true,
     },
-    // extra: {
-    //   eas: {
-    //     projectId: "your-eas-project-id",
-    //   },
-    // },
+    extra: {
+      ...config.extra,
+      apiUrl: API_URL,
+      eas: {
+        projectId: "1bbf2f39-eab3-4e0c-802c-c6e6c2ba362a",
+      },
+    },
     experiments: {
       tsconfigPaths: true,
       typedRoutes: true,
