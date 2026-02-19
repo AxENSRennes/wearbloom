@@ -47,6 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         ...config.ios?.infoPlist,
         NSAppTransportSecurity: atsConfig,
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
