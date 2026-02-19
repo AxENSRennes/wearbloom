@@ -1,6 +1,10 @@
 import type { Href } from "expo-router";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
 import { Redirect, Slot, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -82,26 +86,28 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{
-          persister: clientPersister,
-          dehydrateOptions: {
-            shouldDehydrateQuery: (query) => query.state.status === "success",
-          },
-        }}
-      >
-        <ToastProvider>
-          {consentResolved && !consented && (
-            <Redirect href={"/(public)/consent" as Href} />
-          )}
-          {showOnboardingRedirect && (
-            <Redirect href={"/(onboarding)" as Href} />
-          )}
-          <Slot />
-        </ToastProvider>
-        <StatusBar style="dark" />
-      </PersistQueryClientProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: clientPersister,
+            dehydrateOptions: {
+              shouldDehydrateQuery: (query) => query.state.status === "success",
+            },
+          }}
+        >
+          <ToastProvider>
+            {consentResolved && !consented && (
+              <Redirect href={"/(public)/consent" as Href} />
+            )}
+            {showOnboardingRedirect && (
+              <Redirect href={"/(onboarding)" as Href} />
+            )}
+            <Slot />
+          </ToastProvider>
+          <StatusBar style="dark" />
+        </PersistQueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

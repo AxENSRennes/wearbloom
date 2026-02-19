@@ -4,6 +4,7 @@ import { useCallback, useRef } from "react";
 import { useWindowDimensions, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import Carousel, { Pagination } from "react-native-reanimated-carousel";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
 import { StepPickGarment } from "./StepPickGarment";
@@ -35,6 +36,7 @@ export function OnboardingFlow({
   garmentUri,
 }: OnboardingFlowProps): ReactElement {
   const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const carouselRef = useRef<ICarouselInstance>(null);
   const progress = useSharedValue<number>(0);
 
@@ -112,7 +114,7 @@ export function OnboardingFlow({
   );
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <View
         className="items-center pb-4 pt-2"
         accessibilityLabel="Onboarding progress"

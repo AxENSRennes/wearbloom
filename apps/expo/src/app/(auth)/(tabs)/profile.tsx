@@ -73,7 +73,7 @@ export default function ProfileScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="flex-1 p-4">
         <View className="items-center py-8">
           <ThemedText variant="display">Profile</ThemedText>

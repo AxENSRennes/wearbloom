@@ -238,7 +238,7 @@ export default function AddGarmentScreen() {
   // Step: Success
   if (state.step === "success") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <View className="flex-1 items-center justify-center p-6">
           <ThemedText variant="heading" className="mb-2 text-center">
             Garment Saved!
@@ -274,7 +274,7 @@ export default function AddGarmentScreen() {
   // Step: Previewing / Uploading
   if (state.step === "previewing" || state.step === "uploading") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView edges={["top"]} className="flex-1 bg-background">
         <View className="flex-1 p-6">
           {/* Header */}
           <ThemedText variant="heading" className="mb-4 text-center">
@@ -336,7 +336,7 @@ export default function AddGarmentScreen() {
 
   // Step: Idle — Source selection
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center p-6">
         <ThemedText variant="heading" className="mb-2 text-center">
           Add a Garment
