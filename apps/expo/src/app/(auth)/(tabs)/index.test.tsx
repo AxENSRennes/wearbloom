@@ -775,6 +775,8 @@ describe("WardrobeScreen", () => {
     const source = await Bun.file(import.meta.dir + "/index.tsx").text();
     expect(source).toContain("usePaywallGuard");
     expect(source).toContain("guardRender(garmentId)");
-    expect(source).toContain('pathname: "/(auth)/paywall"');
+    expect(source).toContain(
+      "/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}",
+    );
   });
 });

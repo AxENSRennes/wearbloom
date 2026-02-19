@@ -13,7 +13,7 @@ describe("appendLocalImage", () => {
   test("falls back to image/jpeg when local blob has empty mime type", async () => {
     globalThis.fetch = mock(
       async () => new Response(new Blob(["jpeg-bytes"]), { status: 200 }),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const formData = new FormData();
     await appendLocalImage(
@@ -34,7 +34,7 @@ describe("appendLocalImage", () => {
         new Response(new Blob(["png-bytes"], { type: "image/png" }), {
           status: 200,
         }),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const formData = new FormData();
     await appendLocalImage(
@@ -52,7 +52,7 @@ describe("appendLocalImage", () => {
   test("throws LOCAL_IMAGE_READ_FAILED when local uri read fails", async () => {
     globalThis.fetch = mock(
       async () => new Response(null, { status: 404 }),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const formData = new FormData();
     await expect(

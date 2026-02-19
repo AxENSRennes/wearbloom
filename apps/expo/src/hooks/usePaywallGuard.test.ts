@@ -88,10 +88,9 @@ describe("usePaywallGuard", () => {
     subscriptionStatusState.isSubscriber = false;
     const { guardRender } = runHook();
     expect(guardRender("garment-42")).toBe(false);
-    expect(routerMock.push).toHaveBeenCalledWith({
-      pathname: "/(auth)/paywall",
-      params: { garmentId: "garment-42" },
-    });
+    expect(routerMock.push).toHaveBeenCalledWith(
+      "/(auth)/paywall?garmentId=garment-42",
+    );
   });
 
   test("guardRender returns true while subscription status is loading", () => {

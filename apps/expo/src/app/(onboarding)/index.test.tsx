@@ -20,7 +20,6 @@ describe("OnboardingScreen", () => {
 
   test("handleCreateAccount navigates to sign-up with from=onboarding query param", async () => {
     const source = await Bun.file(import.meta.dir + "/index.tsx").text();
-    expect(source).toContain('pathname: "/(public)/sign-up"');
-    expect(source).toContain('params: { from: "onboarding" }');
+    expect(source).toContain('"/(public)/sign-up?from=onboarding"');
   });
 });
