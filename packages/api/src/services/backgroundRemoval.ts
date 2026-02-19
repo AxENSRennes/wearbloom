@@ -1,12 +1,22 @@
 import type { Logger } from "pino";
-import Replicate from "replicate";
 
 export interface BackgroundRemoval {
   removeBackground(imageBuffer: Buffer): Promise<Buffer | null>;
 }
 
+interface FalClient {
+  config(opts: { credentials: string }): void;
+  storage: {
+    upload(blob: Blob): Promise<string>;
+  };
+  subscribe(
+    modelId: string,
+    opts: { input: Record<string, unknown> },
+  ): Promise<{ data: unknown }>;
+}
+
 interface BackgroundRemovalOptions {
-  replicateApiToken: string;
+  falKey: string;
   logger?: Logger;
 }
 
@@ -14,28 +24,29 @@ const BG_REMOVAL_TIMEOUT_MS = 30_000;
 const MAX_CUTOUT_SIZE = 20 * 1024 * 1024; // 20 MB
 
 export function createBackgroundRemoval({
-  replicateApiToken,
+  falKey,
   logger,
 }: BackgroundRemovalOptions): BackgroundRemoval {
-  const replicate = new Replicate({ auth: replicateApiToken });
+  // Lazy-import @fal-ai/client — same pattern as falFashn.ts
+  let falClientInstance: FalClient | null = null;
+  let falClientPromise: Promise<FalClient> | null = null;
+
+  function getFalClient() {
+    if (falClientInstance) {
+      return Promise.resolve(falClientInstance);
+    }
+    const promise = (falClientPromise ??= import("@fal-ai/client").then(
+      (mod) => {
+        const client = mod.fal;
+        client.config({ credentials: falKey });
+        falClientInstance = client;
+        return client;
+      },
+    ));
+    return promise;
+  }
 
   return {
-    /**
-     * Fire-and-forget background removal async task.
-     *
-     * This function sends the image to Replicate for background removal processing.
-     * It runs with a timeout to prevent hanging requests. The removal happens
-     * asynchronously in the background without blocking the response.
-     *
-     * Note: In the garment.ts router, this is called via fire-and-forget IIFE:
-     *   void (async () => { const cutout = await bgRemoval.removeBackground(...); })()
-     *
-     * The client polls garment.getGarment to check bgRemovalStatus and retrieve
-     * the cutout path when ready. Status values: "pending", "completed", "failed", "skipped".
-     *
-     * Limitation: If the server crashes during removal, the cutout will be lost
-     * (acceptable for MVP). In production, consider a persistent job queue.
-     */
     async removeBackground(imageBuffer: Buffer): Promise<Buffer | null> {
       const start = Date.now();
       const controller = new AbortController();
@@ -45,50 +56,45 @@ export function createBackgroundRemoval({
       );
 
       try {
-        const output = await replicate.run(
-          "cjwbw/rembg:fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
-          {
-            input: { image: imageBuffer },
-            signal: controller.signal,
-          },
-        );
+        const fal = await getFalClient();
 
-        // Output is a URL string pointing to the result PNG
-        if (typeof output !== "string") {
+        // Upload buffer to fal storage
+        const blob = new Blob([imageBuffer]);
+        const uploadedUrl = await fal.storage.upload(blob);
+
+        // Call Bria RMBG v2
+        const result = await fal.subscribe("fal-ai/rmbg-v2", {
+          input: { image_url: uploadedUrl },
+        });
+
+        // Extract image URL from result
+        const imageUrl = (
+          result.data as { image?: { url?: string } } | null | undefined
+        )?.image?.url;
+
+        if (typeof imageUrl !== "string") {
           logger?.error(
-            { outputType: typeof output },
+            { outputType: typeof result.data },
             "Unexpected background removal output type",
           );
           return null;
         }
 
-        // Validate output URL domain to prevent SSRF
-        const outputUrl = new URL(output);
-        if (
-          outputUrl.protocol !== "https:" ||
-          !outputUrl.hostname.endsWith(".replicate.delivery")
-        ) {
-          logger?.warn(
-            { url: output },
-            "Blocked background removal URL — domain not allowed",
-          );
-          return null;
-        }
-
+        // Download the result PNG
         const fetchController = new AbortController();
         const fetchTimeout = setTimeout(
           () => fetchController.abort(),
           BG_REMOVAL_TIMEOUT_MS,
         );
         try {
-          const response = await fetch(output, {
+          const response = await fetch(imageUrl, {
             signal: fetchController.signal,
           });
 
           const contentLength = response.headers.get("content-length");
           if (contentLength && parseInt(contentLength, 10) > MAX_CUTOUT_SIZE) {
             logger?.warn(
-              { url: output, contentLength },
+              { url: imageUrl, contentLength },
               "Background removal result too large",
             );
             return null;

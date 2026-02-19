@@ -56,7 +56,7 @@ export default function PrivacyScreen() {
         </Section>
 
         <Section title="Third-Party Services">
-          {`We use the following third-party services to operate Wearbloom:\n\n\u2022 AI inference provider: Processes your photos for virtual try-on rendering. Photos are sent securely and are not retained by the provider after processing.\n\u2022 Apple In-App Purchases: Handles subscription payments. Apple processes payment information directly; we do not store your payment details.`}
+          {`We use the following third-party services to operate Wearbloom:\n\n\u2022 AI try-on providers (FASHN AI and Google): Process your photos for virtual try-on rendering. Photos are transmitted securely via HTTPS and are not retained by the providers after processing.\n\u2022 Background removal (Bria AI): Removes the background from garment photos you upload. Images are transmitted securely and are not retained after processing.\n\u2022 Apple In-App Purchases: Handles subscription payments. Apple processes payment information directly; we do not store your payment details.`}
         </Section>
 
         <Section title="Your Rights">

@@ -350,8 +350,8 @@ export function PaywallScreen({
           className="mt-3 text-center text-text-secondary"
         >
           {isExpiredSubscriber
-            ? `${product?.displayPrice ?? "\u2026"}/week. Cancel anytime.`
-            : `Then ${product?.displayPrice ?? "\u2026"}/week. Cancel anytime.`}
+            ? `${product?.displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`
+            : `Then ${product?.displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`}
         </ThemedText>
 
         {/* Restore purchases */}
@@ -405,6 +405,24 @@ export function PaywallScreen({
           >
             <ThemedText variant="small" className="text-text-tertiary">
               Privacy Policy
+            </ThemedText>
+          </ThemedPressable>
+          <ThemedText variant="small" className="text-text-tertiary">
+            ·
+          </ThemedText>
+          <ThemedPressable
+            onPress={() =>
+              void Linking.openURL(
+                "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+              )
+            }
+            accessible
+            accessibilityRole="link"
+            accessibilityLabel="Subscription Terms"
+            accessibilityHint="Double tap to view Apple subscription terms"
+          >
+            <ThemedText variant="small" className="text-text-tertiary">
+              Subscription Terms
             </ThemedText>
           </ThemedPressable>
         </View>

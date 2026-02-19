@@ -4,19 +4,37 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { createBackgroundRemoval } from "./backgroundRemoval";
 
 // ---------------------------------------------------------------------------
-// Mock the Replicate SDK (third-party, acceptable for mock.module)
-// mock.module is irreversible, so we use a shared mockRun that tests can
+// Mock the @fal-ai/client SDK (third-party, acceptable for mock.module)
+// mock.module is irreversible, so we use shared mocks that tests can
 // reconfigure via mockImplementation / mockImplementationOnce.
 // ---------------------------------------------------------------------------
 
-const mockRun = mock<(...args: unknown[]) => Promise<unknown>>(() =>
-  Promise.resolve("https://pbxt.replicate.delivery/output.png"),
+const mockUpload = mock<(...args: unknown[]) => Promise<string>>(() =>
+  Promise.resolve("https://fal.storage/uploaded-image.png"),
 );
 
-void mock.module("replicate", () => ({
-  default: class MockReplicate {
-    constructor(_opts?: unknown) {}
-    run = mockRun;
+const mockSubscribe = mock<(...args: unknown[]) => Promise<unknown>>(() =>
+  Promise.resolve({
+    data: {
+      image: {
+        url: "https://fal.run/output.png",
+        content_type: "image/png",
+        width: 512,
+        height: 512,
+      },
+    },
+  }),
+);
+
+const mockConfig = mock(() => {});
+
+void mock.module("@fal-ai/client", () => ({
+  fal: {
+    config: mockConfig,
+    storage: {
+      upload: mockUpload,
+    },
+    subscribe: mockSubscribe,
   },
 }));
 
@@ -30,7 +48,6 @@ function createMockLogger() {
     error: mock(() => {}),
     warn: mock(() => {}),
     debug: mock(() => {}),
-    // pino loggers also have these, but the implementation only uses info/error
     fatal: mock(() => {}),
     trace: mock(() => {}),
     child: mock(() => createMockLogger()),
@@ -46,17 +63,31 @@ function mockFetchImpl(impl: () => Promise<Response>) {
   );
 }
 
-describe("backgroundRemoval — createBackgroundRemoval", () => {
+describe("backgroundRemoval — createBackgroundRemoval (fal.ai)", () => {
   let fetchSpy: ReturnType<typeof spyOn>;
 
   afterEach(() => {
     // Restore fetch spy so other tests are not affected
     fetchSpy?.mockRestore();
-    // Reset the shared mockRun to default (success URL) for isolation
-    mockRun.mockReset();
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
+    // Reset shared mocks to default for isolation
+    mockUpload.mockReset();
+    mockUpload.mockImplementation(() =>
+      Promise.resolve("https://fal.storage/uploaded-image.png"),
     );
+    mockSubscribe.mockReset();
+    mockSubscribe.mockImplementation(() =>
+      Promise.resolve({
+        data: {
+          image: {
+            url: "https://fal.run/output.png",
+            content_type: "image/png",
+            width: 512,
+            height: 512,
+          },
+        },
+      }),
+    );
+    mockConfig.mockReset();
   });
 
   // -----------------------------------------------------------------------
@@ -65,13 +96,9 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   test("success: returns Buffer from downloaded URL", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
-
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
@@ -82,23 +109,31 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     expect(result).toBeInstanceOf(Buffer);
     expect(result).not.toBeNull();
     expect(result!.length).toBe(PNG_BYTES.length);
-    // Verify fetch was called with the URL returned by replicate.run
+    // Verify fal.storage.upload was called
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    // Verify fal.subscribe was called with the right model
+    expect(mockSubscribe).toHaveBeenCalledTimes(1);
+    const subscribeArgs = mockSubscribe.mock.calls[0]!;
+    expect(subscribeArgs[0]).toBe("fal-ai/rmbg-v2");
+    // Verify fetch was called with the output URL
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const fetchCallArgs = fetchSpy.mock.calls[0] as unknown[];
-    expect(fetchCallArgs[0]).toBe("https://pbxt.replicate.delivery/output.png");
+    expect(fetchCallArgs[0]).toBe("https://fal.run/output.png");
   });
 
   // -----------------------------------------------------------------------
-  // 2. Non-string output from replicate.run
+  // 2. Non-string output from fal.subscribe (unexpected data shape)
   // -----------------------------------------------------------------------
-  test("returns null when replicate.run returns non-string output", async () => {
+  test("returns null when fal.subscribe returns unexpected output shape", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
-    mockRun.mockImplementation(() => Promise.resolve(42));
+    mockSubscribe.mockImplementation(() =>
+      Promise.resolve({ data: { result: 42 } }),
+    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
@@ -107,7 +142,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
     const result = await service.removeBackground(Buffer.from("input-image"));
 
     expect(result).toBeNull();
-    // fetch should NOT have been called since output was not a string
+    // fetch should NOT have been called since output had no image URL
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -117,13 +152,9 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   test("returns null when fetch of output URL returns non-ok response", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
-
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("Not Found", { status: 404 })),
@@ -135,20 +166,19 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   });
 
   // -----------------------------------------------------------------------
-  // 4. replicate.run throws a generic error
+  // 4. fal.subscribe throws a generic error
   // -----------------------------------------------------------------------
-  test("returns null when replicate.run throws an error", async () => {
+  test("returns null when fal.subscribe throws an error", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
-    mockRun.mockImplementation(() =>
-      Promise.reject(new Error("Replicate API failure")),
+    mockSubscribe.mockImplementation(() =>
+      Promise.reject(new Error("fal.ai API failure")),
     );
 
-    // fetch should not be called if replicate.run throws
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
     );
@@ -160,18 +190,18 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   });
 
   // -----------------------------------------------------------------------
-  // 5. AbortError (timeout) from replicate.run
+  // 5. AbortError (timeout)
   // -----------------------------------------------------------------------
   test("returns null on AbortError (timeout)", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
     const abortError = new Error("The operation was aborted");
     abortError.name = "AbortError";
-    mockRun.mockImplementation(() => Promise.reject(abortError));
+    mockSubscribe.mockImplementation(() => Promise.reject(abortError));
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
@@ -189,13 +219,9 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   test("logs info with duration on success", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
-
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
@@ -218,15 +244,15 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   // -----------------------------------------------------------------------
   // 7. Logs error on generic error
   // -----------------------------------------------------------------------
-  test("logs error with duration when replicate.run throws", async () => {
+  test("logs error with duration when fal.subscribe throws", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
     const err = new Error("Something broke");
-    mockRun.mockImplementation(() => Promise.reject(err));
+    mockSubscribe.mockImplementation(() => Promise.reject(err));
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
@@ -251,13 +277,13 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   test("logs timeout error when AbortError is thrown", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
     const abortError = new Error("The operation was aborted");
     abortError.name = "AbortError";
-    mockRun.mockImplementation(() => Promise.reject(abortError));
+    mockSubscribe.mockImplementation(() => Promise.reject(abortError));
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
@@ -278,14 +304,16 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   // -----------------------------------------------------------------------
   // 7c. Logs error when output type is unexpected
   // -----------------------------------------------------------------------
-  test("logs error when replicate.run returns non-string output", async () => {
+  test("logs error when fal.subscribe returns unexpected output shape", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
 
-    mockRun.mockImplementation(() => Promise.resolve({ url: "something" }));
+    mockSubscribe.mockImplementation(() =>
+      Promise.resolve({ data: { url: "something" } }),
+    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
@@ -309,13 +337,9 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   test("logs error with status when fetch returns non-ok response", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       logger,
     });
-
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("Server Error", { status: 500 })),
@@ -338,14 +362,11 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   // -----------------------------------------------------------------------
   test("works without logger — no crash on any code path", async () => {
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "test-fal-key",
       // no logger
     });
 
     // Success path without logger
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
     );
@@ -355,7 +376,7 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
 
     // Error path without logger
     fetchSpy.mockRestore();
-    mockRun.mockImplementation(() => Promise.reject(new Error("fail")));
+    mockSubscribe.mockImplementation(() => Promise.reject(new Error("fail")));
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response("should not be called")),
     );
@@ -365,18 +386,14 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
   });
 
   // -----------------------------------------------------------------------
-  // 9. Passes signal to replicate.run for abort support
+  // 9. Configures fal client with credentials
   // -----------------------------------------------------------------------
-  test("passes AbortController signal to replicate.run", async () => {
+  test("configures fal client with the provided falKey", async () => {
     const logger = createMockLogger();
     const service = createBackgroundRemoval({
-      replicateApiToken: "test-token",
+      falKey: "my-secret-fal-key",
       logger,
     });
-
-    mockRun.mockImplementation(() =>
-      Promise.resolve("https://pbxt.replicate.delivery/output.png"),
-    );
 
     fetchSpy = mockFetchImpl(() =>
       Promise.resolve(new Response(PNG_BYTES, { status: 200 })),
@@ -384,17 +401,9 @@ describe("backgroundRemoval — createBackgroundRemoval", () => {
 
     await service.removeBackground(Buffer.from("input-image"));
 
-    // Verify replicate.run was called with signal in options
-    expect(mockRun).toHaveBeenCalledTimes(1);
-    const runArgs = mockRun.mock.calls[0]!;
-    // First arg is the model identifier string
-    expect(runArgs[0]).toBe(
-      "cjwbw/rembg:fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
-    );
-    // Second arg is options object with input and signal
-    const options = runArgs[1] as Record<string, unknown>;
-    expect(options).toHaveProperty("input");
-    expect(options).toHaveProperty("signal");
-    expect((options.signal as AbortSignal).aborted).toBe(false);
+    // Verify fal.config was called with credentials
+    expect(mockConfig).toHaveBeenCalledTimes(1);
+    const configArgs = mockConfig.mock.calls[0] as unknown[];
+    expect(configArgs[0]).toEqual({ credentials: "my-secret-fal-key" });
   });
 });

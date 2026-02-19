@@ -54,7 +54,6 @@
     "@paralleldrive/cuid2": "^3.3.0",
     "@trpc/server": "catalog:",
     "pino": "^9.6.0",
-    "replicate": "^1.4.0",
     "superjson": "2.2.3",
     "zod": "catalog:"
   },

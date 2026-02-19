@@ -10,7 +10,6 @@ const serverSchema = z.object({
   BETTER_AUTH_BASE_URL: z.url().optional(),
   BETTER_AUTH_PRODUCTION_URL: z.url().optional(),
   IMAGES_DIR: z.string().default("/data/images"),
-  REPLICATE_API_TOKEN: z.string().default(""),
   FAL_KEY: z.string().default(""),
   ACTIVE_TRYON_PROVIDER: z.enum(TRYON_PROVIDERS).default("fal_fashn"),
   FAL_WEBHOOK_URL: z.string().default(""),

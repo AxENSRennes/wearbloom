@@ -29,9 +29,10 @@ export default function ConsentScreen() {
             className="text-center text-text-secondary"
           >
             We collect your photos and wardrobe data to power AI try-on. Your
-            data is stored securely, shared only with essential providers (AI
-            processing and Apple billing), and not used for advertising or
-            marketing.
+            photos are processed by third-party AI services (FASHN AI, Bria AI,
+            and Google) to generate virtual try-on results and remove garment
+            backgrounds. Photos are not retained by these providers after
+            processing. Your data is not used for advertising or marketing.
           </ThemedText>
 
           <ThemedPressable

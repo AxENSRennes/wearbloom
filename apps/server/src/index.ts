@@ -95,9 +95,9 @@ const imageStorage = createImageStorage({
   logger,
 });
 
-const backgroundRemoval = env.REPLICATE_API_TOKEN
+const backgroundRemoval = env.FAL_KEY
   ? createBackgroundRemoval({
-      replicateApiToken: env.REPLICATE_API_TOKEN,
+      falKey: env.FAL_KEY,
       logger,
     })
   : undefined;
