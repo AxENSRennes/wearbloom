@@ -1,9 +1,11 @@
+import type { GarmentCategory } from "~/constants/categories";
+import { isGarmentCategory } from "~/constants/categories";
 import { mmkvStorage } from "./mmkv";
 
 export interface QueuedUpload {
   id: string;
   imageUri: string;
-  category: string;
+  category: GarmentCategory;
   width: number;
   height: number;
   queuedAt: string;
@@ -12,10 +14,12 @@ export interface QueuedUpload {
 function isQueuedUpload(item: unknown): item is QueuedUpload {
   if (typeof item !== "object" || item === null) return false;
   const obj = item as Record<string, unknown>;
+  const isKnownCategory =
+    typeof obj.category === "string" && isGarmentCategory(obj.category);
   return (
     typeof obj.id === "string" &&
     typeof obj.imageUri === "string" &&
-    typeof obj.category === "string" &&
+    isKnownCategory &&
     typeof obj.width === "number" &&
     typeof obj.height === "number" &&
     typeof obj.queuedAt === "string"

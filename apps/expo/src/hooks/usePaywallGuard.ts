@@ -13,10 +13,9 @@ export function usePaywallGuard() {
       if (isLoading) return true;
       if (canRender || isSubscriber) return true;
 
-      router.push({
-        pathname: "/(auth)/paywall",
-        params: { garmentId },
-      } as unknown as Href);
+      router.push(
+        `/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}` as Href,
+      );
       return false;
     },
     [canRender, isLoading, isSubscriber, router],

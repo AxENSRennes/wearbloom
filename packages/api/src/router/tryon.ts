@@ -121,10 +121,7 @@ export const tryonRouter = {
         .values({
           userId,
           garmentId: input.garmentId,
-          provider: ctx.tryOnProvider.name as
-            | "fal_fashn"
-            | "fal_nano_banana"
-            | "google_vto",
+          provider: ctx.tryOnProvider.name,
           status: "pending",
         })
         .returning({ id: tryOnRenders.id });

@@ -57,10 +57,7 @@ export default function RenderScreen() {
   const requestRenderMutation = useMutation(
     trpc.tryon.requestRender.mutationOptions({
       onSuccess: (newData) => {
-        router.replace({
-          pathname: "/render/[id]",
-          params: { id: newData.renderId },
-        } as unknown as Href);
+        router.replace(`/render/${newData.renderId}` as Href);
       },
     }),
   );

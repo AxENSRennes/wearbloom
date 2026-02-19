@@ -2,6 +2,10 @@ import { createId } from "@paralleldrive/cuid2";
 import { sql } from "drizzle-orm";
 import { check, index, pgEnum, pgTable, unique } from "drizzle-orm/pg-core";
 
+import { GARMENT_CATEGORIES, TRYON_PROVIDERS } from "@acme/validators";
+
+export { GARMENT_CATEGORIES, TRYON_PROVIDERS };
+
 export const users = pgTable("users", (t) => ({
   id: t.text().primaryKey(),
   name: t.text(),
@@ -68,14 +72,6 @@ export const bodyPhotos = pgTable(
   (table) => [unique().on(table.userId)],
 );
 
-export const GARMENT_CATEGORIES = [
-  "tops",
-  "bottoms",
-  "dresses",
-  "shoes",
-  "outerwear",
-] as const;
-
 export const garmentCategory = pgEnum("garment_category", GARMENT_CATEGORIES);
 
 export const BG_REMOVAL_STATUSES = [
@@ -120,12 +116,6 @@ export const RENDER_STATUSES = [
   "processing",
   "completed",
   "failed",
-] as const;
-
-export const TRYON_PROVIDERS = [
-  "fal_fashn",
-  "fal_nano_banana",
-  "google_vto",
 ] as const;
 
 export const renderStatus = pgEnum("render_status", RENDER_STATUSES);

@@ -140,18 +140,14 @@ export default function WardrobeScreen() {
         {
           onSuccess: (data) => {
             bottomSheetRef.current?.close();
-            router.push({
-              pathname: "/render/[id]",
-              params: { id: data.renderId },
-            } as unknown as Href);
+            router.push(`/render/${data.renderId}` as Href);
           },
           onError: (err) => {
             if (err.message === "INSUFFICIENT_CREDITS") {
               bottomSheetRef.current?.close();
-              router.push({
-                pathname: "/(auth)/paywall",
-                params: { garmentId },
-              } as unknown as Href);
+              router.push(
+                `/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}` as Href,
+              );
             } else if (err.message === "INVALID_CATEGORY") {
               showToast({
                 message: "Try-on not available for this category.",

@@ -1,17 +1,31 @@
+import { z } from "zod/v4";
+
 import type { createSubscriptionManager } from "@acme/api/services/subscriptionManager";
 
+const appleNotificationSchema = z.object({
+  notificationType: z.string().optional(),
+  subtype: z.string().optional(),
+  data: z
+    .object({
+      signedTransactionInfo: z.string().optional(),
+      signedRenewalInfo: z.string().optional(),
+    })
+    .optional(),
+});
+
+const decodedTransactionSchema = z.object({
+  appAccountToken: z.string().optional(),
+  expiresDate: z.coerce.number().optional(),
+  purchaseDate: z.coerce.number().optional(),
+  originalTransactionId: z.string().optional(),
+  transactionId: z.string().optional(),
+  productId: z.string().optional(),
+  offerType: z.coerce.number().optional(),
+});
+
 interface WebhookVerifier {
-  verifyAndDecodeNotification: (signedPayload: string) => Promise<{
-    notificationType?: string;
-    subtype?: string;
-    data?: {
-      signedTransactionInfo?: string;
-      signedRenewalInfo?: string;
-    };
-  }>;
-  verifyAndDecodeTransaction: (
-    signedTransaction: string,
-  ) => Promise<Record<string, unknown>>;
+  verifyAndDecodeNotification: (signedPayload: string) => Promise<unknown>;
+  verifyAndDecodeTransaction: (signedTransaction: string) => Promise<unknown>;
 }
 
 interface WebhookLogger {
@@ -47,19 +61,33 @@ export function createAppleWebhookHandler({
 }) {
   async function extractTransaction(
     data: { signedTransactionInfo?: string } | undefined,
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<z.infer<typeof decodedTransactionSchema> | null> {
     if (!data?.signedTransactionInfo) {
       return null;
     }
-    return verifier.verifyAndDecodeTransaction(data.signedTransactionInfo);
+
+    const decoded = await verifier.verifyAndDecodeTransaction(
+      data.signedTransactionInfo,
+    );
+    const parsedTransaction = decodedTransactionSchema.safeParse(decoded);
+    if (!parsedTransaction.success) {
+      logger.warn(
+        { error: parsedTransaction.error.flatten() },
+        "Apple webhook: invalid decoded transaction payload",
+      );
+      return null;
+    }
+
+    return parsedTransaction.data;
   }
 
   return {
     async handleNotification(signedPayload: string): Promise<WebhookResult> {
-      let notification;
+      let notification: z.infer<typeof appleNotificationSchema>;
       try {
-        notification =
+        const decoded =
           await verifier.verifyAndDecodeNotification(signedPayload);
+        notification = appleNotificationSchema.parse(decoded);
       } catch (err) {
         logger.error(
           { error: String(err) },
@@ -81,9 +109,7 @@ export function createAppleWebhookHandler({
         return { status: 200, body: { received: true } };
       }
 
-      const transaction = await extractTransaction(
-        data as { signedTransactionInfo?: string } | undefined,
-      );
+      const transaction = await extractTransaction(data);
       if (!transaction) {
         logger.warn(
           { notificationType },
@@ -92,7 +118,7 @@ export function createAppleWebhookHandler({
         return { status: 200, body: { received: true, skipped: true } };
       }
 
-      const appAccountToken = transaction.appAccountToken as string | undefined;
+      const { appAccountToken } = transaction;
       if (!appAccountToken) {
         logger.warn(
           { notificationType, transactionId: transaction.transactionId },
@@ -102,13 +128,8 @@ export function createAppleWebhookHandler({
       }
 
       const userId = appAccountToken;
-      const expiresDate = transaction.expiresDate as number | undefined;
-      const purchaseDate = transaction.purchaseDate as number | undefined;
-      const originalTransactionId = transaction.originalTransactionId as
-        | string
-        | undefined;
-      const transactionId = transaction.transactionId as string | undefined;
-      const productId = transaction.productId as string | undefined;
+      const { expiresDate, purchaseDate } = transaction;
+      const { originalTransactionId, transactionId, productId } = transaction;
 
       if (!originalTransactionId || !transactionId || !productId) {
         logger.warn(

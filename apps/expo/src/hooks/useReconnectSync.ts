@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showToast } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
+import { appendLocalImage } from "~/utils/formData";
 import { processQueue } from "~/utils/uploadQueue";
 import { useNetworkStatus } from "./useNetworkStatus";
 
@@ -20,11 +21,12 @@ export function useReconnectSync() {
     // Process any queued offline uploads
     void processQueue(async (payload) => {
       const formData = new FormData();
-      formData.append("photo", {
-        uri: payload.imageUri,
-        type: "image/jpeg",
-        name: "garment.jpg",
-      } as unknown as Blob);
+      await appendLocalImage(
+        formData,
+        "photo",
+        payload.imageUri,
+        "garment.jpg",
+      );
       formData.append("category", payload.category);
       formData.append("width", String(payload.width));
       formData.append("height", String(payload.height));

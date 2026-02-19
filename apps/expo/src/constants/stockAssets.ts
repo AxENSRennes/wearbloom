@@ -1,11 +1,8 @@
 import type { ImageSourcePropType } from "react-native";
 
-export type GarmentCategory =
-  | "tops"
-  | "bottoms"
-  | "dresses"
-  | "outerwear"
-  | "shoes";
+import type { GarmentCategory } from "./categories";
+
+export type { GarmentCategory };
 
 export interface StockGarment {
   id: string;

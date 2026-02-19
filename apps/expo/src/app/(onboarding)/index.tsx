@@ -29,10 +29,7 @@ export default function OnboardingScreen() {
   );
 
   const handleCreateAccount = useCallback(() => {
-    router.push({
-      pathname: "/(public)/sign-up",
-      params: { from: "onboarding" },
-    } as unknown as Href);
+    router.push("/(public)/sign-up?from=onboarding" as Href);
   }, [router]);
 
   const handleTryAnother = useCallback(() => {

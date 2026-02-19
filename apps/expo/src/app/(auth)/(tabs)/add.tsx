@@ -17,23 +17,15 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import type { GarmentCategory } from "~/constants/categories";
 import { CategoryPills } from "~/components/garment/CategoryPills";
+import { GARMENT_CATEGORIES, isGarmentCategory } from "~/constants/categories";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { trpc } from "~/utils/api";
+import { appendLocalImage } from "~/utils/formData";
 import { compressImage } from "~/utils/imageCompressor";
 import { enqueueUpload } from "~/utils/uploadQueue";
 
-/**
- * Garment categories. MUST stay in sync with GARMENT_CATEGORIES in
- * packages/db/src/schema.ts and VALID_CATEGORIES in packages/api/src/router/garment.ts
- */
-const CATEGORIES = [
-  "tops",
-  "bottoms",
-  "dresses",
-  "shoes",
-  "outerwear",
-] as const;
 const WARDROBE_ROUTE = "/(auth)/(tabs)/" as const;
 
 // ---------------------------------------------------------------------------
@@ -53,13 +45,13 @@ export type AddState =
       imageUri: string;
       width: number;
       height: number;
-      category: string;
+      category: GarmentCategory;
     }
   | { step: "success"; garmentId: string };
 
 export type AddAction =
   | { type: "PHOTO_SELECTED"; uri: string; width: number; height: number }
-  | { type: "UPLOAD_START"; category: string }
+  | { type: "UPLOAD_START"; category: GarmentCategory }
   | { type: "UPLOAD_SUCCESS"; garmentId: string }
   | { type: "UPLOAD_ERROR" }
   | { type: "RETAKE" }
@@ -110,7 +102,8 @@ export default function AddGarmentScreen() {
   const [state, dispatch] = useReducer(addGarmentReducer, {
     step: "idle",
   } as AddState);
-  const [selectedCategory, setSelectedCategory] = useState("tops");
+  const [selectedCategory, setSelectedCategory] =
+    useState<GarmentCategory>("tops");
   const [showActionSheet, setShowActionSheet] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -122,7 +115,7 @@ export default function AddGarmentScreen() {
   const supportedCategories = supportedCategoriesQuery.data ?? [];
   const unsupportedCategories =
     supportedCategories.length > 0
-      ? CATEGORIES.filter((c) => !supportedCategories.includes(c))
+      ? GARMENT_CATEGORIES.filter((c) => !supportedCategories.includes(c))
       : [];
 
   const uploadMutation = useMutation(
@@ -207,7 +200,7 @@ export default function AddGarmentScreen() {
     }
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (state.step !== "previewing") return;
 
     if (!isConnected) {
@@ -230,17 +223,13 @@ export default function AddGarmentScreen() {
     dispatch({ type: "UPLOAD_START", category: selectedCategory });
 
     const formData = new FormData();
-    formData.append("photo", {
-      uri: state.imageUri,
-      type: "image/jpeg",
-      name: "garment.jpg",
-    } as unknown as Blob);
+    await appendLocalImage(formData, "photo", state.imageUri, "garment.jpg");
     formData.append("category", selectedCategory);
     formData.append("width", String(state.width));
     formData.append("height", String(state.height));
 
     uploadMutation.mutate(formData);
-  }, [state, selectedCategory, uploadMutation, isConnected]);
+  }, [state, isConnected, selectedCategory, uploadMutation]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -313,9 +302,13 @@ export default function AddGarmentScreen() {
               Select Category
             </ThemedText>
             <CategoryPills
-              categories={CATEGORIES}
+              categories={GARMENT_CATEGORIES}
               selected={selectedCategory}
-              onSelect={setSelectedCategory}
+              onSelect={(category) => {
+                if (isGarmentCategory(category)) {
+                  setSelectedCategory(category);
+                }
+              }}
               unsupportedCategories={unsupportedCategories}
             />
           </View>

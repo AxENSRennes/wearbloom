@@ -1,5 +1,6 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
+import { z } from "zod/v4";
 
 import { restorePurchasesSchema, verifyPurchaseSchema } from "@acme/validators";
 
@@ -10,6 +11,16 @@ import { protectedProcedure } from "../trpc";
 
 /** Fallback expiry when Apple transaction has no expiresDate (7 days). */
 const DEFAULT_EXPIRY_MS = 7 * 86_400_000;
+
+const decodedTransactionSchema = z.object({
+  appAccountToken: z.string().optional(),
+  transactionId: z.string().optional(),
+  originalTransactionId: z.string().optional(),
+  productId: z.string().optional(),
+  expiresDate: z.coerce.number().optional(),
+  purchaseDate: z.coerce.number().optional(),
+  offerType: z.coerce.number().optional(),
+});
 
 export const subscriptionRouter = {
   getCredits: protectedProcedure.query(async ({ ctx }) => {
@@ -92,8 +103,18 @@ export const subscriptionRouter = {
           });
         });
 
+      const parsedDecoded = decodedTransactionSchema.safeParse(decoded);
+      if (!parsedDecoded.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "INVALID_TRANSACTION_DATA",
+          cause: parsedDecoded.error,
+        });
+      }
+      const decodedData = parsedDecoded.data;
+
       // Validate appAccountToken matches authenticated user
-      const appAccountToken = decoded.appAccountToken as string | undefined;
+      const { appAccountToken } = decodedData;
       if (!appAccountToken) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -108,11 +129,7 @@ export const subscriptionRouter = {
       }
 
       const subManager = createSubscriptionManager({ db: ctx.db });
-      const transactionId = decoded.transactionId as string | undefined;
-      const originalTransactionId = decoded.originalTransactionId as
-        | string
-        | undefined;
-      const productId = decoded.productId as string | undefined;
+      const { transactionId, originalTransactionId, productId } = decodedData;
 
       if (!transactionId || !originalTransactionId || !productId) {
         throw new TRPCError({
@@ -121,14 +138,13 @@ export const subscriptionRouter = {
         });
       }
 
-      const expiresDate = decoded.expiresDate as number | undefined;
-      const purchaseDate = decoded.purchaseDate as number | undefined;
+      const { expiresDate, purchaseDate } = decodedData;
 
       // Determine if this is an initial buy with trial
       const existingSub = await subManager.getSubscription(ctx.session.user.id);
       const isInitialBuy = !existingSub;
       // StoreKit 2: offerType 1 = introductory offer (free trial)
-      const hasTrial = isInitialBuy && decoded.offerType === 1;
+      const hasTrial = isInitialBuy && decodedData.offerType === 1;
 
       const status = subManager.determineSubscriptionStatus({
         isInitialBuy,
@@ -183,22 +199,37 @@ export const subscriptionRouter = {
           });
 
         if (!decoded) continue;
+        const parsedDecoded = decodedTransactionSchema.safeParse(decoded);
+        if (!parsedDecoded.success) {
+          failed++;
+          continue;
+        }
+        const decodedData = parsedDecoded.data;
 
         // Validate appAccountToken matches authenticated user
         // Skip transactions without appAccountToken to prevent cross-user subscription theft
-        const appAccountToken = decoded.appAccountToken as string | undefined;
+        const { appAccountToken } = decodedData;
         if (!appAccountToken || appAccountToken !== ctx.session.user.id)
           continue;
 
-        const expiresDate = decoded.expiresDate as number | undefined;
+        const { expiresDate } = decodedData;
         if (!expiresDate || expiresDate < Date.now()) continue; // skip expired
 
-        const purchaseDate = decoded.purchaseDate as number | undefined;
+        const {
+          purchaseDate,
+          transactionId,
+          originalTransactionId,
+          productId,
+        } = decodedData;
+        if (!transactionId || !originalTransactionId || !productId) {
+          failed++;
+          continue;
+        }
 
         await subManager.upsertSubscription(ctx.session.user.id, {
-          appleTransactionId: decoded.transactionId as string,
-          appleOriginalTransactionId: decoded.originalTransactionId as string,
-          productId: decoded.productId as string,
+          appleTransactionId: transactionId,
+          appleOriginalTransactionId: originalTransactionId,
+          productId,
           status: "subscribed",
           startedAt: purchaseDate ? new Date(purchaseDate) : new Date(),
           expiresAt: new Date(expiresDate),

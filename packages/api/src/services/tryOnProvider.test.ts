@@ -29,8 +29,8 @@ describe("createTryOnProvider", () => {
   });
 
   test("throws for unknown provider", () => {
-    expect(() => createTryOnProvider("unknown", baseConfig)).toThrow(
-      "Unknown provider: unknown",
+    expect(() => createTryOnProvider("unknown" as never, baseConfig)).toThrow(
+      "Unknown provider",
     );
   });
 });

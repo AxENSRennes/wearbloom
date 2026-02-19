@@ -1,18 +1,19 @@
+import type {
+  GarmentCategory,
+  RenderMode,
+  TryOnProviderName,
+} from "@acme/validators";
+
 import { FalFashnProvider } from "./providers/falFashn";
 import { FalNanoBananaProvider } from "./providers/falNanoBanana";
 import { GoogleVTOProvider } from "./providers/googleVTO";
 
-export type GarmentCategory =
-  | "tops"
-  | "bottoms"
-  | "dresses"
-  | "shoes"
-  | "outerwear";
-
 export interface RenderOptions {
-  category?: string;
-  mode?: "performance" | "balanced" | "quality";
+  category?: GarmentCategory;
+  mode?: RenderMode;
 }
+
+export type { GarmentCategory, TryOnProviderName };
 
 export interface TryOnResult {
   imageUrl: string;
@@ -29,8 +30,8 @@ export interface TryOnProvider {
     options?: RenderOptions,
   ): Promise<{ jobId: string }>;
   getResult(jobId: string): Promise<TryOnResult | null>;
-  readonly name: string;
-  readonly supportedCategories: GarmentCategory[];
+  readonly name: TryOnProviderName;
+  readonly supportedCategories: readonly GarmentCategory[];
 }
 
 export interface TryOnProviderConfig {
@@ -44,7 +45,7 @@ export interface TryOnProviderConfig {
 }
 
 export function createTryOnProvider(
-  providerName: string,
+  providerName: TryOnProviderName,
   config: TryOnProviderConfig,
 ): TryOnProvider {
   switch (providerName) {
@@ -55,6 +56,6 @@ export function createTryOnProvider(
     case "google_vto":
       return new GoogleVTOProvider(config);
     default:
-      throw new Error(`Unknown provider: ${providerName}`);
+      throw new Error("Unknown provider");
   }
 }

@@ -16,10 +16,10 @@ export default function PaywallRoute() {
   };
 
   const handleSuccess = (pendingGarmentId?: string) => {
-    router.replace({
-      pathname: "/(auth)/(tabs)/",
-      params: pendingGarmentId ? { pendingGarmentId } : undefined,
-    } as unknown as Href);
+    const route = pendingGarmentId
+      ? `/(auth)/(tabs)/?pendingGarmentId=${encodeURIComponent(pendingGarmentId)}`
+      : "/(auth)/(tabs)/";
+    router.replace(route as Href);
   };
 
   return (

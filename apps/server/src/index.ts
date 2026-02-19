@@ -66,18 +66,13 @@ if (env.APPLE_IAP_KEY_ID && env.APPLE_IAP_ISSUER_ID && env.APPLE_IAP_KEY_PATH) {
     const client = createAppleClient(appleConfig);
     const subscriptionManager = createSubscriptionManager({ db });
 
-    // Type assertions needed: Apple library returns concrete class types
-    // (JWSTransactionDecodedPayload) that lack index signatures required by
-    // Record<string, unknown>. Our DI interfaces are intentionally loose.
     appleIap = {
-      verifier: verifier as unknown as AppleIapDeps["verifier"],
+      verifier,
       client,
     };
 
     appleWebhookHandler = createAppleWebhookHandler({
-      verifier: verifier as unknown as Parameters<
-        typeof createAppleWebhookHandler
-      >[0]["verifier"],
+      verifier,
       subscriptionManager,
       logger,
     });

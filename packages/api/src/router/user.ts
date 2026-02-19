@@ -14,11 +14,7 @@ export const userRouter = {
   uploadBodyPhoto: uploadProcedure
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
-      // Cast needed: RN FormData typings lack .get(), but server runtime (Bun) has it
-      const formData = input as unknown as {
-        get(key: string): File | string | null;
-      };
-      const file = formData.get("photo");
+      const file = input.get("photo");
       if (!file || typeof file === "string") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -26,8 +22,8 @@ export const userRouter = {
         });
       }
 
-      const widthStr = formData.get("width");
-      const heightStr = formData.get("height");
+      const widthStr = input.get("width");
+      const heightStr = input.get("height");
       const width = typeof widthStr === "string" ? Number(widthStr) : undefined;
       const height =
         typeof heightStr === "string" ? Number(heightStr) : undefined;

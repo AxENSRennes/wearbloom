@@ -17,22 +17,65 @@ export interface FalClient {
         input: Record<string, unknown>;
         webhookUrl?: string;
       },
-    ): Promise<{ request_id: string }>;
-    result(
-      modelId: string,
-      opts: { requestId: string },
-    ): Promise<{
-      images: {
-        url: string;
-        content_type: string;
-        width: number;
-        height: number;
-      }[];
-    }>;
+    ): Promise<unknown>;
+    result(modelId: string, opts: { requestId: string }): Promise<unknown>;
   };
   storage: {
-    upload(blob: Blob): Promise<string>;
+    upload(blob: Blob): Promise<unknown>;
   };
+}
+
+export interface FalImage {
+  url: string;
+  content_type: string;
+  width: number;
+  height: number;
+}
+
+function isFalImage(value: unknown): value is FalImage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.url === "string" &&
+    typeof record.content_type === "string" &&
+    typeof record.width === "number" &&
+    typeof record.height === "number"
+  );
+}
+
+export function getFalRequestId(payload: unknown): string {
+  if (typeof payload === "object" && payload !== null) {
+    const record = payload as Record<string, unknown>;
+    if (typeof record.request_id === "string") {
+      return record.request_id;
+    }
+  }
+  throw new Error("FAL_INVALID_SUBMIT_RESPONSE");
+}
+
+export function getFalFirstImage(payload: unknown): FalImage | null {
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+  const record = payload as Record<string, unknown>;
+  if (!Array.isArray(record.images)) return null;
+  const images = record.images as unknown[];
+
+  const first = images[0];
+  if (!isFalImage(first)) {
+    return null;
+  }
+
+  return first;
+}
+
+export function getFalUploadUrl(payload: unknown): string {
+  if (typeof payload === "string") {
+    return payload;
+  }
+  throw new Error("FAL_INVALID_UPLOAD_RESPONSE");
 }
 
 export class FalFashnProvider implements TryOnProvider {
@@ -64,13 +107,15 @@ export class FalFashnProvider implements TryOnProvider {
     if (this.falClientInstance) {
       return Promise.resolve(this.falClientInstance);
     }
-    this.falClientPromise ??= import("@fal-ai/client").then((mod) => {
-      const client = mod.fal as unknown as FalClient;
+    const falClientPromise = (this.falClientPromise ??= import(
+      "@fal-ai/client"
+    ).then((mod) => {
+      const client = mod.fal;
       client.config({ credentials: this.falKey });
       this.falClientInstance = client;
       return client;
-    });
-    return this.falClientPromise;
+    }));
+    return falClientPromise;
   }
 
   async submitRender(
@@ -92,7 +137,7 @@ export class FalFashnProvider implements TryOnProvider {
       webhookUrl: this.webhookUrl,
     });
 
-    return { jobId: result.request_id };
+    return { jobId: getFalRequestId(result) };
   }
 
   async getResult(jobId: string): Promise<TryOnResult | null> {
@@ -101,7 +146,7 @@ export class FalFashnProvider implements TryOnProvider {
       const result = await client.queue.result(MODEL_ID, {
         requestId: jobId,
       });
-      const image = result.images[0];
+      const image = getFalFirstImage(result);
       if (!image) return null;
       return {
         imageUrl: image.url,
@@ -120,9 +165,11 @@ export class FalFashnProvider implements TryOnProvider {
       const { readFile } = await import("node:fs/promises");
       const buffer = await readFile(image);
       const blob = new Blob([buffer], { type: "image/jpeg" });
-      return client.storage.upload(blob);
+      const upload = await client.storage.upload(blob);
+      return getFalUploadUrl(upload);
     }
     const blob = new Blob([image], { type: "image/jpeg" });
-    return client.storage.upload(blob);
+    const upload = await client.storage.upload(blob);
+    return getFalUploadUrl(upload);
   }
 }

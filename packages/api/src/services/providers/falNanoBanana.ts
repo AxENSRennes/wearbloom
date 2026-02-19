@@ -6,6 +6,7 @@ import type {
   TryOnResult,
 } from "../tryOnProvider";
 import type { FalClient } from "./falFashn";
+import { getFalFirstImage, getFalRequestId, getFalUploadUrl } from "./falFashn";
 
 export class FalNanoBananaProvider implements TryOnProvider {
   readonly name = "fal_nano_banana" as const;
@@ -38,13 +39,15 @@ export class FalNanoBananaProvider implements TryOnProvider {
     if (this.falClientInstance) {
       return Promise.resolve(this.falClientInstance);
     }
-    this.falClientPromise ??= import("@fal-ai/client").then((mod) => {
-      const client = mod.fal as unknown as FalClient;
+    const falClientPromise = (this.falClientPromise ??= import(
+      "@fal-ai/client"
+    ).then((mod) => {
+      const client = mod.fal;
       client.config({ credentials: this.falKey });
       this.falClientInstance = client;
       return client;
-    });
-    return this.falClientPromise;
+    }));
+    return falClientPromise;
   }
 
   async submitRender(
@@ -72,7 +75,7 @@ export class FalNanoBananaProvider implements TryOnProvider {
       webhookUrl: this.webhookUrl,
     });
 
-    return { jobId: result.request_id };
+    return { jobId: getFalRequestId(result) };
   }
 
   async getResult(jobId: string): Promise<TryOnResult | null> {
@@ -82,7 +85,7 @@ export class FalNanoBananaProvider implements TryOnProvider {
       const result = await client.queue.result(this.modelId, {
         requestId: jobId,
       });
-      const image = result.images[0];
+      const image = getFalFirstImage(result);
       if (!image) return null;
       return {
         imageUrl: image.url,
@@ -101,9 +104,11 @@ export class FalNanoBananaProvider implements TryOnProvider {
       const { readFile } = await import("node:fs/promises");
       const buffer = await readFile(image);
       const blob = new Blob([buffer], { type: "image/jpeg" });
-      return client.storage.upload(blob);
+      const upload = await client.storage.upload(blob);
+      return getFalUploadUrl(upload);
     }
     const blob = new Blob([image], { type: "image/jpeg" });
-    return client.storage.upload(blob);
+    const upload = await client.storage.upload(blob);
+    return getFalUploadUrl(upload);
   }
 }

@@ -10,6 +10,7 @@ import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 import { getBaseUrl } from "~/utils/base-url";
+import { appendLocalImage } from "~/utils/formData";
 import { compressImage } from "~/utils/imageCompressor";
 import { setOnboardingBodyPhotoSource } from "~/utils/onboardingState";
 
@@ -83,11 +84,12 @@ export function BodyPhotoManager() {
       const compressed = await compressImage(asset.uri);
 
       const formData = new FormData();
-      formData.append("photo", {
-        uri: compressed.uri,
-        type: "image/jpeg",
-        name: "body-avatar.jpg",
-      } as unknown as Blob);
+      await appendLocalImage(
+        formData,
+        "photo",
+        compressed.uri,
+        "body-avatar.jpg",
+      );
       formData.append("width", String(compressed.width));
       formData.append("height", String(compressed.height));
 

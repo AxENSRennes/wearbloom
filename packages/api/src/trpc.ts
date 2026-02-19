@@ -2,6 +2,11 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod/v4";
 
+import type {
+  GarmentCategory,
+  RenderMode,
+  TryOnProviderName,
+} from "@acme/validators";
 import { db } from "@acme/db/client";
 
 import { RateLimiter } from "./rateLimit";
@@ -34,9 +39,7 @@ export interface AppleIapDeps {
       subtype?: string;
       data?: unknown;
     }>;
-    verifyAndDecodeTransaction: (
-      signedTransaction: string,
-    ) => Promise<Record<string, unknown>>;
+    verifyAndDecodeTransaction: (signedTransaction: string) => Promise<unknown>;
   };
   client: {
     requestTestNotification: () => Promise<unknown>;
@@ -81,15 +84,15 @@ export interface TryOnProviderContext {
   submitRender(
     personImage: string | Buffer,
     garmentImage: string | Buffer,
-    options?: { category?: string; mode?: string },
+    options?: { category?: GarmentCategory; mode?: RenderMode },
   ): Promise<{ jobId: string }>;
   getResult(jobId: string): Promise<{
     imageUrl: string;
     imageData?: Buffer;
     contentType: string;
   } | null>;
-  readonly name: string;
-  readonly supportedCategories: readonly string[];
+  readonly name: TryOnProviderName;
+  readonly supportedCategories: readonly GarmentCategory[];
 }
 
 export interface AnonymousConfig {

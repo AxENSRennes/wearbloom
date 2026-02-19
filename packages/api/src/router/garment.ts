@@ -21,11 +21,7 @@ export const garmentRouter = {
   upload: uploadProcedure
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
-      const formData = input as unknown as {
-        get(key: string): File | string | null;
-      };
-
-      const file = formData.get("photo");
+      const file = input.get("photo");
       if (!file || typeof file === "string") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -33,7 +29,7 @@ export const garmentRouter = {
         });
       }
 
-      const categoryStr = formData.get("category");
+      const categoryStr = input.get("category");
       if (typeof categoryStr !== "string") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -74,8 +70,8 @@ export const garmentRouter = {
       const buffer = Buffer.from(await file.arrayBuffer());
       validateImageBytes(buffer, file.type);
 
-      const widthStr = formData.get("width");
-      const heightStr = formData.get("height");
+      const widthStr = input.get("width");
+      const heightStr = input.get("height");
       const width = typeof widthStr === "string" ? Number(widthStr) : undefined;
       const height =
         typeof heightStr === "string" ? Number(heightStr) : undefined;
