@@ -160,6 +160,12 @@ describe("FeedbackButton", () => {
 
     expect(html).toContain("Icon-MessageCircle");
   });
+
+  test("renders iOS blur backdrop for glass effect", () => {
+    const html = renderToStaticMarkup(<FeedbackButton {...defaultProps} />);
+
+    expect(html).toContain('testID="feedback-blur-background"');
+  });
 });
 
 // =============================================================================

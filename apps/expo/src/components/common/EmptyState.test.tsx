@@ -1,3 +1,4 @@
+import { View } from "react-native";
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -92,5 +93,24 @@ describe("EmptyState", () => {
     );
 
     expect(html).toContain('variant="secondary"');
+  });
+
+  test("renders default illustration with accessibility role image", () => {
+    const html = renderToStaticMarkup(<EmptyState headline="Test" />);
+
+    expect(html).toContain('accessibilityRole="image"');
+    expect(html).toContain("Wardrobe empty state illustration");
+  });
+
+  test("renders custom illustration when provided", () => {
+    const html = renderToStaticMarkup(
+      <EmptyState
+        headline="Test"
+        illustration={<View testID="custom-illustration" />}
+      />,
+    );
+
+    expect(html).toContain("custom-illustration");
+    expect(html).not.toContain("Wardrobe empty state illustration");
   });
 });

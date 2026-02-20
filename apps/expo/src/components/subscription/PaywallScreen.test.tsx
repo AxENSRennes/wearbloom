@@ -300,6 +300,12 @@ describe("PaywallScreen", () => {
     expect(html).toContain('accessibilityLabel="Your try-on result preview"');
   });
 
+  test("renders Apple Pay badge on iOS", () => {
+    const html = render();
+    expect(html).toContain("Apple Pay");
+    expect(html).toContain("Fast checkout with");
+  });
+
   // --- garmentId passthrough ---
 
   test("accepts garmentId prop and renders normally", () => {

@@ -1,7 +1,13 @@
 import type { VariantProps } from "@gluestack-ui/utils/nativewind-utils";
 import type { PressableProps, TextProps, ViewProps } from "react-native";
 import React from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { createButton } from "@gluestack-ui/core/lib/esm/index.jsx";
 import { tva } from "@gluestack-ui/utils/nativewind-utils";
 
@@ -111,6 +117,9 @@ const SPINNER_COLORS: Record<ButtonVariant, string> = {
   ghost: wearbloomTheme.colors["text-secondary"],
 };
 
+const BUTTON_PRESS_SCALE = 0.97;
+const BUTTON_PRESS_OPACITY = 0.9;
+
 export function Button({
   label,
   variant = "primary",
@@ -120,29 +129,70 @@ export function Button({
   className,
   accessibilityHint,
 }: ButtonProps) {
+  const [scale] = React.useState(() => new Animated.Value(1));
+  const [opacity] = React.useState(() => new Animated.Value(1));
+
+  const animatePressState = React.useCallback(
+    (isPressed: boolean) => {
+      const toScale = isPressed ? BUTTON_PRESS_SCALE : 1;
+      const toOpacity = isPressed ? BUTTON_PRESS_OPACITY : 1;
+
+      Animated.parallel([
+        Animated.spring(scale, {
+          toValue: toScale,
+          speed: 30,
+          bounciness: 0,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: toOpacity,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    [opacity, scale],
+  );
+
+  const isUnavailable = disabled || isLoading;
+
   return (
-    <GluestackButton
-      className={buttonStyle({
-        variant,
-        isDisabled: disabled || isLoading,
-        className,
-      })}
-      onPress={onPress}
-      isDisabled={disabled || isLoading}
-      accessible
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: disabled || isLoading, busy: isLoading }}
+    <Animated.View
+      style={{
+        transform: [{ scale }],
+        opacity,
+      }}
     >
-      {isLoading ? (
-        <ActivityIndicator color={SPINNER_COLORS[variant]} size="small" />
-      ) : (
-        <GluestackButton.Text className={buttonTextStyle({ variant })}>
-          {label}
-        </GluestackButton.Text>
-      )}
-    </GluestackButton>
+      <GluestackButton
+        className={buttonStyle({
+          variant,
+          isDisabled: isUnavailable,
+          className,
+        })}
+        onPress={onPress}
+        isDisabled={isUnavailable}
+        onPressIn={() => {
+          if (isUnavailable) return;
+          animatePressState(true);
+        }}
+        onPressOut={() => {
+          animatePressState(false);
+        }}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: isUnavailable, busy: isLoading }}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={SPINNER_COLORS[variant]} size="small" />
+        ) : (
+          <GluestackButton.Text className={buttonTextStyle({ variant })}>
+            {label}
+          </GluestackButton.Text>
+        )}
+      </GluestackButton>
+    </Animated.View>
   );
 }
 

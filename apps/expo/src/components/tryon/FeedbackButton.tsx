@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import {
   Check,
@@ -278,9 +279,10 @@ export function FeedbackButton({
         {
           height: 44,
           borderRadius: 22,
-          // Note: backdrop-blur effect requires expo-blur (BlurView) which is not installed.
-          // Using semi-transparent background as fallback.
-          backgroundColor: "rgba(255,255,255,0.3)",
+          backgroundColor:
+            Platform.OS === "ios"
+              ? "rgba(255,255,255,0.2)"
+              : "rgba(255,255,255,0.3)",
           overflow: "hidden",
           alignItems: "center",
           justifyContent: "center",
@@ -288,7 +290,17 @@ export function FeedbackButton({
         reducedMotion ? { width: getStaticWidth(state) } : animatedStyle,
       ]}
     >
-      {content}
+      {Platform.OS === "ios" ? (
+        <BlurView
+          testID="feedback-blur-background"
+          tint="light"
+          intensity={35}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+      <View className="h-full w-full items-center justify-center">
+        {content}
+      </View>
     </Animated.View>
   );
 }

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { wearbloomTheme } from "@acme/ui";
+
 import type { GarmentCategory } from "~/constants/stockAssets";
 import { StepPickGarment } from "./StepPickGarment";
 import { StepSeeTheMagic } from "./StepSeeTheMagic";
@@ -113,7 +115,9 @@ export function OnboardingFlow({
                   width: 10,
                   height: 10,
                   borderRadius: 5,
-                  backgroundColor: isActive ? "#1A1A1A" : "#D1D5DB",
+                  backgroundColor: isActive
+                    ? wearbloomTheme.colors["text-primary"]
+                    : wearbloomTheme.colors.border,
                 }}
               />
             );

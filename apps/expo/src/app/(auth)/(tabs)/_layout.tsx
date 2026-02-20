@@ -33,8 +33,12 @@ export default function TabsLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: wearbloomTheme.colors.background,
-          borderTopColor: wearbloomTheme.colors.border,
-          borderTopWidth: 1,
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 11,

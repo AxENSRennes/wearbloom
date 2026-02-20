@@ -102,7 +102,10 @@ export function StepYourPhoto({
           First, let&apos;s see you
         </ThemedText>
 
-        <ThemedText variant="body" className="mt-2 text-center text-[#6B6B6B]">
+        <ThemedText
+          variant="body"
+          className="mt-2 text-center text-text-secondary"
+        >
           Take a photo or use an example
         </ThemedText>
 

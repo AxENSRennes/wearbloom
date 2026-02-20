@@ -86,4 +86,11 @@ describe("Button", () => {
   test("is a function", () => {
     expect(typeof Button).toBe("function");
   });
+
+  test("applies animated press feedback constants", async () => {
+    const source = await Bun.file(import.meta.dir + "/button.tsx").text();
+    expect(source).toContain("BUTTON_PRESS_SCALE = 0.97");
+    expect(source).toContain("BUTTON_PRESS_OPACITY = 0.9");
+    expect(source).toContain("duration: 100");
+  });
 });

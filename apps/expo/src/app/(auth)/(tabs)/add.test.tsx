@@ -255,6 +255,14 @@ describe("AddGarmentScreen — Story 3.5 integration", () => {
     expect(html).toContain("Tips for best results");
   });
 
+  test("implements custom in-app camera flow with framing guide", async () => {
+    const source = await Bun.file(import.meta.dir + "/add.tsx").text();
+    expect(source).toContain("CameraView");
+    expect(source).toContain("Place garment flat");
+    expect(source).toContain("Flash");
+    expect(source).toContain("Capture garment photo");
+  });
+
   test("uses tabs root route for Browse Wardrobe success navigation", async () => {
     const source = await Bun.file(import.meta.dir + "/add.tsx").text();
     expect(source).toContain('const WARDROBE_ROUTE = "/(auth)/(tabs)/"');

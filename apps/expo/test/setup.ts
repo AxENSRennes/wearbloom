@@ -372,6 +372,44 @@ mockModuleWithResolve("expo-image-picker", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-camera — mock CameraView capture + permission hook
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("expo-camera", () => ({
+  CameraView: React.forwardRef(
+    (props: Record<string, unknown>, ref: unknown) => {
+      if (ref && typeof ref === "object" && "current" in ref) {
+        (ref as { current: Record<string, unknown> | null }).current = {
+          takePictureAsync: mock(() =>
+            Promise.resolve({
+              uri: "file:///mock/camera.jpg",
+              width: 3024,
+              height: 4032,
+            }),
+          ),
+        };
+      }
+      const { children, ...rest } = props;
+      return React.createElement(
+        "mock-CameraView",
+        rest,
+        children as React.ReactNode,
+      );
+    },
+  ),
+  useCameraPermissions: () => [
+    { granted: true, canAskAgain: true, expires: "never", status: "granted" },
+    mock(() =>
+      Promise.resolve({
+        granted: true,
+        canAskAgain: true,
+        expires: "never",
+        status: "granted",
+      }),
+    ),
+  ],
+}));
+
+// ---------------------------------------------------------------------------
 // expo-image-manipulator — mock image manipulation
 // ---------------------------------------------------------------------------
 mockModuleWithResolve("expo-image-manipulator", () => ({
@@ -419,6 +457,13 @@ mockModuleWithResolve("expo-router", () => ({
 // ---------------------------------------------------------------------------
 mockModuleWithResolve("expo-image", () => ({
   Image: mockComponent("ExpoImage"),
+}));
+
+// ---------------------------------------------------------------------------
+// expo-blur — mock BlurView for glassmorphism surfaces
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("expo-blur", () => ({
+  BlurView: mockComponent("BlurView"),
 }));
 
 // ---------------------------------------------------------------------------
@@ -567,6 +612,9 @@ mockModuleWithResolve("@acme/ui", () => ({
     colors: {
       primary: "#4c6ef5",
       neutral: "#868e96",
+      border: "#EBEBEB",
+      "text-primary": "#1A1A1A",
+      "text-secondary": "#6B6B6B",
       "text-tertiary": "#A3A3A3",
     },
   },

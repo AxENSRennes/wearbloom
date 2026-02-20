@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Pressable, ScrollView, View } from "react-native";
+import type { ComponentProps } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { useQuery } from "@tanstack/react-query";
 import { Check, CircleCheck, X } from "lucide-react-native";
 
 import {
@@ -13,9 +16,13 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
 import { useStoreKit } from "~/hooks/useStoreKit";
 import { useSubscription } from "~/hooks/useSubscription";
+import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
+import { getAuthHeaders } from "~/utils/authHeaders";
+import { getBaseUrl } from "~/utils/base-url";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +36,8 @@ type DisplayState =
   | "processing"
   | "restoring"
   | ViewState;
+
+type HeroImageSource = ComponentProps<typeof Image>["source"];
 
 interface TrialOffer {
   paymentMode: string;
@@ -91,6 +100,10 @@ export function PaywallScreen({
     state: subscriptionState,
     hadSubscription,
   } = useSubscription();
+  const latestCompletedRenderQuery = useQuery({
+    ...trpc.tryon.getLatestCompletedRender.queryOptions(),
+    enabled: userId.length > 0,
+  });
 
   const handlePurchaseError = useCallback(
     (error: { code?: unknown } | null) => {
@@ -218,6 +231,18 @@ export function PaywallScreen({
     await retryProductFetch();
   }, [retryProductFetch]);
 
+  const heroImageSource: HeroImageSource = useMemo(() => {
+    const latestRender = latestCompletedRenderQuery.data;
+    if (!latestRender?.resultImageUrl) {
+      return STOCK_BODY_PHOTO;
+    }
+
+    return {
+      uri: `${getBaseUrl()}${latestRender.resultImageUrl}`,
+      headers: getAuthHeaders(),
+    };
+  }, [latestCompletedRenderQuery.data]);
+
   if (displayState === "loading") {
     return <PaywallLoadingState />;
   }
@@ -259,6 +284,7 @@ export function PaywallScreen({
       displayPrice={product?.displayPrice}
       onRestore={handleRestore}
       isRestoringNow={isRestoringNow}
+      heroImageSource={heroImageSource}
     />
   );
 }
@@ -371,6 +397,7 @@ interface PaywallReadyStateProps {
   displayPrice?: string;
   onRestore: () => Promise<void>;
   isRestoringNow: boolean;
+  heroImageSource: HeroImageSource;
 }
 
 function PaywallReadyState({
@@ -383,6 +410,7 @@ function PaywallReadyState({
   displayPrice,
   onRestore,
   isRestoringNow,
+  heroImageSource,
 }: PaywallReadyStateProps) {
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -393,15 +421,20 @@ function PaywallReadyState({
         contentContainerClassName="flex-grow justify-center pb-8 pt-12"
         showsVerticalScrollIndicator={false}
       >
-        <View
-          className="mb-6 h-48 items-center justify-center rounded-2xl bg-surface"
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel="Your try-on result preview"
-        >
-          <ThemedText variant="caption" className="text-text-tertiary">
-            Your try-on result preview
-          </ThemedText>
+        <View className="mb-6 overflow-hidden rounded-2xl">
+          <Image
+            source={heroImageSource}
+            style={{ height: 192, width: "100%" }}
+            contentFit="cover"
+            transition={200}
+            accessibilityRole="image"
+            accessibilityLabel="Your try-on result preview"
+          />
+          <View className="absolute bottom-3 left-3 rounded-full bg-black/50 px-3 py-1">
+            <ThemedText variant="small" className="text-white">
+              Your try-on result preview
+            </ThemedText>
+          </View>
         </View>
 
         <ThemedText variant="display" className="mb-6">
@@ -423,6 +456,19 @@ function PaywallReadyState({
           isLoading={isProcessing}
           disabled={isProcessing}
         />
+
+        {Platform.OS === "ios" ? (
+          <View className="mt-3 flex-row items-center justify-center gap-2">
+            <ThemedText variant="caption" className="text-text-secondary">
+              Fast checkout with
+            </ThemedText>
+            <View className="rounded-md bg-black px-2.5 py-1">
+              <ThemedText variant="small" className="font-semibold text-white">
+                Apple Pay
+              </ThemedText>
+            </View>
+          </View>
+        ) : null}
 
         <ThemedText
           variant="caption"

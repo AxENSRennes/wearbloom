@@ -1,7 +1,9 @@
 import type { Href } from "expo-router";
-import { useCallback, useReducer, useState } from "react";
+import type { ComponentRef } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -105,6 +107,11 @@ export default function AddGarmentScreen() {
   const [selectedCategory, setSelectedCategory] =
     useState<GarmentCategory>("tops");
   const [showActionSheet, setShowActionSheet] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isFlashEnabled, setIsFlashEnabled] = useState(false);
+  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef<ComponentRef<typeof CameraView>>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isConnected } = useNetworkStatus();
@@ -146,47 +153,9 @@ export default function AddGarmentScreen() {
     }),
   );
 
-  const handleCapture = useCallback(async (source: "camera" | "gallery") => {
+  const handlePhotoReady = useCallback(async (uri: string) => {
     try {
-      let result: ImagePicker.ImagePickerResult;
-
-      if (source === "camera") {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Camera permission is required to take a photo.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          quality: 1,
-        });
-      } else {
-        const permission =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Photo library permission is required.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          quality: 1,
-        });
-      }
-
-      if (result.canceled) return;
-
-      const asset = result.assets[0];
-      if (!asset) return;
-
-      const compressed = await compressImage(asset.uri).catch(() => null);
+      const compressed = await compressImage(uri).catch(() => null);
       if (!compressed) {
         showToast({
           message: "Could not process the photo. Please try again.",
@@ -208,6 +177,89 @@ export default function AddGarmentScreen() {
       });
     }
   }, []);
+
+  const handleOpenCamera = useCallback(async () => {
+    const permission = cameraPermission ?? (await requestCameraPermission());
+    if (!permission.granted) {
+      showToast({
+        message: "Camera permission is required to take a photo.",
+        variant: "error",
+      });
+      return;
+    }
+
+    setShowActionSheet(false);
+    setIsFlashEnabled(false);
+    setIsCameraOpen(true);
+  }, [cameraPermission, requestCameraPermission]);
+
+  const handleSelectFromGallery = useCallback(async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+    if (permission.status !== "granted") {
+      showToast({
+        message: "Photo library permission is required.",
+        variant: "error",
+      });
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 1,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    if (!asset) return;
+
+    await handlePhotoReady(asset.uri);
+    setIsCameraOpen(false);
+    setShowActionSheet(false);
+  }, [handlePhotoReady]);
+
+  const handleCapture = useCallback(
+    async (source: "camera" | "gallery") => {
+      if (source === "camera") {
+        await handleOpenCamera();
+        return;
+      }
+
+      await handleSelectFromGallery();
+    },
+    [handleOpenCamera, handleSelectFromGallery],
+  );
+
+  const handleTakePhoto = useCallback(async () => {
+    if (isTakingPhoto) return;
+    if (!cameraRef.current) return;
+
+    try {
+      setIsTakingPhoto(true);
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 1,
+      });
+
+      if (!photo.uri) {
+        showToast({
+          message: "Could not capture photo. Please try again.",
+          variant: "error",
+        });
+        return;
+      }
+
+      await handlePhotoReady(photo.uri);
+      setIsCameraOpen(false);
+    } catch {
+      showToast({
+        message: "Could not capture photo. Please try again.",
+        variant: "error",
+      });
+    } finally {
+      setIsTakingPhoto(false);
+    }
+  }, [handlePhotoReady, isTakingPhoto]);
 
   const handleSave = useCallback(async () => {
     if (state.step !== "previewing") return;
@@ -249,6 +301,83 @@ export default function AddGarmentScreen() {
 
     uploadMutation.mutate(formData);
   }, [state, isConnected, selectedCategory, uploadMutation]);
+
+  if (isCameraOpen) {
+    return (
+      <SafeAreaView className="flex-1 bg-black">
+        <CameraView
+          ref={cameraRef}
+          style={{ flex: 1 }}
+          facing="back"
+          flash={isFlashEnabled ? "on" : "off"}
+        >
+          <View className="flex-1 justify-between bg-black/20 p-6">
+            <View className="flex-row items-center justify-between">
+              <Pressable
+                className="rounded-full bg-black/40 px-4 py-2"
+                onPress={() => {
+                  setIsCameraOpen(false);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Close camera"
+              >
+                <ThemedText variant="caption" className="text-white">
+                  Cancel
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                className="rounded-full bg-black/40 px-4 py-2"
+                onPress={() => setIsFlashEnabled((prev) => !prev)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isFlashEnabled ? "Turn flash off" : "Turn flash on"
+                }
+              >
+                <ThemedText variant="caption" className="text-white">
+                  Flash {isFlashEnabled ? "On" : "Off"}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            <View className="items-center">
+              <View
+                className="h-72 w-56 rounded-3xl border-2 border-white/95"
+                style={{ borderStyle: "dashed" }}
+              />
+              <ThemedText variant="body" className="mt-4 text-white">
+                Place garment flat
+              </ThemedText>
+            </View>
+
+            <View className="items-center pb-4">
+              <Pressable
+                className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white/20"
+                onPress={() => void handleTakePhoto()}
+                accessibilityRole="button"
+                accessibilityLabel="Capture garment photo"
+                disabled={isTakingPhoto}
+              >
+                <View className="h-12 w-12 rounded-full bg-white" />
+              </Pressable>
+
+              <Pressable
+                className="mt-4 rounded-full bg-black/40 px-4 py-2"
+                onPress={() => void handleSelectFromGallery()}
+                accessibilityRole="button"
+                accessibilityLabel="Choose from gallery"
+              >
+                <ThemedText variant="caption" className="text-white">
+                  Choose from gallery
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </CameraView>
+      </SafeAreaView>
+    );
+  }
+
   if (state.step === "success") {
     return (
       <AddSuccessState

@@ -2,7 +2,7 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 
-import { and, count, eq, gt } from "@acme/db";
+import { and, count, desc, eq, gt } from "@acme/db";
 import {
   bodyPhotos,
   garments,
@@ -30,6 +30,32 @@ const MAX_REFUNDS_PER_MONTH = 3;
 export const tryonRouter = {
   getSupportedCategories: publicProcedure.query(({ ctx }) => {
     return ctx.tryOnProvider?.supportedCategories ?? [];
+  }),
+
+  getLatestCompletedRender: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    const latestRenderResult = await ctx.db
+      .select({ id: tryOnRenders.id })
+      .from(tryOnRenders)
+      .where(
+        and(
+          eq(tryOnRenders.userId, userId),
+          eq(tryOnRenders.status, "completed"),
+        ),
+      )
+      .orderBy(desc(tryOnRenders.createdAt))
+      .limit(1);
+
+    const latestRender = latestRenderResult[0];
+    if (!latestRender) {
+      return null;
+    }
+
+    return {
+      renderId: latestRender.id,
+      resultImageUrl: `/api/images/render/${latestRender.id}`,
+    };
   }),
 
   requestRender: renderProcedure

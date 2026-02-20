@@ -1,8 +1,9 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
 import { useCallback, useMemo, useReducer, useRef } from "react";
-import { Dimensions, View } from "react-native";
+import { Dimensions, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
@@ -285,19 +286,37 @@ export default function WardrobeScreen() {
     <>
       <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
         {/* Sticky CategoryPills header */}
-        <View className="absolute left-0 right-0 top-0 z-10 bg-white/90 px-4 py-2">
-          <CategoryPills
-            categories={ALL_CATEGORIES}
-            selected={uiState.selectedCategory}
-            onSelect={handleCategorySelect}
-          />
-          {!isConnected && (
-            <View className="mt-1 items-center rounded bg-amber-100 py-1">
-              <ThemedText variant="caption" className="text-amber-800">
-                Offline
-              </ThemedText>
-            </View>
-          )}
+        <View
+          className="absolute left-0 right-0 top-0 z-10 overflow-hidden px-4 py-2"
+          style={{
+            backgroundColor:
+              Platform.OS === "ios"
+                ? "rgba(255,255,255,0.78)"
+                : "rgba(255,255,255,0.9)",
+          }}
+        >
+          {Platform.OS === "ios" ? (
+            <BlurView
+              testID="wardrobe-category-header-blur"
+              tint="light"
+              intensity={25}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+          <View>
+            <CategoryPills
+              categories={ALL_CATEGORIES}
+              selected={uiState.selectedCategory}
+              onSelect={handleCategorySelect}
+            />
+            {!isConnected && (
+              <View className="mt-1 items-center rounded bg-amber-100 py-1">
+                <ThemedText variant="caption" className="text-amber-800">
+                  Offline
+                </ThemedText>
+              </View>
+            )}
+          </View>
         </View>
 
         {isLoading ? (

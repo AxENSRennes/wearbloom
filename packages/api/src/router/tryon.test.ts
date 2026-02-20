@@ -132,6 +132,41 @@ describe("tryon.getSupportedCategories", () => {
   });
 });
 
+describe("tryon.getLatestCompletedRender", () => {
+  let selectSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    selectSpy?.mockRestore();
+  });
+
+  test("returns the latest completed render when available", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([{ id: "render-latest" }]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getLatestCompletedRender();
+
+    expect(result).toEqual({
+      renderId: "render-latest",
+      resultImageUrl: "/api/images/render/render-latest",
+    });
+  });
+
+  test("returns null when no completed render exists", async () => {
+    const { db } = await import("@acme/db/client");
+    selectSpy = spyOn(db as never, "select").mockReturnValue(
+      mockDbSelect([]) as never,
+    );
+
+    const { caller } = await createAuthenticatedCaller();
+    const result = await caller.tryon.getLatestCompletedRender();
+
+    expect(result).toBeNull();
+  });
+});
+
 describe("tryon.requestRender", () => {
   let selectSpy: ReturnType<typeof spyOn>;
   let insertSpy: ReturnType<typeof spyOn>;

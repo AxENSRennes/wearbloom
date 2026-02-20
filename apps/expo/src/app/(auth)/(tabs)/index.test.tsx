@@ -269,11 +269,11 @@ describe("WardrobeScreen", () => {
   // -------------------------------------------------------------------------
   // 9. Sticky header background
   // -------------------------------------------------------------------------
-  test("CategoryPills sticky header has semi-transparent background", () => {
+  test("CategoryPills sticky header renders premium overlay container", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
 
-    // The absolute-positioned container wrapping CategoryPills
-    expect(html).toContain("bg-white/90");
+    // iOS path renders blur view; Android path keeps translucent background fallback
+    expect(html).toContain("wardrobe-category-header-blur");
   });
 
   // -------------------------------------------------------------------------
