@@ -147,59 +147,66 @@ export default function AddGarmentScreen() {
   );
 
   const handleCapture = useCallback(async (source: "camera" | "gallery") => {
-    let result: ImagePicker.ImagePickerResult;
+    try {
+      let result: ImagePicker.ImagePickerResult;
 
-    if (source === "camera") {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-      if (permission.status !== "granted") {
+      if (source === "camera") {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Camera permission is required to take a photo.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          quality: 1,
+        });
+      } else {
+        const permission =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Photo library permission is required.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          quality: 1,
+        });
+      }
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      if (!asset) return;
+
+      const compressed = await compressImage(asset.uri).catch(() => null);
+      if (!compressed) {
         showToast({
-          message: "Camera permission is required to take a photo.",
+          message: "Could not process the photo. Please try again.",
           variant: "error",
         });
         return;
       }
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        quality: 1,
+
+      dispatch({
+        type: "PHOTO_SELECTED",
+        uri: compressed.uri,
+        width: compressed.width,
+        height: compressed.height,
       });
-    } else {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-      if (permission.status !== "granted") {
-        showToast({
-          message: "Photo library permission is required.",
-          variant: "error",
-        });
-        return;
-      }
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 1,
-      });
-    }
-
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    if (!asset) return;
-
-    const compressed = await compressImage(asset.uri).catch(() => null);
-    if (!compressed) {
+    } catch {
       showToast({
         message: "Could not process the photo. Please try again.",
         variant: "error",
       });
-      return;
     }
-
-    dispatch({
-      type: "PHOTO_SELECTED",
-      uri: compressed.uri,
-      width: compressed.width,
-      height: compressed.height,
-    });
   }, []);
 
   const handleSave = useCallback(async () => {

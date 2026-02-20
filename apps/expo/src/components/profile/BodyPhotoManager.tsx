@@ -42,77 +42,84 @@ export function BodyPhotoManager() {
     : null;
 
   async function handleUpload(source: "camera" | "gallery") {
-    let result: ImagePicker.ImagePickerResult;
+    try {
+      let result: ImagePicker.ImagePickerResult;
 
-    if (source === "camera") {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-      if (permission.status !== "granted") {
+      if (source === "camera") {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Camera permission is required to take a photo.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 1,
+        });
+      } else {
+        const permission =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+        if (permission.status !== "granted") {
+          showToast({
+            message: "Photo library permission is required.",
+            variant: "error",
+          });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 1,
+        });
+      }
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      if (!asset) return;
+
+      const compressed = await compressImage(asset.uri).catch(() => null);
+      if (!compressed) {
         showToast({
-          message: "Camera permission is required to take a photo.",
+          message: "Could not process the photo. Please try again.",
           variant: "error",
         });
         return;
       }
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 1,
-      });
-    } else {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-      if (permission.status !== "granted") {
+
+      const formData = new FormData();
+      const didAppend = await appendLocalImage(
+        formData,
+        "photo",
+        compressed.uri,
+        "body-avatar.jpg",
+      )
+        .then(() => true)
+        .catch(() => false);
+
+      if (!didAppend) {
         showToast({
-          message: "Photo library permission is required.",
+          message: "Could not process the photo. Please try again.",
           variant: "error",
         });
         return;
       }
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 1,
-      });
-    }
 
-    if (result.canceled) return;
+      formData.append("width", String(compressed.width));
+      formData.append("height", String(compressed.height));
 
-    const asset = result.assets[0];
-    if (!asset) return;
-
-    const compressed = await compressImage(asset.uri).catch(() => null);
-    if (!compressed) {
+      uploadMutation.mutate(formData);
+    } catch {
       showToast({
         message: "Could not process the photo. Please try again.",
         variant: "error",
       });
-      return;
     }
-
-    const formData = new FormData();
-    const didAppend = await appendLocalImage(
-      formData,
-      "photo",
-      compressed.uri,
-      "body-avatar.jpg",
-    )
-      .then(() => true)
-      .catch(() => false);
-
-    if (!didAppend) {
-      showToast({
-        message: "Could not process the photo. Please try again.",
-        variant: "error",
-      });
-      return;
-    }
-
-    formData.append("width", String(compressed.width));
-    formData.append("height", String(compressed.height));
-
-    uploadMutation.mutate(formData);
   }
 
   return (
