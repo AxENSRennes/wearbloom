@@ -245,6 +245,15 @@ mock.module("../services/imageProcessor", () => ({ ... }));
 - `restrictEnvAccess` rule: blocks `process.env` access outside `env.ts` files
 - Expo config ignores: `.expo/**`, `expo-plugins/**`
 
+**react-doctor (React health checker):**
+- Static analysis tool checking 60+ rules: React Compiler compatibility, state & effects, performance, architecture, dead code, accessibility
+- Auto-detects framework (React Native), React version (19), TypeScript, and React Compiler
+- Run locally: `npx react-doctor apps/expo -y --verbose`
+- Run score-only: `npx react-doctor apps/expo -y --score`
+- CI enforced: runs on every PR alongside lint/format/typecheck
+- Config: `react-doctor.config.json` at project root (optional — for ignoring specific rules)
+- Docs: https://github.com/millionco/react-doctor
+
 **Naming Conventions:**
 
 | Element | Convention | Example |

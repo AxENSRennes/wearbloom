@@ -56,9 +56,21 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+  react-doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: React Doctor
+        run: |
+          npx react-doctor@0.0.28 apps/expo -y --verbose
+
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [lint, format, typecheck]
+    needs: [lint, format, typecheck, react-doctor]
     runs-on: ubuntu-latest
     permissions:
       packages: write
