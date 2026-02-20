@@ -1,3 +1,23 @@
+interface ReactNativeFormDataFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+const LOCAL_URI_PREFIXES = [
+  "file://",
+  "content://",
+  "ph://",
+  "assets-library://",
+] as const;
+
+function isLocalNativeUri(uri: string): boolean {
+  const normalizedUri = uri.toLowerCase();
+  return LOCAL_URI_PREFIXES.some((prefix) =>
+    normalizedUri.startsWith(prefix),
+  );
+}
+
 function inferImageMimeType(uri: string, filename: string): string {
   const value = `${filename} ${uri}`.toLowerCase();
 
@@ -18,6 +38,16 @@ export async function appendLocalImage(
   uri: string,
   filename: string,
 ): Promise<void> {
+  if (isLocalNativeUri(uri)) {
+    const localFile: ReactNativeFormDataFile = {
+      uri,
+      name: filename,
+      type: inferImageMimeType(uri, filename),
+    };
+    formData.append(key, localFile as unknown as Blob);
+    return;
+  }
+
   const response = await fetch(uri);
   if (!response.ok) {
     throw new Error("LOCAL_IMAGE_READ_FAILED");

@@ -10,7 +10,34 @@ afterEach(() => {
 });
 
 describe("appendLocalImage", () => {
-  test("falls back to image/jpeg when local blob has empty mime type", async () => {
+  test("uses React Native file append for local URIs without fetch", async () => {
+    const fetchSpy = mock(
+      async () => new Response(new Blob(["unused"]), { status: 200 }),
+    );
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+
+    const appendSpy = mock(() => {});
+    const formData = { append: appendSpy } as unknown as FormData;
+
+    await appendLocalImage(
+      formData,
+      "photo",
+      "file:///tmp/photo.jpg",
+      "photo.jpg",
+    );
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(appendSpy).toHaveBeenCalledTimes(1);
+    const call = appendSpy.mock.calls[0] as unknown[];
+    expect(call[0]).toBe("photo");
+    expect(call[1]).toEqual({
+      uri: "file:///tmp/photo.jpg",
+      name: "photo.jpg",
+      type: "image/jpeg",
+    });
+  });
+
+  test("falls back to image/jpeg when remote blob has empty mime type", async () => {
     globalThis.fetch = mock(
       async () => new Response(new Blob(["jpeg-bytes"]), { status: 200 }),
     ) as unknown as typeof fetch;
@@ -19,7 +46,7 @@ describe("appendLocalImage", () => {
     await appendLocalImage(
       formData,
       "photo",
-      "file:///tmp/photo.jpg",
+      "https://example.com/photo.jpg",
       "photo.jpg",
     );
 
@@ -28,7 +55,7 @@ describe("appendLocalImage", () => {
     expect((entry as Blob).type).toBe("image/jpeg");
   });
 
-  test("keeps valid blob mime types", async () => {
+  test("keeps valid remote blob mime types", async () => {
     globalThis.fetch = mock(
       async () =>
         new Response(new Blob(["png-bytes"], { type: "image/png" }), {
@@ -40,7 +67,7 @@ describe("appendLocalImage", () => {
     await appendLocalImage(
       formData,
       "photo",
-      "file:///tmp/photo.png",
+      "https://example.com/photo.png",
       "photo.png",
     );
 
@@ -49,7 +76,7 @@ describe("appendLocalImage", () => {
     expect((entry as Blob).type).toBe("image/png");
   });
 
-  test("throws LOCAL_IMAGE_READ_FAILED when local uri read fails", async () => {
+  test("throws LOCAL_IMAGE_READ_FAILED when remote read fails", async () => {
     globalThis.fetch = mock(
       async () => new Response(null, { status: 404 }),
     ) as unknown as typeof fetch;
@@ -59,7 +86,7 @@ describe("appendLocalImage", () => {
       appendLocalImage(
         formData,
         "photo",
-        "file:///tmp/missing.jpg",
+        "https://example.com/missing.jpg",
         "missing.jpg",
       ),
     ).rejects.toThrow("LOCAL_IMAGE_READ_FAILED");
