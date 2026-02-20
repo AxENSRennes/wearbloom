@@ -235,7 +235,11 @@ function useAddGarmentController(): AddGarmentController {
   }, []);
 
   const handleOpenCamera = useCallback(async () => {
-    const permission = cameraPermission ?? (await requestCameraPermission());
+    let permission = cameraPermission;
+    if (!permission?.granted) {
+      permission = await requestCameraPermission();
+    }
+
     if (!permission.granted) {
       showToast({
         message: "Camera permission is required to take a photo.",
