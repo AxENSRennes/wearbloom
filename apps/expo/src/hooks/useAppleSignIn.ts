@@ -8,8 +8,32 @@ import { showToast } from "@acme/ui";
 import { trpc } from "~/utils/api";
 import { authClient } from "~/utils/auth";
 
+const DEFAULT_NON_BLOCKING_TIMEOUT_MS = 4000;
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_resolve, reject) => {
+      const timerId = setTimeout(() => {
+        reject(new Error(timeoutMessage));
+      }, timeoutMs);
+      promise
+        .finally(() => clearTimeout(timerId))
+        .catch(() => {
+          clearTimeout(timerId);
+        });
+    }),
+  ]);
+}
+
 export function useAppleSignIn(options?: {
   onSuccess?: () => void | Promise<void>;
+  grantCredits?: boolean;
+  maxWaitMs?: number;
 }) {
   const router = useRouter();
   const grantCredits = useMutation(
@@ -53,21 +77,39 @@ export function useAppleSignIn(options?: {
       return result.data;
     },
     onSuccess: async () => {
-      try {
-        await grantCredits.mutateAsync();
-      } catch {
-        // Non-critical — idempotent grant, credits may already exist
+      const shouldGrantCredits = options?.grantCredits ?? true;
+      const timeoutMs = options?.maxWaitMs ?? DEFAULT_NON_BLOCKING_TIMEOUT_MS;
+
+      if (shouldGrantCredits) {
+        void withTimeout(
+          grantCredits.mutateAsync(),
+          timeoutMs,
+          "Grant credits request timed out",
+        ).catch(() => {
+          // Non-critical — idempotent grant, credits may already exist
+        });
       }
+
       if (options?.onSuccess) {
-        await options.onSuccess();
+        try {
+          await withTimeout(
+            Promise.resolve(options.onSuccess()),
+            timeoutMs,
+            "Post-auth success flow timed out",
+          );
+        } catch {
+          router.replace("/(auth)/(tabs)" as Href);
+        }
       } else {
         router.replace("/(auth)/(tabs)" as Href);
       }
     },
     onError: (error: Error) => {
+      const message = error.message.toLowerCase();
       if (
-        error.message.includes("canceled") ||
-        error.message.includes("ERR_REQUEST_CANCELED")
+        message.includes("canceled") ||
+        message.includes("cancelled") ||
+        message.includes("err_request_canceled")
       ) {
         return;
       }

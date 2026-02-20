@@ -342,6 +342,16 @@ describe("useAppleSignIn", () => {
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
 
+  test("onSuccess can skip non-blocking credit grant", async () => {
+    runHook({ grantCredits: false });
+    assertDefined(onSuccessCb, "onSuccessCb should be set");
+
+    await onSuccessCb();
+
+    expect(grantCreditsMutateAsync).not.toHaveBeenCalled();
+    expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
+  });
+
   test("onSuccess navigates even if grantCredits fails", async () => {
     grantCreditsMutateAsync.mockImplementation(() =>
       Promise.reject(new Error("Already granted")),
@@ -351,6 +361,18 @@ describe("useAppleSignIn", () => {
 
     await onSuccessCb();
 
+    expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
+  });
+
+  test("onSuccess falls back to default navigation if custom success flow times out", async () => {
+    const neverEndingSuccess = mock(() => new Promise<void>(() => undefined));
+    runHook({ onSuccess: neverEndingSuccess, maxWaitMs: 1 });
+    assertDefined(onSuccessCb, "onSuccessCb should be set");
+
+    await onSuccessCb();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(neverEndingSuccess).toHaveBeenCalled();
     expect(routerMock.replace).toHaveBeenCalledWith("/(auth)/(tabs)");
   });
 

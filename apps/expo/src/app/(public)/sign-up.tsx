@@ -141,6 +141,7 @@ export default function SignUpScreen() {
   const appleSignIn = useAppleSignIn(
     isFromOnboarding
       ? {
+          grantCredits: false,
           onSuccess: async () => {
             await completeSignUpFlow({ skipCreditGrant: true });
           },
@@ -312,7 +313,13 @@ export default function SignUpScreen() {
             <Button
               label="Skip for now"
               variant="ghost"
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                  return;
+                }
+                router.replace("/(onboarding)" as Href);
+              }}
               disabled={isLoading}
               accessibilityHint="Returns to onboarding to try more combinations"
             />

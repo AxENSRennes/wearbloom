@@ -5,10 +5,9 @@ import { renderToString } from "react-dom/server";
 import OnboardingScreen from "./index";
 
 describe("OnboardingScreen", () => {
-  test("renders OnboardingFlow component", () => {
+  test("renders the first onboarding step", () => {
     const html = renderToString(createElement(OnboardingScreen));
-    // Should render children from OnboardingFlow (carousel with step components)
-    expect(html).toContain("mock-Carousel");
+    expect(html).toContain("First, let");
   });
 
   test("handleCreateAccount does not call markOnboardingComplete before navigation", async () => {

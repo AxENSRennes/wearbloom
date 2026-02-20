@@ -191,15 +191,22 @@ describe("SignUpScreen (onboarding context)", () => {
     const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
     // useAppleSignIn should receive onboarding onSuccess callback
     const hookCallIndex = source.indexOf("useAppleSignIn(");
-    const hookSection = source.substring(hookCallIndex, hookCallIndex + 300);
+    const hookSection = source.substring(hookCallIndex, hookCallIndex + 420);
     expect(hookSection).toContain("completeSignUpFlow");
     expect(hookSection).toContain("onSuccess");
+    expect(hookSection).toContain("grantCredits: false");
   });
 
   test("contains fallback routing to body photo when onboarding photo persistence fails", async () => {
     const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
     expect(source).toContain('router.replace("/(auth)/body-photo"');
     expect(source).toContain("requiresBodyPhoto");
+  });
+
+  test("uses back stack fallback when Skip for now is pressed", async () => {
+    const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
+    expect(source).toContain("router.canGoBack()");
+    expect(source).toContain('router.replace("/(onboarding)" as Href)');
   });
 });
 
