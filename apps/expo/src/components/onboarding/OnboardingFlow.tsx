@@ -15,7 +15,7 @@ const PAGE_COUNT = PAGES.length;
 const GARMENT_TO_RESULT_DELAY_MS = 500;
 type OnboardingStep = (typeof PAGES)[number];
 
-export interface OnboardingFlowProps {
+interface OnboardingFlowProps {
   onPhotoSelected: (uri: string, isStock: boolean) => void;
   onGarmentSelected: (
     uri: string,

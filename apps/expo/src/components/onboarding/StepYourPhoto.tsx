@@ -15,7 +15,7 @@ import {
   setOnboardingOwnBodyPhotoUri,
 } from "~/utils/onboardingState";
 
-export interface StepYourPhotoProps {
+interface StepYourPhotoProps {
   onPhotoSelected: (uri: string, isStock: boolean) => void;
 }
 

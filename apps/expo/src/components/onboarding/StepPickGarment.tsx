@@ -18,7 +18,7 @@ import { STOCK_GARMENTS } from "~/constants/stockAssets";
 // TODO(Epic-2): Add garment category picker when user photographs own garment
 const DEFAULT_PHOTO_CATEGORY: GarmentCategory = "tops";
 
-export interface StepPickGarmentProps {
+interface StepPickGarmentProps {
   onGarmentSelected: (
     uri: string,
     category: GarmentCategory,

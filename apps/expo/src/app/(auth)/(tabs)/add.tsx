@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
-import type { ComponentRef } from "react";
-import { useCallback, useReducer, useRef, useState } from "react";
+import type { ComponentRef, MutableRefObject } from "react";
+import { useCallback, useReducer, useRef } from "react";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -96,23 +96,88 @@ export function addGarmentReducer(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+interface AddUiState {
+  selectedCategory: GarmentCategory;
+  showActionSheet: boolean;
+  isCameraOpen: boolean;
+  isFlashEnabled: boolean;
+  isTakingPhoto: boolean;
+}
 
-export default function AddGarmentScreen() {
+type AddUiAction =
+  | { type: "SELECT_CATEGORY"; category: GarmentCategory }
+  | { type: "OPEN_ACTION_SHEET" }
+  | { type: "CLOSE_ACTION_SHEET" }
+  | { type: "OPEN_CAMERA" }
+  | { type: "CLOSE_CAMERA" }
+  | { type: "TOGGLE_FLASH" }
+  | { type: "PHOTO_CAPTURE_STARTED" }
+  | { type: "PHOTO_CAPTURE_FINISHED" };
+
+const INITIAL_ADD_UI_STATE: AddUiState = {
+  selectedCategory: "tops",
+  showActionSheet: false,
+  isCameraOpen: false,
+  isFlashEnabled: false,
+  isTakingPhoto: false,
+};
+
+function addUiReducer(state: AddUiState, action: AddUiAction): AddUiState {
+  switch (action.type) {
+    case "SELECT_CATEGORY":
+      return { ...state, selectedCategory: action.category };
+    case "OPEN_ACTION_SHEET":
+      return { ...state, showActionSheet: true };
+    case "CLOSE_ACTION_SHEET":
+      return { ...state, showActionSheet: false };
+    case "OPEN_CAMERA":
+      return {
+        ...state,
+        showActionSheet: false,
+        isCameraOpen: true,
+        isFlashEnabled: false,
+      };
+    case "CLOSE_CAMERA":
+      return { ...state, isCameraOpen: false };
+    case "TOGGLE_FLASH":
+      return { ...state, isFlashEnabled: !state.isFlashEnabled };
+    case "PHOTO_CAPTURE_STARTED":
+      return { ...state, isTakingPhoto: true };
+    case "PHOTO_CAPTURE_FINISHED":
+      return { ...state, isTakingPhoto: false };
+  }
+}
+
+interface AddGarmentController {
+  state: AddState;
+  selectedCategory: GarmentCategory;
+  showActionSheet: boolean;
+  isCameraOpen: boolean;
+  isFlashEnabled: boolean;
+  isTakingPhoto: boolean;
+  unsupportedCategories: readonly string[];
+  isSaving: boolean;
+  cameraRef: MutableRefObject<ComponentRef<typeof CameraView> | null>;
+  addAnother: () => void;
+  closeActionSheet: () => void;
+  closeCamera: () => void;
+  capture: (source: "camera" | "gallery") => Promise<void>;
+  openActionSheet: () => void;
+  retake: () => void;
+  save: () => Promise<void>;
+  selectCategory: (category: string) => void;
+  selectFromGallery: () => Promise<void>;
+  takePhoto: () => Promise<void>;
+  toggleFlash: () => void;
+}
+
+function useAddGarmentController(): AddGarmentController {
   const [state, dispatch] = useReducer(addGarmentReducer, {
     step: "idle",
   } as AddState);
-  const [selectedCategory, setSelectedCategory] =
-    useState<GarmentCategory>("tops");
-  const [showActionSheet, setShowActionSheet] = useState(false);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [isFlashEnabled, setIsFlashEnabled] = useState(false);
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [uiState, dispatchUi] = useReducer(addUiReducer, INITIAL_ADD_UI_STATE);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<ComponentRef<typeof CameraView>>(null);
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { isConnected } = useNetworkStatus();
 
@@ -137,7 +202,6 @@ export default function AddGarmentScreen() {
       onError: (error) => {
         dispatch({ type: "UPLOAD_ERROR" });
 
-        // Map known business error codes to user-friendly messages
         const errorMessages: Record<string, string> = {
           MISSING_PHOTO: "No photo selected. Please try again.",
           MISSING_CATEGORY: "Please select a category.",
@@ -155,15 +219,7 @@ export default function AddGarmentScreen() {
 
   const handlePhotoReady = useCallback(async (uri: string) => {
     try {
-      const compressed = await compressImage(uri).catch(() => null);
-      if (!compressed) {
-        showToast({
-          message: "Could not process the photo. Please try again.",
-          variant: "error",
-        });
-        return;
-      }
-
+      const compressed = await compressImage(uri);
       dispatch({
         type: "PHOTO_SELECTED",
         uri: compressed.uri,
@@ -188,9 +244,7 @@ export default function AddGarmentScreen() {
       return;
     }
 
-    setShowActionSheet(false);
-    setIsFlashEnabled(false);
-    setIsCameraOpen(true);
+    dispatchUi({ type: "OPEN_CAMERA" });
   }, [cameraPermission, requestCameraPermission]);
 
   const handleSelectFromGallery = useCallback(async () => {
@@ -215,8 +269,8 @@ export default function AddGarmentScreen() {
     if (!asset) return;
 
     await handlePhotoReady(asset.uri);
-    setIsCameraOpen(false);
-    setShowActionSheet(false);
+    dispatchUi({ type: "CLOSE_CAMERA" });
+    dispatchUi({ type: "CLOSE_ACTION_SHEET" });
   }, [handlePhotoReady]);
 
   const handleCapture = useCallback(
@@ -232,34 +286,33 @@ export default function AddGarmentScreen() {
   );
 
   const handleTakePhoto = useCallback(async () => {
-    if (isTakingPhoto) return;
+    if (uiState.isTakingPhoto) return;
     if (!cameraRef.current) return;
 
+    dispatchUi({ type: "PHOTO_CAPTURE_STARTED" });
     try {
-      setIsTakingPhoto(true);
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 1,
-      });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 1 });
 
       if (!photo.uri) {
         showToast({
           message: "Could not capture photo. Please try again.",
           variant: "error",
         });
+        dispatchUi({ type: "PHOTO_CAPTURE_FINISHED" });
         return;
       }
 
       await handlePhotoReady(photo.uri);
-      setIsCameraOpen(false);
+      dispatchUi({ type: "CLOSE_CAMERA" });
     } catch {
       showToast({
         message: "Could not capture photo. Please try again.",
         variant: "error",
       });
-    } finally {
-      setIsTakingPhoto(false);
     }
-  }, [handlePhotoReady, isTakingPhoto]);
+
+    dispatchUi({ type: "PHOTO_CAPTURE_FINISHED" });
+  }, [handlePhotoReady, uiState.isTakingPhoto]);
 
   const handleSave = useCallback(async () => {
     if (state.step !== "previewing") return;
@@ -268,7 +321,7 @@ export default function AddGarmentScreen() {
       enqueueUpload({
         id: createId(),
         imageUri: state.imageUri,
-        category: selectedCategory,
+        category: uiState.selectedCategory,
         width: state.width,
         height: state.height,
         queuedAt: new Date().toISOString(),
@@ -281,13 +334,13 @@ export default function AddGarmentScreen() {
       return;
     }
 
-    dispatch({ type: "UPLOAD_START", category: selectedCategory });
+    dispatch({ type: "UPLOAD_START", category: uiState.selectedCategory });
 
     let formData: FormData;
     try {
       formData = new FormData();
       await appendLocalImage(formData, "photo", state.imageUri, "garment.jpg");
-      formData.append("category", selectedCategory);
+      formData.append("category", uiState.selectedCategory);
       formData.append("width", String(state.width));
       formData.append("height", String(state.height));
     } catch {
@@ -300,118 +353,185 @@ export default function AddGarmentScreen() {
     }
 
     uploadMutation.mutate(formData);
-  }, [state, isConnected, selectedCategory, uploadMutation]);
+  }, [state, isConnected, uiState.selectedCategory, uploadMutation]);
 
-  if (isCameraOpen) {
+  const handleSelectCategory = useCallback((category: string) => {
+    if (isGarmentCategory(category)) {
+      dispatchUi({ type: "SELECT_CATEGORY", category });
+    }
+  }, []);
+
+  return {
+    state,
+    selectedCategory: uiState.selectedCategory,
+    showActionSheet: uiState.showActionSheet,
+    isCameraOpen: uiState.isCameraOpen,
+    isFlashEnabled: uiState.isFlashEnabled,
+    isTakingPhoto: uiState.isTakingPhoto,
+    unsupportedCategories,
+    isSaving: uploadMutation.isPending,
+    cameraRef,
+    addAnother: () => dispatch({ type: "ADD_ANOTHER" }),
+    closeActionSheet: () => dispatchUi({ type: "CLOSE_ACTION_SHEET" }),
+    closeCamera: () => dispatchUi({ type: "CLOSE_CAMERA" }),
+    capture: handleCapture,
+    openActionSheet: () => dispatchUi({ type: "OPEN_ACTION_SHEET" }),
+    retake: () => dispatch({ type: "RETAKE" }),
+    save: handleSave,
+    selectCategory: handleSelectCategory,
+    selectFromGallery: handleSelectFromGallery,
+    takePhoto: handleTakePhoto,
+    toggleFlash: () => dispatchUi({ type: "TOGGLE_FLASH" }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function AddGarmentScreen() {
+  const router = useRouter();
+  const controller = useAddGarmentController();
+
+  if (controller.isCameraOpen) {
     return (
-      <SafeAreaView className="flex-1 bg-black">
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          facing="back"
-          flash={isFlashEnabled ? "on" : "off"}
-        >
-          <View className="flex-1 justify-between bg-black/20 p-6">
-            <View className="flex-row items-center justify-between">
-              <Pressable
-                className="rounded-full bg-black/40 px-4 py-2"
-                onPress={() => {
-                  setIsCameraOpen(false);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Close camera"
-              >
-                <ThemedText variant="caption" className="text-white">
-                  Cancel
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                className="rounded-full bg-black/40 px-4 py-2"
-                onPress={() => setIsFlashEnabled((prev) => !prev)}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isFlashEnabled ? "Turn flash off" : "Turn flash on"
-                }
-              >
-                <ThemedText variant="caption" className="text-white">
-                  Flash {isFlashEnabled ? "On" : "Off"}
-                </ThemedText>
-              </Pressable>
-            </View>
-
-            <View className="items-center">
-              <View
-                className="h-72 w-56 rounded-3xl border-2 border-white/95"
-                style={{ borderStyle: "dashed" }}
-              />
-              <ThemedText variant="body" className="mt-4 text-white">
-                Place garment flat
-              </ThemedText>
-            </View>
-
-            <View className="items-center pb-4">
-              <Pressable
-                className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white/20"
-                onPress={() => void handleTakePhoto()}
-                accessibilityRole="button"
-                accessibilityLabel="Capture garment photo"
-                disabled={isTakingPhoto}
-              >
-                <View className="h-12 w-12 rounded-full bg-white" />
-              </Pressable>
-
-              <Pressable
-                className="mt-4 rounded-full bg-black/40 px-4 py-2"
-                onPress={() => void handleSelectFromGallery()}
-                accessibilityRole="button"
-                accessibilityLabel="Choose from gallery"
-              >
-                <ThemedText variant="caption" className="text-white">
-                  Choose from gallery
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        </CameraView>
-      </SafeAreaView>
+      <AddCameraCaptureState
+        cameraRef={controller.cameraRef}
+        isFlashEnabled={controller.isFlashEnabled}
+        isTakingPhoto={controller.isTakingPhoto}
+        onCloseCamera={controller.closeCamera}
+        onSelectFromGallery={controller.selectFromGallery}
+        onTakePhoto={controller.takePhoto}
+        onToggleFlash={controller.toggleFlash}
+      />
     );
   }
 
-  if (state.step === "success") {
+  if (controller.state.step === "success") {
     return (
       <AddSuccessState
-        onAddAnother={() => dispatch({ type: "ADD_ANOTHER" })}
+        onAddAnother={controller.addAnother}
         onBrowseWardrobe={() => router.push(WARDROBE_ROUTE as Href)}
       />
     );
   }
 
-  if (state.step === "previewing" || state.step === "uploading") {
+  if (
+    controller.state.step === "previewing" ||
+    controller.state.step === "uploading"
+  ) {
     return (
       <AddPreviewState
-        imageUri={state.imageUri}
-        selectedCategory={selectedCategory}
-        unsupportedCategories={unsupportedCategories}
-        onSelectCategory={(category) => {
-          if (isGarmentCategory(category)) {
-            setSelectedCategory(category);
-          }
-        }}
-        onSave={handleSave}
-        onRetake={() => dispatch({ type: "RETAKE" })}
-        isSaving={uploadMutation.isPending}
+        imageUri={controller.state.imageUri}
+        selectedCategory={controller.selectedCategory}
+        unsupportedCategories={controller.unsupportedCategories}
+        onSelectCategory={controller.selectCategory}
+        onSave={controller.save}
+        onRetake={controller.retake}
+        isSaving={controller.isSaving}
       />
     );
   }
 
   return (
     <AddIdleState
-      showActionSheet={showActionSheet}
-      onOpenActionSheet={() => setShowActionSheet(true)}
-      onCloseActionSheet={() => setShowActionSheet(false)}
-      onCapture={handleCapture}
+      showActionSheet={controller.showActionSheet}
+      onOpenActionSheet={controller.openActionSheet}
+      onCloseActionSheet={controller.closeActionSheet}
+      onCapture={controller.capture}
     />
+  );
+}
+
+interface AddCameraCaptureStateProps {
+  cameraRef: MutableRefObject<ComponentRef<typeof CameraView> | null>;
+  isFlashEnabled: boolean;
+  isTakingPhoto: boolean;
+  onCloseCamera: () => void;
+  onSelectFromGallery: () => Promise<void>;
+  onTakePhoto: () => Promise<void>;
+  onToggleFlash: () => void;
+}
+
+function AddCameraCaptureState({
+  cameraRef,
+  isFlashEnabled,
+  isTakingPhoto,
+  onCloseCamera,
+  onSelectFromGallery,
+  onTakePhoto,
+  onToggleFlash,
+}: AddCameraCaptureStateProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-black">
+      <CameraView
+        ref={cameraRef}
+        style={{ flex: 1 }}
+        facing="back"
+        flash={isFlashEnabled ? "on" : "off"}
+      >
+        <View className="flex-1 justify-between bg-black/20 p-6">
+          <View className="flex-row items-center justify-between">
+            <Pressable
+              className="rounded-full bg-black/40 px-4 py-2"
+              onPress={onCloseCamera}
+              accessibilityRole="button"
+              accessibilityLabel="Close camera"
+            >
+              <ThemedText variant="caption" className="text-white">
+                Cancel
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              className="rounded-full bg-black/40 px-4 py-2"
+              onPress={onToggleFlash}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isFlashEnabled ? "Turn flash off" : "Turn flash on"
+              }
+            >
+              <ThemedText variant="caption" className="text-white">
+                Flash {isFlashEnabled ? "On" : "Off"}
+              </ThemedText>
+            </Pressable>
+          </View>
+
+          <View className="items-center">
+            <View
+              className="h-72 w-56 rounded-3xl border-2 border-white/95"
+              style={{ borderStyle: "dashed" }}
+            />
+            <ThemedText variant="body" className="mt-4 text-white">
+              Place garment flat
+            </ThemedText>
+          </View>
+
+          <View className="items-center pb-4">
+            <Pressable
+              className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white/20"
+              onPress={() => void onTakePhoto()}
+              accessibilityRole="button"
+              accessibilityLabel="Capture garment photo"
+              disabled={isTakingPhoto}
+            >
+              <View className="h-12 w-12 rounded-full bg-white" />
+            </Pressable>
+
+            <Pressable
+              className="mt-4 rounded-full bg-black/40 px-4 py-2"
+              onPress={() => void onSelectFromGallery()}
+              accessibilityRole="button"
+              accessibilityLabel="Choose from gallery"
+            >
+              <ThemedText variant="caption" className="text-white">
+                Choose from gallery
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </CameraView>
+    </SafeAreaView>
   );
 }
 

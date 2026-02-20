@@ -21,7 +21,7 @@ import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
 import { mockRequestRender } from "~/services/mockRenderService";
 import { authClient } from "~/utils/auth";
 
-export interface StepSeeTheMagicProps {
+interface StepSeeTheMagicProps {
   onCreateAccount: () => void;
   onTryAnother: () => void;
   bodyPhotoUri?: string;
