@@ -65,6 +65,11 @@ describe("ProfileScreen", () => {
     expect(html).toMatch(/^<mock-SafeAreaView/);
   });
 
+  test("renders a ScrollView container for long profile content", () => {
+    const html = render(createElement(ProfileScreen));
+    expect(html).toContain("mock-ScrollView");
+  });
+
   // Body Avatar Section tests (Story 1.5)
   test("renders body photo placeholder when no photo exists", () => {
     const html = render(createElement(ProfileScreen));

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Pressable, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Check, CircleCheck, X } from "lucide-react-native";
@@ -308,7 +308,11 @@ export function PaywallScreen({
     <SafeAreaView className="flex-1 bg-background">
       <CloseButton onClose={onClose} />
 
-      <View className="flex-1 justify-center p-6">
+      <ScrollView
+        className="flex-1 p-6"
+        contentContainerClassName="flex-grow justify-center pb-8 pt-12"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero placeholder */}
         <View
           className="mb-6 h-48 items-center justify-center rounded-2xl bg-surface"
@@ -426,7 +430,7 @@ export function PaywallScreen({
             </ThemedText>
           </ThemedPressable>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -123,6 +123,11 @@ describe("SignInScreen", () => {
     // Only one secure text entry (password, no confirm password)
     expect(passwordMatches?.length ?? 0).toBeLessThanOrEqual(1);
   });
+
+  test("renders a ScrollView container for small screens", () => {
+    const html = render(createElement(SignInScreen));
+    expect(html).toContain("mock-ScrollView");
+  });
 });
 
 describe("SignInScreen credit grant behavior", () => {

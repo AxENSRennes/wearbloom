@@ -34,4 +34,9 @@ describe("ConsentScreen", () => {
     const html = render(createElement(ConsentScreen));
     expect(html).toContain("Accept &amp; Continue");
   });
+
+  test("renders a ScrollView container for long consent copy", () => {
+    const html = render(createElement(ConsentScreen));
+    expect(html).toContain("mock-ScrollView");
+  });
 });

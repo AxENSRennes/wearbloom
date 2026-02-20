@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { useState } from "react";
-import { Switch, View } from "react-native";
+import { ScrollView, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -74,7 +74,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
-      <View className="flex-1 p-4">
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerClassName="pb-6 pt-4"
+        showsVerticalScrollIndicator={false}
+      >
         <View className="items-center py-8">
           <ThemedText variant="display">Profile</ThemedText>
           <ThemedText variant="body" className="mt-2 text-text-secondary">
@@ -146,7 +150,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <View className="mt-auto gap-2 pb-4">
+        <View className="mt-4 gap-2 pb-4">
           <ThemedText variant="caption" className="px-1 text-text-secondary">
             Subscription
           </ThemedText>
@@ -240,18 +244,18 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
+      </ScrollView>
 
-        <AlertDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          onConfirm={() => deleteAccountMutation.mutate()}
-          title="Delete Account?"
-          message="This will permanently delete your account and all associated data. This action cannot be undone."
-          confirmLabel="Delete Account"
-          variant="destructive"
-          isLoading={deleteAccountMutation.isPending}
-        />
-      </View>
+      <AlertDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={() => deleteAccountMutation.mutate()}
+        title="Delete Account?"
+        message="This will permanently delete your account and all associated data. This action cannot be undone."
+        confirmLabel="Delete Account"
+        variant="destructive"
+        isLoading={deleteAccountMutation.isPending}
+      />
     </SafeAreaView>
   );
 }

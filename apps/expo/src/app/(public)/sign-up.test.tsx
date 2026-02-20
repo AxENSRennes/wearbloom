@@ -138,6 +138,11 @@ describe("SignUpScreen (normal context)", () => {
     const html = render(createElement(SignUpScreen));
     expect(html).not.toContain("Skip for now");
   });
+
+  test("renders a ScrollView container for long forms", () => {
+    const html = render(createElement(SignUpScreen));
+    expect(html).toContain("mock-ScrollView");
+  });
 });
 
 describe("SignUpScreen (onboarding context)", () => {

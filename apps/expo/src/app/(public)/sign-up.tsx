@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { useState } from "react";
-import { Platform, TextInput, View } from "react-native";
+import { Platform, ScrollView, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -196,143 +196,150 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 justify-center px-6">
-        <ThemedText
-          variant="display"
-          className={`text-center ${isFromOnboarding ? "mb-2" : "mb-8"}`}
-        >
-          {isFromOnboarding ? "Create Free Account" : "Create Account"}
-        </ThemedText>
-
-        {isFromOnboarding && (
+      <ScrollView
+        className="flex-1 px-6"
+        contentContainerClassName="flex-grow justify-center py-6"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View>
           <ThemedText
-            variant="body"
-            className="mb-8 text-center text-[15px] text-text-secondary"
-            accessibilityRole="text"
+            variant="display"
+            className={`text-center ${isFromOnboarding ? "mb-2" : "mb-8"}`}
           >
-            Save your wardrobe and unlock more free try-ons
+            {isFromOnboarding ? "Create Free Account" : "Create Account"}
           </ThemedText>
-        )}
 
-        {Platform.OS === "ios" && (
-          <>
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={
-                AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
-              }
-              buttonStyle={
-                AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-              }
-              cornerRadius={12}
-              style={{ height: 52, width: "100%" }}
-              onPress={() => appleSignIn.mutate()}
-            />
-
-            <View className="my-6 flex-row items-center">
-              <View className="flex-1 border-b border-border" />
-              <ThemedText
-                variant="caption"
-                className="mx-4 text-text-secondary"
-              >
-                or sign up with email
-              </ThemedText>
-              <View className="flex-1 border-b border-border" />
-            </View>
-          </>
-        )}
-
-        <View className="mb-4">
-          <TextInput
-            className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-            placeholder="Name"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            value={name}
-            onChangeText={handleNameChange}
-            onBlur={() => setNameError(validateName(name))}
-            autoCapitalize="words"
-            autoComplete="name"
-            accessibilityLabel="Full name"
-          />
-          {nameError ? (
-            <ThemedText variant="small" className="mt-1 text-error">
-              {nameError}
+          {isFromOnboarding && (
+            <ThemedText
+              variant="body"
+              className="mb-8 text-center text-[15px] text-text-secondary"
+              accessibilityRole="text"
+            >
+              Save your wardrobe and unlock more free try-ons
             </ThemedText>
-          ) : null}
-        </View>
-
-        <View className="mb-4">
-          <TextInput
-            className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-            placeholder="Email"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            value={email}
-            onChangeText={handleEmailChange}
-            onBlur={() => setEmailError(validateEmail(email))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            autoCorrect={false}
-            accessibilityLabel="Email address"
-          />
-          {emailError ? (
-            <ThemedText variant="small" className="mt-1 text-error">
-              {emailError}
-            </ThemedText>
-          ) : null}
-        </View>
-
-        <View className="mb-6">
-          <TextInput
-            className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-            placeholder="Password"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            value={password}
-            onChangeText={handlePasswordChange}
-            onBlur={() => setPasswordError(validatePassword(password))}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="new-password"
-            accessibilityLabel="Password"
-          />
-          {passwordError ? (
-            <ThemedText variant="small" className="mt-1 text-error">
-              {passwordError}
-            </ThemedText>
-          ) : null}
-        </View>
-
-        <Button
-          label={isFromOnboarding ? "Create Free Account" : "Create Account"}
-          onPress={handleSignUp}
-          isLoading={emailSignUp.isPending}
-          disabled={isLoading}
-        />
-
-        <View className="mt-6 items-center">
-          {isFromOnboarding ? (
-            <Button
-              label="Skip for now"
-              variant="ghost"
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                  return;
-                }
-                router.replace("/(onboarding)" as Href);
-              }}
-              disabled={isLoading}
-              accessibilityHint="Returns to onboarding to try more combinations"
-            />
-          ) : (
-            <Button
-              label="Already have an account? Sign in"
-              variant="ghost"
-              onPress={() => router.replace("/(public)/sign-in" as Href)}
-              disabled={isLoading}
-            />
           )}
+
+          {Platform.OS === "ios" && (
+            <>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={
+                  AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
+                }
+                buttonStyle={
+                  AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={12}
+                style={{ height: 52, width: "100%" }}
+                onPress={() => appleSignIn.mutate()}
+              />
+
+              <View className="my-6 flex-row items-center">
+                <View className="flex-1 border-b border-border" />
+                <ThemedText
+                  variant="caption"
+                  className="mx-4 text-text-secondary"
+                >
+                  or sign up with email
+                </ThemedText>
+                <View className="flex-1 border-b border-border" />
+              </View>
+            </>
+          )}
+
+          <View className="mb-4">
+            <TextInput
+              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
+              placeholder="Name"
+              placeholderTextColor={PLACEHOLDER_COLOR}
+              value={name}
+              onChangeText={handleNameChange}
+              onBlur={() => setNameError(validateName(name))}
+              autoCapitalize="words"
+              autoComplete="name"
+              accessibilityLabel="Full name"
+            />
+            {nameError ? (
+              <ThemedText variant="small" className="mt-1 text-error">
+                {nameError}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          <View className="mb-4">
+            <TextInput
+              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
+              placeholder="Email"
+              placeholderTextColor={PLACEHOLDER_COLOR}
+              value={email}
+              onChangeText={handleEmailChange}
+              onBlur={() => setEmailError(validateEmail(email))}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              accessibilityLabel="Email address"
+            />
+            {emailError ? (
+              <ThemedText variant="small" className="mt-1 text-error">
+                {emailError}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          <View className="mb-6">
+            <TextInput
+              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
+              placeholder="Password"
+              placeholderTextColor={PLACEHOLDER_COLOR}
+              value={password}
+              onChangeText={handlePasswordChange}
+              onBlur={() => setPasswordError(validatePassword(password))}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="new-password"
+              accessibilityLabel="Password"
+            />
+            {passwordError ? (
+              <ThemedText variant="small" className="mt-1 text-error">
+                {passwordError}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          <Button
+            label={isFromOnboarding ? "Create Free Account" : "Create Account"}
+            onPress={handleSignUp}
+            isLoading={emailSignUp.isPending}
+            disabled={isLoading}
+          />
+
+          <View className="mt-6 items-center">
+            {isFromOnboarding ? (
+              <Button
+                label="Skip for now"
+                variant="ghost"
+                onPress={() => {
+                  if (router.canGoBack()) {
+                    router.back();
+                    return;
+                  }
+                  router.replace("/(onboarding)" as Href);
+                }}
+                disabled={isLoading}
+                accessibilityHint="Returns to onboarding to try more combinations"
+              />
+            ) : (
+              <Button
+                label="Already have an account? Sign in"
+                variant="ghost"
+                onPress={() => router.replace("/(public)/sign-in" as Href)}
+                disabled={isLoading}
+              />
+            )}
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

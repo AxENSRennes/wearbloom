@@ -276,6 +276,11 @@ describe("PaywallScreen", () => {
     expect(html).toMatch(/^<mock-SafeAreaView/);
   });
 
+  test("renders a ScrollView container in ready state", () => {
+    const html = render();
+    expect(html).toContain("mock-ScrollView");
+  });
+
   test("renders price disclosure text", () => {
     const html = render();
     expect(html).toContain("Cancel anytime");

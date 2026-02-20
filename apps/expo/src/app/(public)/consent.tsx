@@ -1,5 +1,5 @@
 import type { Href } from "expo-router";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 
@@ -18,7 +18,11 @@ export default function ConsentScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <Stack.Screen options={{ gestureEnabled: false }} />
-      <View className="flex-1 justify-center px-4">
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerClassName="flex-grow justify-center py-6"
+        showsVerticalScrollIndicator={false}
+      >
         <View className="items-center gap-6">
           <ThemedText variant="display" className="text-center">
             Wearbloom
@@ -49,9 +53,9 @@ export default function ConsentScreen() {
             </ThemedText>
           </ThemedPressable>
         </View>
-      </View>
+      </ScrollView>
 
-      <View className="px-4 pb-6">
+      <View className="px-4 pb-6 pt-2">
         <Button
           label="Accept & Continue"
           variant="primary"
