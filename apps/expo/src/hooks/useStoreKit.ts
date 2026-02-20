@@ -34,6 +34,13 @@ interface StoreKitAdapter {
   getAvailablePurchases: () => Promise<{ purchaseToken?: string | null }[]>;
 }
 
+interface UseStoreKitOptions {
+  userId: string;
+  onPurchaseError?: (error: ExpoPurchaseError) => void;
+  onVerifySuccess?: () => void;
+  onVerifyError?: (error: Error) => void;
+}
+
 const webStoreKitAdapter: StoreKitAdapter = {
   useIAP: () => ({
     connected: false,
@@ -58,7 +65,12 @@ function toError(value: unknown) {
   return new Error("STOREKIT_PRODUCTS_UNAVAILABLE");
 }
 
-export function useStoreKit({ userId }: { userId: string }) {
+export function useStoreKit({
+  userId,
+  onPurchaseError,
+  onVerifySuccess,
+  onVerifyError,
+}: UseStoreKitOptions) {
   const isWeb = Platform.OS === "web";
   const storeKitAdapter = getStoreKitAdapter();
   const {
@@ -74,6 +86,7 @@ export function useStoreKit({ userId }: { userId: string }) {
     },
     onPurchaseError: (error) => {
       setPurchaseError(error);
+      onPurchaseError?.(error);
     },
   });
 
@@ -90,6 +103,10 @@ export function useStoreKit({ userId }: { userId: string }) {
         void queryClient.invalidateQueries({
           queryKey: trpc.subscription.getSubscriptionStatus.queryKey(),
         });
+        onVerifySuccess?.();
+      },
+      onError: (error) => {
+        onVerifyError?.(toError(error));
       },
     }),
   );

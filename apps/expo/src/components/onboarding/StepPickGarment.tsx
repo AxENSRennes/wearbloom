@@ -46,12 +46,10 @@ function GarmentCard({
     <Pressable
       onPress={onPress}
       onPressIn={() => {
-        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value API
-        pressScale.value = withSpring(0.97, PRESS_SPRING_CONFIG);
+        pressScale.set(withSpring(0.97, PRESS_SPRING_CONFIG));
       }}
       onPressOut={() => {
-        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value API
-        pressScale.value = withSpring(1, PRESS_SPRING_CONFIG);
+        pressScale.set(withSpring(1, PRESS_SPRING_CONFIG));
       }}
       className="flex-1 p-1"
       accessibilityLabel={garment.label}

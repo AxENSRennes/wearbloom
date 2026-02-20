@@ -769,8 +769,19 @@ mockModuleWithResolve("react-native-reanimated", () => {
       createAnimatedComponent: (comp: unknown) => comp,
     },
     View: AnimatedView,
-    useSharedValue: (initial: number) => {
-      const ref = React.useRef({ value: initial });
+    useSharedValue: <T>(initial: T) => {
+      const ref = React.useRef({
+        value: initial,
+        get() {
+          return this.value;
+        },
+        set(next: T | ((value: T) => T)) {
+          this.value =
+            typeof next === "function"
+              ? (next as (value: T) => T)(this.value)
+              : next;
+        },
+      });
       return ref.current;
     },
     useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),

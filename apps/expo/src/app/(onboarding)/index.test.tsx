@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 
-import OnboardingScreen from "./index";
+import OnboardingScreen from "./OnboardingScreen";
 
 describe("OnboardingScreen", () => {
   test("renders the first onboarding step", () => {
@@ -18,7 +18,9 @@ describe("OnboardingScreen", () => {
   });
 
   test("handleCreateAccount navigates to sign-up with from=onboarding query param", async () => {
-    const source = await Bun.file(import.meta.dir + "/index.tsx").text();
+    const source = await Bun.file(
+      import.meta.dir + "/OnboardingScreen.tsx",
+    ).text();
     expect(source).toContain('"/(public)/sign-up?from=onboarding"');
   });
 });

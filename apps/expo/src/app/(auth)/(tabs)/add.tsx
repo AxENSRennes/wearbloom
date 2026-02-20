@@ -147,57 +147,59 @@ export default function AddGarmentScreen() {
   );
 
   const handleCapture = useCallback(async (source: "camera" | "gallery") => {
-    try {
-      let result: ImagePicker.ImagePickerResult;
+    let result: ImagePicker.ImagePickerResult;
 
-      if (source === "camera") {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Camera permission is required to take a photo.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          quality: 1,
+    if (source === "camera") {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+      if (permission.status !== "granted") {
+        showToast({
+          message: "Camera permission is required to take a photo.",
+          variant: "error",
         });
-      } else {
-        const permission =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Photo library permission is required.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          quality: 1,
-        });
+        return;
       }
-
-      if (result.canceled || !result.assets[0]) return;
-
-      const asset = result.assets[0];
-      const compressed = await compressImage(asset.uri);
-
-      dispatch({
-        type: "PHOTO_SELECTED",
-        uri: compressed.uri,
-        width: compressed.width,
-        height: compressed.height,
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 1,
       });
-    } catch {
+    } else {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+      if (permission.status !== "granted") {
+        showToast({
+          message: "Photo library permission is required.",
+          variant: "error",
+        });
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 1,
+      });
+    }
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    if (!asset) return;
+
+    const compressed = await compressImage(asset.uri).catch(() => null);
+    if (!compressed) {
       showToast({
         message: "Could not process the photo. Please try again.",
         variant: "error",
       });
+      return;
     }
+
+    dispatch({
+      type: "PHOTO_SELECTED",
+      uri: compressed.uri,
+      width: compressed.width,
+      height: compressed.height,
+    });
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -240,111 +242,171 @@ export default function AddGarmentScreen() {
 
     uploadMutation.mutate(formData);
   }, [state, isConnected, selectedCategory, uploadMutation]);
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
-  // Step: Success
   if (state.step === "success") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 items-center justify-center p-6">
-          <ThemedText variant="heading" className="mb-2 text-center">
-            Garment Saved!
-          </ThemedText>
-          <ThemedText
-            variant="body"
-            className="mb-8 text-center text-text-secondary"
-          >
-            Your garment has been added to your wardrobe.
-          </ThemedText>
-          <View className="w-full gap-3">
-            <Button
-              label="Add Another"
-              variant="secondary"
-              onPress={() => dispatch({ type: "ADD_ANOTHER" })}
-            />
-            <Pressable
-              className="items-center justify-center py-3"
-              accessibilityRole="button"
-              accessibilityLabel="Browse wardrobe"
-              onPress={() => router.push(WARDROBE_ROUTE as Href)}
-            >
-              <ThemedText variant="body" className="text-text-secondary">
-                Browse Wardrobe
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
-      </SafeAreaView>
+      <AddSuccessState
+        onAddAnother={() => dispatch({ type: "ADD_ANOTHER" })}
+        onBrowseWardrobe={() => router.push(WARDROBE_ROUTE as Href)}
+      />
     );
   }
 
-  // Step: Previewing / Uploading
   if (state.step === "previewing" || state.step === "uploading") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 p-6">
-          {/* Header */}
-          <ThemedText variant="heading" className="mb-4 text-center">
-            Preview & Categorize
-          </ThemedText>
-
-          {/* Image Preview */}
-          <View className="mb-6 flex-1 items-center justify-center">
-            <View
-              className="aspect-square w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-white"
-              accessibilityRole="image"
-              accessibilityLabel="Garment photo preview"
-            >
-              <Image
-                source={{ uri: state.imageUri }}
-                style={{ width: "100%", height: "100%" }}
-                contentFit="contain"
-              />
-            </View>
-          </View>
-
-          {/* Category Selection */}
-          <View className="mb-6">
-            <ThemedText variant="caption" className="mb-2 text-text-secondary">
-              Select Category
-            </ThemedText>
-            <CategoryPills
-              categories={GARMENT_CATEGORIES}
-              selected={selectedCategory}
-              onSelect={(category) => {
-                if (isGarmentCategory(category)) {
-                  setSelectedCategory(category);
-                }
-              }}
-              unsupportedCategories={unsupportedCategories}
-            />
-          </View>
-
-          {/* Actions */}
-          <View className="gap-3">
-            <Button
-              label="Save to Wardrobe"
-              variant="primary"
-              onPress={handleSave}
-              isLoading={uploadMutation.isPending}
-              disabled={uploadMutation.isPending}
-            />
-            <Button
-              label="Retake"
-              variant="secondary"
-              onPress={() => dispatch({ type: "RETAKE" })}
-              disabled={uploadMutation.isPending}
-            />
-          </View>
-        </View>
-      </SafeAreaView>
+      <AddPreviewState
+        imageUri={state.imageUri}
+        selectedCategory={selectedCategory}
+        unsupportedCategories={unsupportedCategories}
+        onSelectCategory={(category) => {
+          if (isGarmentCategory(category)) {
+            setSelectedCategory(category);
+          }
+        }}
+        onSave={handleSave}
+        onRetake={() => dispatch({ type: "RETAKE" })}
+        isSaving={uploadMutation.isPending}
+      />
     );
   }
 
-  // Step: Idle — Source selection
+  return (
+    <AddIdleState
+      showActionSheet={showActionSheet}
+      onOpenActionSheet={() => setShowActionSheet(true)}
+      onCloseActionSheet={() => setShowActionSheet(false)}
+      onCapture={handleCapture}
+    />
+  );
+}
+
+interface AddSuccessStateProps {
+  onAddAnother: () => void;
+  onBrowseWardrobe: () => void;
+}
+
+function AddSuccessState({
+  onAddAnother,
+  onBrowseWardrobe,
+}: AddSuccessStateProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-1 items-center justify-center p-6">
+        <ThemedText variant="heading" className="mb-2 text-center">
+          Garment Saved!
+        </ThemedText>
+        <ThemedText
+          variant="body"
+          className="mb-8 text-center text-text-secondary"
+        >
+          Your garment has been added to your wardrobe.
+        </ThemedText>
+        <View className="w-full gap-3">
+          <Button
+            label="Add Another"
+            variant="secondary"
+            onPress={onAddAnother}
+          />
+          <Pressable
+            className="items-center justify-center py-3"
+            accessibilityRole="button"
+            accessibilityLabel="Browse wardrobe"
+            onPress={onBrowseWardrobe}
+          >
+            <ThemedText variant="body" className="text-text-secondary">
+              Browse Wardrobe
+            </ThemedText>
+          </Pressable>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface AddPreviewStateProps {
+  imageUri: string;
+  selectedCategory: GarmentCategory;
+  unsupportedCategories: readonly string[];
+  onSelectCategory: (category: string) => void;
+  onSave: () => void;
+  onRetake: () => void;
+  isSaving: boolean;
+}
+
+function AddPreviewState({
+  imageUri,
+  selectedCategory,
+  unsupportedCategories,
+  onSelectCategory,
+  onSave,
+  onRetake,
+  isSaving,
+}: AddPreviewStateProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-1 p-6">
+        <ThemedText variant="heading" className="mb-4 text-center">
+          Preview & Categorize
+        </ThemedText>
+
+        <View className="mb-6 flex-1 items-center justify-center">
+          <View
+            className="aspect-square w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-white"
+            accessibilityRole="image"
+            accessibilityLabel="Garment photo preview"
+          >
+            <Image
+              source={{ uri: imageUri }}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="contain"
+            />
+          </View>
+        </View>
+
+        <View className="mb-6">
+          <ThemedText variant="caption" className="mb-2 text-text-secondary">
+            Select Category
+          </ThemedText>
+          <CategoryPills
+            categories={GARMENT_CATEGORIES}
+            selected={selectedCategory}
+            onSelect={onSelectCategory}
+            unsupportedCategories={unsupportedCategories}
+          />
+        </View>
+
+        <View className="gap-3">
+          <Button
+            label="Save to Wardrobe"
+            variant="primary"
+            onPress={onSave}
+            isLoading={isSaving}
+            disabled={isSaving}
+          />
+          <Button
+            label="Retake"
+            variant="secondary"
+            onPress={onRetake}
+            disabled={isSaving}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface AddIdleStateProps {
+  showActionSheet: boolean;
+  onOpenActionSheet: () => void;
+  onCloseActionSheet: () => void;
+  onCapture: (source: "camera" | "gallery") => Promise<void>;
+}
+
+function AddIdleState({
+  showActionSheet,
+  onOpenActionSheet,
+  onCloseActionSheet,
+  onCapture,
+}: AddIdleStateProps) {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center p-6">
@@ -358,7 +420,6 @@ export default function AddGarmentScreen() {
           Take a photo of your garment or import one from your gallery.
         </ThemedText>
 
-        {/* Photography tips */}
         <View className="mb-6 w-full rounded-xl bg-surface p-4">
           <ThemedText
             variant="caption"
@@ -377,13 +438,13 @@ export default function AddGarmentScreen() {
           <Button
             label="Add Garment"
             variant="primary"
-            onPress={() => setShowActionSheet(true)}
+            onPress={onOpenActionSheet}
           />
         </View>
 
         <ActionSheet
           isOpen={showActionSheet}
-          onClose={() => setShowActionSheet(false)}
+          onClose={onCloseActionSheet}
           items={[
             {
               label: "Take Photo",
@@ -393,7 +454,7 @@ export default function AddGarmentScreen() {
                   color={wearbloomTheme.colors["text-primary"]}
                 />
               ),
-              onPress: () => void handleCapture("camera"),
+              onPress: () => void onCapture("camera"),
             },
             {
               label: "Import from Gallery",
@@ -403,7 +464,7 @@ export default function AddGarmentScreen() {
                   color={wearbloomTheme.colors["text-primary"]}
                 />
               ),
-              onPress: () => void handleCapture("gallery"),
+              onPress: () => void onCapture("gallery"),
             },
           ]}
         />

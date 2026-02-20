@@ -30,6 +30,11 @@ type DisplayState =
   | "restoring"
   | ViewState;
 
+interface TrialOffer {
+  paymentMode: string;
+  period: { unit: string; value: number };
+}
+
 export interface PaywallScreenProps {
   onClose: () => void;
   onSuccess: (garmentId?: string) => void;
@@ -55,6 +60,16 @@ function isUserCancelledPurchaseError(error: { code?: unknown } | null) {
   return normalizedCode.includes("cancel");
 }
 
+function hasRestoredPurchases(result: unknown): result is { restored: number } {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "restored" in result &&
+    typeof (result as { restored?: unknown }).restored === "number" &&
+    (result as { restored: number }).restored > 0
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -68,6 +83,45 @@ export function PaywallScreen({
   const { data: session } = authClient.useSession();
   const userId = session?.user.id ?? "";
 
+  const [viewState, setViewState] = useState<ViewState>("ready");
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const {
+    refetch: subscriptionRefetch,
+    state: subscriptionState,
+    hadSubscription,
+  } = useSubscription();
+
+  const handlePurchaseError = useCallback(
+    (error: { code?: unknown } | null) => {
+      if (isUserCancelledPurchaseError(error)) {
+        setViewState("declined");
+        return;
+      }
+      setViewState("error");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    },
+    [],
+  );
+
+  const handleVerifySuccess = useCallback(() => {
+    setViewState("success");
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    if (completionTimerRef.current) {
+      clearTimeout(completionTimerRef.current);
+    }
+    completionTimerRef.current = setTimeout(() => {
+      void subscriptionRefetch();
+      onSuccess(garmentId);
+    }, 2000);
+  }, [subscriptionRefetch, onSuccess, garmentId]);
+
+  const handleVerifyError = useCallback(() => {
+    setViewState("error");
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  }, []);
+
   const {
     purchase,
     restore,
@@ -78,54 +132,24 @@ export function PaywallScreen({
     productLoadState,
     productLoadError,
     retryProductFetch,
-    purchaseError,
-    verifyError,
-  } = useStoreKit({ userId });
-
-  const {
-    refetch: subscriptionRefetch,
-    state: subscriptionState,
-    hadSubscription,
-  } = useSubscription();
-
-  const [viewState, setViewState] = useState<ViewState>("ready");
-  const wasPurchasingRef = useRef(false);
+  } = useStoreKit({
+    userId,
+    onPurchaseError: handlePurchaseError,
+    onVerifySuccess: handleVerifySuccess,
+    onVerifyError: handleVerifyError,
+  });
 
   // AC#8: Determine if showing resubscribe or free trial messaging
   const isExpiredSubscriber =
     subscriptionState === "free_no_credits" && hadSubscription;
 
-  /* eslint-disable react-hooks/set-state-in-effect -- derived from external hook state */
-  // Watch for purchase errors (decline / error)
   useEffect(() => {
-    if (!purchaseError) return;
-    if (isUserCancelledPurchaseError(purchaseError)) {
-      setViewState("declined");
-    } else {
-      setViewState("error");
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
-  }, [purchaseError]);
-
-  // Watch for successful verification
-  useEffect(() => {
-    if (wasPurchasingRef.current && !isPurchasing && !verifyError) {
-      setViewState("success");
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      const timer = setTimeout(() => {
-        void subscriptionRefetch();
-        onSuccess(garmentId);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-    if (verifyError) {
-      setViewState("error");
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
-    wasPurchasingRef.current = isPurchasing;
-  }, [isPurchasing, verifyError, subscriptionRefetch, onSuccess, garmentId]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+      }
+    };
+  }, []);
 
   // Derive display state
   const displayState: DisplayState =
@@ -141,9 +165,7 @@ export function PaywallScreen({
 
   // Trial info
   const trialOffer = (
-    product?.subscriptionOffers as
-      | { paymentMode: string; period: { unit: string; value: number } }[]
-      | undefined
+    product?.subscriptionOffers as TrialOffer[] | undefined
   )?.find((offer) => offer.paymentMode === "free-trial");
   const trialDays = trialOffer?.period.value;
 
@@ -156,29 +178,33 @@ export function PaywallScreen({
 
   const handlePurchase = useCallback(() => {
     setViewState("ready");
-    void purchase();
+    void purchase().catch(() => {
+      setViewState("error");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    });
   }, [purchase]);
 
   const handleRestore = useCallback(async () => {
-    try {
-      const result = await restore();
-      await subscriptionRefetch();
-      if (
-        "restored" in result &&
-        (result as { restored: number }).restored > 0
-      ) {
-        showToast({ message: "Subscription restored!", variant: "success" });
-        onSuccess(garmentId);
-      } else {
-        showToast({
-          message: "No previous purchases found",
-          variant: "info",
-        });
-      }
-    } catch {
+    const restoreResult = await restore()
+      .then((result) => ({ ok: true as const, result }))
+      .catch(() => ({ ok: false as const }));
+
+    if (!restoreResult.ok) {
       showToast({
         message: "Could not restore purchases. Try again.",
         variant: "error",
+      });
+      return;
+    }
+
+    await subscriptionRefetch();
+    if (hasRestoredPurchases(restoreResult.result)) {
+      showToast({ message: "Subscription restored!", variant: "success" });
+      onSuccess(garmentId);
+    } else {
+      showToast({
+        message: "No previous purchases found",
+        variant: "info",
       });
     }
   }, [restore, subscriptionRefetch, onSuccess, garmentId]);
@@ -192,118 +218,172 @@ export function PaywallScreen({
     await retryProductFetch();
   }, [retryProductFetch]);
 
-  // -------------------------------------------------------------------------
-  // Loading state
-  // -------------------------------------------------------------------------
   if (displayState === "loading") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 items-center justify-center">
-          <Spinner />
-        </View>
-      </SafeAreaView>
-    );
+    return <PaywallLoadingState />;
   }
 
-  // -------------------------------------------------------------------------
-  // Product load error — retry prompt
-  // -------------------------------------------------------------------------
   if (displayState === "productError") {
     return (
-      <SafeAreaView className="flex-1 bg-background">
-        <CloseButton onClose={onClose} />
-        <View className="flex-1 items-center justify-center gap-4 p-6">
-          <ThemedText variant="body" className="text-center text-error">
-            Couldn't load App Store products
-          </ThemedText>
-          <ThemedText
-            variant="caption"
-            className="text-center text-text-secondary"
-          >
-            {productLoadError?.message ??
-              "Try again in a moment or restore an existing subscription."}
-          </ThemedText>
-          <View className="w-full gap-3">
-            <Button label="Retry" onPress={() => void handleRetryProducts()} />
-            <Button
-              label="Restore Purchases"
-              variant="secondary"
-              onPress={() => void handleRestore()}
-            />
-            <Button
-              label="Back to wardrobe"
-              variant="ghost"
-              onPress={onClose}
-            />
-          </View>
-        </View>
-      </SafeAreaView>
+      <PaywallProductErrorState
+        onClose={onClose}
+        productLoadErrorMessage={productLoadError?.message}
+        onRetryProducts={handleRetryProducts}
+        onRestore={handleRestore}
+      />
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Success celebration
-  // -------------------------------------------------------------------------
   if (displayState === "success") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 items-center justify-center gap-4 p-6">
-          <CircleCheck size={64} color={wearbloomTheme.colors.success} />
-          <ThemedText variant="display">Welcome!</ThemedText>
-          <ThemedText
-            variant="body"
-            className="text-center text-text-secondary"
-          >
-            Try on anything, anytime.
-          </ThemedText>
-        </View>
-      </SafeAreaView>
-    );
+    return <PaywallSuccessState />;
   }
 
-  // -------------------------------------------------------------------------
-  // Declined — soft message
-  // -------------------------------------------------------------------------
   if (displayState === "declined") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <CloseButton onClose={onClose} />
-        <View className="flex-1 items-center justify-center gap-4 p-6">
-          <ThemedText
-            variant="body"
-            className="text-center text-text-secondary"
-          >
-            No worries — your wardrobe is always here.
-          </ThemedText>
-          <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
-        </View>
-      </SafeAreaView>
-    );
+    return <PaywallDeclinedState onClose={onClose} />;
   }
 
-  // -------------------------------------------------------------------------
-  // Error — retry prompt
-  // -------------------------------------------------------------------------
   if (displayState === "error") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <CloseButton onClose={onClose} />
-        <View className="flex-1 items-center justify-center gap-4 p-6">
-          <ThemedText variant="body" className="text-center text-error">
-            Something went wrong. Try again.
-          </ThemedText>
-          <Button label="Try again" onPress={handleRetry} />
-        </View>
-      </SafeAreaView>
-    );
+    return <PaywallErrorState onClose={onClose} onRetry={handleRetry} />;
   }
 
-  // -------------------------------------------------------------------------
-  // Ready / Processing / Restoring — full paywall
-  // -------------------------------------------------------------------------
   const isProcessing = displayState === "processing";
   const isRestoringNow = displayState === "restoring";
 
+  return (
+    <PaywallReadyState
+      onClose={onClose}
+      benefits={BENEFITS}
+      ctaLabel={ctaLabel}
+      isProcessing={isProcessing}
+      onPurchase={handlePurchase}
+      isExpiredSubscriber={isExpiredSubscriber}
+      displayPrice={product?.displayPrice}
+      onRestore={handleRestore}
+      isRestoringNow={isRestoringNow}
+    />
+  );
+}
+
+function PaywallLoadingState() {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-1 items-center justify-center">
+        <Spinner />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface PaywallProductErrorStateProps {
+  onClose: () => void;
+  productLoadErrorMessage?: string;
+  onRetryProducts: () => Promise<void>;
+  onRestore: () => Promise<void>;
+}
+
+function PaywallProductErrorState({
+  onClose,
+  productLoadErrorMessage,
+  onRetryProducts,
+  onRestore,
+}: PaywallProductErrorStateProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <CloseButton onClose={onClose} />
+      <View className="flex-1 items-center justify-center gap-4 p-6">
+        <ThemedText variant="body" className="text-center text-error">
+          Couldn't load App Store products
+        </ThemedText>
+        <ThemedText
+          variant="caption"
+          className="text-center text-text-secondary"
+        >
+          {productLoadErrorMessage ??
+            "Try again in a moment or restore an existing subscription."}
+        </ThemedText>
+        <View className="w-full gap-3">
+          <Button label="Retry" onPress={() => void onRetryProducts()} />
+          <Button
+            label="Restore Purchases"
+            variant="secondary"
+            onPress={() => void onRestore()}
+          />
+          <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function PaywallSuccessState() {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-1 items-center justify-center gap-4 p-6">
+        <CircleCheck size={64} color={wearbloomTheme.colors.success} />
+        <ThemedText variant="display">Welcome!</ThemedText>
+        <ThemedText variant="body" className="text-center text-text-secondary">
+          Try on anything, anytime.
+        </ThemedText>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function PaywallDeclinedState({ onClose }: { onClose: () => void }) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <CloseButton onClose={onClose} />
+      <View className="flex-1 items-center justify-center gap-4 p-6">
+        <ThemedText variant="body" className="text-center text-text-secondary">
+          No worries — your wardrobe is always here.
+        </ThemedText>
+        <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface PaywallErrorStateProps {
+  onClose: () => void;
+  onRetry: () => void;
+}
+
+function PaywallErrorState({ onClose, onRetry }: PaywallErrorStateProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <CloseButton onClose={onClose} />
+      <View className="flex-1 items-center justify-center gap-4 p-6">
+        <ThemedText variant="body" className="text-center text-error">
+          Something went wrong. Try again.
+        </ThemedText>
+        <Button label="Try again" onPress={onRetry} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface PaywallReadyStateProps {
+  onClose: () => void;
+  benefits: readonly string[];
+  ctaLabel: string;
+  isProcessing: boolean;
+  onPurchase: () => void;
+  isExpiredSubscriber: boolean;
+  displayPrice?: string;
+  onRestore: () => Promise<void>;
+  isRestoringNow: boolean;
+}
+
+function PaywallReadyState({
+  onClose,
+  benefits,
+  ctaLabel,
+  isProcessing,
+  onPurchase,
+  isExpiredSubscriber,
+  displayPrice,
+  onRestore,
+  isRestoringNow,
+}: PaywallReadyStateProps) {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <CloseButton onClose={onClose} />
@@ -313,7 +393,6 @@ export function PaywallScreen({
         contentContainerClassName="flex-grow justify-center pb-8 pt-12"
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero placeholder */}
         <View
           className="mb-6 h-48 items-center justify-center rounded-2xl bg-surface"
           accessible
@@ -325,14 +404,12 @@ export function PaywallScreen({
           </ThemedText>
         </View>
 
-        {/* Headline */}
         <ThemedText variant="display" className="mb-6">
           Unlimited Try-Ons
         </ThemedText>
 
-        {/* Benefits */}
         <View className="mb-6 gap-3">
-          {BENEFITS.map((benefit) => (
+          {benefits.map((benefit) => (
             <View key={benefit} className="flex-row items-center gap-3">
               <Check size={20} color={wearbloomTheme.colors["text-primary"]} />
               <ThemedText variant="body">{benefit}</ThemedText>
@@ -340,28 +417,25 @@ export function PaywallScreen({
           ))}
         </View>
 
-        {/* CTA button */}
         <Button
           label={isProcessing ? "Confirming..." : ctaLabel}
-          onPress={handlePurchase}
+          onPress={onPurchase}
           isLoading={isProcessing}
           disabled={isProcessing}
         />
 
-        {/* Price disclosure */}
         <ThemedText
           variant="caption"
           className="mt-3 text-center text-text-secondary"
         >
           {isExpiredSubscriber
-            ? `${product?.displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`
-            : `Then ${product?.displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`}
+            ? `${displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`
+            : `Then ${displayPrice ?? "\u2026"}/week. Auto-renews weekly. Cancel anytime.`}
         </ThemedText>
 
-        {/* Restore purchases */}
         <ThemedPressable
           className="mt-4 items-center py-2"
-          onPress={() => void handleRestore()}
+          onPress={() => void onRestore()}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Restore purchases"
@@ -382,7 +456,6 @@ export function PaywallScreen({
           )}
         </ThemedPressable>
 
-        {/* Terms & Privacy */}
         <View className="mt-4 flex-row items-center justify-center gap-2">
           <ThemedPressable
             onPress={() => void Linking.openURL("https://wearbloom.app/terms")}

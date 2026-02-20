@@ -31,10 +31,10 @@ void SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const pathname = usePathname();
   const initialConsent = hasAcceptedConsentSync();
-  const [consented, setConsented] = useState(() => initialConsent === true);
-  const [consentResolved, setConsentResolved] = useState(
-    () => initialConsent !== null,
-  );
+  const [consentState, setConsentState] = useState(() => ({
+    consented: initialConsent === true,
+    resolved: initialConsent !== null,
+  }));
   // null = still loading; false = not completed; true = completed
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
@@ -62,15 +62,11 @@ export default function RootLayout() {
     void hasAcceptedConsent()
       .then((accepted) => {
         if (cancelled) return;
-        setConsented(accepted);
+        setConsentState({ consented: accepted, resolved: true });
       })
       .catch(() => {
         if (cancelled) return;
-        setConsented(false);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setConsentResolved(true);
+        setConsentState({ consented: false, resolved: true });
       });
     return () => {
       cancelled = true;
@@ -82,7 +78,8 @@ export default function RootLayout() {
   }
 
   // Determine onboarding redirect: only redirect when state is fully resolved to false
-  const showOnboardingRedirect = consented && onboardingDone === false;
+  const showOnboardingRedirect =
+    consentState.consented && onboardingDone === false;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -97,7 +94,7 @@ export default function RootLayout() {
           }}
         >
           <ToastProvider>
-            {consentResolved && !consented && (
+            {consentState.resolved && !consentState.consented && (
               <Redirect href={"/(public)/consent" as Href} />
             )}
             {showOnboardingRedirect && (

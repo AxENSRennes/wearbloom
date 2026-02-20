@@ -11,7 +11,7 @@ import { Image } from "expo-image";
 
 import type { WardrobeItem } from "~/types/wardrobe";
 import { isStockGarment } from "~/types/wardrobe";
-import { authClient } from "~/utils/auth";
+import { getAuthHeaders } from "~/utils/authHeaders";
 import { getBaseUrl } from "~/utils/base-url";
 
 interface GarmentCardProps {
@@ -45,14 +45,12 @@ export function GarmentCard({
 
   const handlePressIn = () => {
     if (reducedMotion) return;
-    // eslint-disable-next-line react-hooks/immutability
-    scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+    scale.set(withSpring(0.97, { damping: 15, stiffness: 300 }));
   };
 
   const handlePressOut = () => {
     if (reducedMotion) return;
-    // eslint-disable-next-line react-hooks/immutability
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.set(withSpring(1, { damping: 15, stiffness: 300 }));
   };
 
   const itemHeight = Math.round(columnWidth * 1.2);
@@ -61,10 +59,7 @@ export function GarmentCard({
     ? garment.imageSource
     : {
         uri: `${getBaseUrl()}/api/images/${garment.id}`,
-        headers: (() => {
-          const cookies = authClient.getCookie();
-          return cookies ? { Cookie: cookies } : undefined;
-        })(),
+        headers: getAuthHeaders(),
       };
 
   const label = isStockGarment(garment)

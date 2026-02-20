@@ -43,7 +43,7 @@ export function StepSeeTheMagic({
   const [progressText, setProgressText] = useState<string>(
     PROGRESS_TEXTS[0].text,
   );
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(0);
   const reducedMotion = useReducedMotion();
 
   // Pulsing scale animation
@@ -67,9 +67,9 @@ export function StepSeeTheMagic({
     },
     onSuccess: () => {
       if (!reducedMotion) {
-        resultOpacity.value = withTiming(1, { duration: 500 });
+        resultOpacity.set(withTiming(1, { duration: 500 }));
       } else {
-        resultOpacity.value = 1;
+        resultOpacity.set(1);
       }
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     },
@@ -95,31 +95,31 @@ export function StepSeeTheMagic({
   // Pulsing scale animation
   useEffect(() => {
     if (!reducedMotion && isRendering) {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(1.02, { duration: 1000 }),
-          withTiming(1, { duration: 1000 }),
+      scale.set(
+        withRepeat(
+          withSequence(
+            withTiming(1.02, { duration: 1000 }),
+            withTiming(1, { duration: 1000 }),
+          ),
+          -1,
+          true,
         ),
-        -1,
-        true,
       );
     }
     return () => {
-      scale.value = 1;
+      scale.set(1);
     };
   }, [scale, reducedMotion, isRendering]);
 
   // Shimmer animation loop
   useEffect(() => {
     if (!reducedMotion && isRendering) {
-      shimmerTranslate.value = withRepeat(
-        withTiming(1, { duration: 1500 }),
-        -1,
-        false,
+      shimmerTranslate.set(
+        withRepeat(withTiming(1, { duration: 1500 }), -1, false),
       );
     }
     return () => {
-      shimmerTranslate.value = -1;
+      shimmerTranslate.set(-1);
     };
   }, [shimmerTranslate, reducedMotion, isRendering]);
 

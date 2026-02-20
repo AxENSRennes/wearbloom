@@ -41,26 +41,30 @@ export function RenderLoadingAnimation({
   useEffect(() => {
     if (reducedMotion) return;
 
-    shimmerTranslateX.value = withRepeat(
-      withTiming(screenWidth, {
-        duration: 1500,
-        easing: Easing.inOut(Easing.ease),
-      }),
-      -1,
+    shimmerTranslateX.set(
+      withRepeat(
+        withTiming(screenWidth, {
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+      ),
     );
 
-    pulseScale.value = withRepeat(
-      withSequence(
-        withTiming(1.02, {
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        withTiming(1.0, {
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-        }),
+    pulseScale.set(
+      withRepeat(
+        withSequence(
+          withTiming(1.02, {
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(1.0, {
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+          }),
+        ),
+        -1,
       ),
-      -1,
     );
   }, [shimmerTranslateX, pulseScale, reducedMotion, screenWidth]);
 
@@ -82,9 +86,9 @@ export function RenderLoadingAnimation({
 
   useEffect(() => {
     if (showGarmentThumbnail && !reducedMotion) {
-      thumbnailOpacity.value = withTiming(1, { duration: 300 });
+      thumbnailOpacity.set(withTiming(1, { duration: 300 }));
     } else if (showGarmentThumbnail && reducedMotion) {
-      thumbnailOpacity.value = 1;
+      thumbnailOpacity.set(1);
     }
   }, [showGarmentThumbnail, reducedMotion, thumbnailOpacity]);
 

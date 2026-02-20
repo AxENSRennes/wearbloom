@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
@@ -73,12 +74,13 @@ export function FeedbackButton({
       return;
     }
 
-    // eslint-disable-next-line react-hooks/immutability
-    fadeOpacity.value = withTiming(0, { duration: FADE_OUT_MS }, (finished) => {
-      if (finished) {
-        runOnJS(onDismissRef.current)();
-      }
-    });
+    fadeOpacity.set(
+      withTiming(0, { duration: FADE_OUT_MS }, (finished) => {
+        if (finished) {
+          runOnJS(onDismissRef.current)();
+        }
+      }),
+    );
   }, [reducedMotion, fadeOpacity]);
 
   const resetAutoHide = useCallback(() => {
@@ -103,13 +105,14 @@ export function FeedbackButton({
     setState("expanded");
 
     if (reducedMotion) {
-      // eslint-disable-next-line react-hooks/immutability
-      expandWidth.value = EXPANDED_WIDTH;
+      expandWidth.set(EXPANDED_WIDTH);
     } else {
-      expandWidth.value = withSpring(EXPANDED_WIDTH, {
-        damping: 15,
-        stiffness: 300,
-      });
+      expandWidth.set(
+        withSpring(EXPANDED_WIDTH, {
+          damping: 15,
+          stiffness: 300,
+        }),
+      );
     }
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -122,13 +125,14 @@ export function FeedbackButton({
 
     // Collapse back to small size for confirmed state
     if (reducedMotion) {
-      // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
-      expandWidth.value = COLLAPSED_WIDTH;
+      expandWidth.set(COLLAPSED_WIDTH);
     } else {
-      expandWidth.value = withSpring(COLLAPSED_WIDTH, {
-        damping: 15,
-        stiffness: 300,
-      });
+      expandWidth.set(
+        withSpring(COLLAPSED_WIDTH, {
+          damping: 15,
+          stiffness: 300,
+        }),
+      );
     }
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -152,13 +156,14 @@ export function FeedbackButton({
     setState("category_picker");
 
     if (reducedMotion) {
-      // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
-      expandWidth.value = CATEGORY_PICKER_WIDTH;
+      expandWidth.set(CATEGORY_PICKER_WIDTH);
     } else {
-      expandWidth.value = withSpring(CATEGORY_PICKER_WIDTH, {
-        damping: 15,
-        stiffness: 300,
-      });
+      expandWidth.set(
+        withSpring(CATEGORY_PICKER_WIDTH, {
+          damping: 15,
+          stiffness: 300,
+        }),
+      );
     }
   }, [isSubmitting, resetAutoHide, reducedMotion, expandWidth]);
 
@@ -169,13 +174,14 @@ export function FeedbackButton({
 
       // Collapse back to small size for confirmed state
       if (reducedMotion) {
-        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are designed to be mutated
-        expandWidth.value = COLLAPSED_WIDTH;
+        expandWidth.set(COLLAPSED_WIDTH);
       } else {
-        expandWidth.value = withSpring(COLLAPSED_WIDTH, {
-          damping: 15,
-          stiffness: 300,
-        });
+        expandWidth.set(
+          withSpring(COLLAPSED_WIDTH, {
+            damping: 15,
+            stiffness: 300,
+          }),
+        );
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -193,67 +199,60 @@ export function FeedbackButton({
     width: expandWidth.value,
   }));
 
-  // --- Render inner content based on state ---
-  const renderContent = () => {
-    if (state === "confirmed") {
-      return (
-        <View className="h-11 w-11 items-center justify-center">
-          <Check size={20} color="white" testID="feedback-icon-confirmed" />
-        </View>
-      );
-    }
-
-    if (state === "category_picker") {
-      return (
-        <View className="flex-row items-center gap-1.5 px-2 py-1.5">
-          {CATEGORIES.map((cat) => (
-            <Pressable
-              key={cat.key}
-              testID={`category-${cat.key}`}
-              onPress={() => handleCategorySelect(cat.key)}
-              disabled={isSubmitting}
-              accessibilityLabel={cat.label}
-              accessibilityRole="button"
-              className="rounded-[14px] bg-white/20 px-2.5 py-1.5"
-            >
-              <ThemedText variant="caption" className="text-white">
-                {cat.label}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
-      );
-    }
-
-    if (state === "expanded") {
-      return (
-        <View className="h-11 flex-row items-center gap-4 px-4">
+  let content: ReactElement;
+  if (state === "confirmed") {
+    content = (
+      <View className="h-11 w-11 items-center justify-center">
+        <Check size={20} color="white" testID="feedback-icon-confirmed" />
+      </View>
+    );
+  } else if (state === "category_picker") {
+    content = (
+      <View className="flex-row items-center gap-1.5 px-2 py-1.5">
+        {CATEGORIES.map((cat) => (
           <Pressable
-            testID="feedback-thumbs-up"
-            onPress={handleThumbsUp}
+            key={cat.key}
+            testID={`category-${cat.key}`}
+            onPress={() => handleCategorySelect(cat.key)}
             disabled={isSubmitting}
-            accessibilityLabel="Good result"
+            accessibilityLabel={cat.label}
             accessibilityRole="button"
-            className="h-8 w-8 items-center justify-center"
+            className="rounded-[14px] bg-white/20 px-2.5 py-1.5"
           >
-            <ThumbsUp size={20} color="white" />
+            <ThemedText variant="caption" className="text-white">
+              {cat.label}
+            </ThemedText>
           </Pressable>
-          <Pressable
-            testID="feedback-thumbs-down"
-            onPress={handleThumbsDown}
-            disabled={isSubmitting}
-            accessibilityLabel="Bad result"
-            accessibilityRole="button"
-            className="h-8 w-8 items-center justify-center"
-          >
-            <ThumbsDown size={20} color="white" />
-          </Pressable>
-        </View>
-      );
-    }
-
-    // Collapsed state (default)
-    return (
+        ))}
+      </View>
+    );
+  } else if (state === "expanded") {
+    content = (
+      <View className="h-11 flex-row items-center gap-4 px-4">
+        <Pressable
+          testID="feedback-thumbs-up"
+          onPress={handleThumbsUp}
+          disabled={isSubmitting}
+          accessibilityLabel="Good result"
+          accessibilityRole="button"
+          className="h-8 w-8 items-center justify-center"
+        >
+          <ThumbsUp size={20} color="white" />
+        </Pressable>
+        <Pressable
+          testID="feedback-thumbs-down"
+          onPress={handleThumbsDown}
+          disabled={isSubmitting}
+          accessibilityLabel="Bad result"
+          accessibilityRole="button"
+          className="h-8 w-8 items-center justify-center"
+        >
+          <ThumbsDown size={20} color="white" />
+        </Pressable>
+      </View>
+    );
+  } else {
+    content = (
       <Pressable
         onPress={handleExpand}
         disabled={isSubmitting}
@@ -270,7 +269,7 @@ export function FeedbackButton({
         </View>
       </Pressable>
     );
-  };
+  }
 
   return (
     <Animated.View
@@ -289,7 +288,7 @@ export function FeedbackButton({
         reducedMotion ? { width: getStaticWidth(state) } : animatedStyle,
       ]}
     >
-      {renderContent()}
+      {content}
     </Animated.View>
   );
 }

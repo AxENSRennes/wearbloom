@@ -1,5 +1,5 @@
 import type { Href } from "expo-router";
-import { useState } from "react";
+import { useReducer } from "react";
 import { Platform, ScrollView, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -22,17 +22,57 @@ import {
 
 const PLACEHOLDER_COLOR = wearbloomTheme.colors["text-tertiary"];
 
+type SignUpField = "name" | "email" | "password";
+
+interface SignUpFormState {
+  name: string;
+  email: string;
+  password: string;
+  errors: Record<SignUpField, string>;
+}
+
+type SignUpFormAction =
+  | { type: "SET_FIELD"; field: SignUpField; value: string }
+  | { type: "SET_ERROR"; field: SignUpField; value: string }
+  | { type: "SET_ERRORS"; errors: Record<SignUpField, string> };
+
+const initialSignUpFormState: SignUpFormState = {
+  name: "",
+  email: "",
+  password: "",
+  errors: {
+    name: "",
+    email: "",
+    password: "",
+  },
+};
+
+function signUpFormReducer(
+  state: SignUpFormState,
+  action: SignUpFormAction,
+): SignUpFormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ERROR":
+      return {
+        ...state,
+        errors: { ...state.errors, [action.field]: action.value },
+      };
+    case "SET_ERRORS":
+      return { ...state, errors: action.errors };
+  }
+}
+
 export default function SignUpScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const isFromOnboarding = from === "onboarding";
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [formState, dispatchForm] = useReducer(
+    signUpFormReducer,
+    initialSignUpFormState,
+  );
 
   const grantCredits = useMutation(
     trpc.subscription.grantInitialCredits.mutationOptions(),
@@ -169,31 +209,131 @@ export default function SignUpScreen() {
   };
 
   const handleNameChange = (value: string) => {
-    setName(value);
-    if (nameError) setNameError(validateName(value));
+    dispatchForm({ type: "SET_FIELD", field: "name", value });
+    if (formState.errors.name) {
+      dispatchForm({
+        type: "SET_ERROR",
+        field: "name",
+        value: validateName(value),
+      });
+    }
   };
 
   const handleEmailChange = (value: string) => {
-    setEmail(value);
-    if (emailError) setEmailError(validateEmail(value));
+    dispatchForm({ type: "SET_FIELD", field: "email", value });
+    if (formState.errors.email) {
+      dispatchForm({
+        type: "SET_ERROR",
+        field: "email",
+        value: validateEmail(value),
+      });
+    }
   };
 
   const handlePasswordChange = (value: string) => {
-    setPassword(value);
-    if (passwordError) setPasswordError(validatePassword(value));
+    dispatchForm({ type: "SET_FIELD", field: "password", value });
+    if (formState.errors.password) {
+      dispatchForm({
+        type: "SET_ERROR",
+        field: "password",
+        value: validatePassword(value),
+      });
+    }
   };
 
   const handleSignUp = () => {
-    const nameErr = validateName(name);
-    const emailErr = validateEmail(email);
-    const passwordErr = validatePassword(password);
-    setNameError(nameErr);
-    setEmailError(emailErr);
-    setPasswordError(passwordErr);
+    const nameErr = validateName(formState.name);
+    const emailErr = validateEmail(formState.email);
+    const passwordErr = validatePassword(formState.password);
+    dispatchForm({
+      type: "SET_ERRORS",
+      errors: { name: nameErr, email: emailErr, password: passwordErr },
+    });
     if (nameErr || emailErr || passwordErr) return;
-    emailSignUp.mutate({ name: name.trim(), email, password });
+    emailSignUp.mutate({
+      name: formState.name.trim(),
+      email: formState.email,
+      password: formState.password,
+    });
   };
 
+  return (
+    <SignUpContent
+      isFromOnboarding={isFromOnboarding}
+      formState={formState}
+      isLoading={isLoading}
+      isEmailPending={emailSignUp.isPending}
+      onAppleSignUp={() => appleSignIn.mutate()}
+      onNameChange={handleNameChange}
+      onEmailChange={handleEmailChange}
+      onPasswordChange={handlePasswordChange}
+      onNameBlur={() =>
+        dispatchForm({
+          type: "SET_ERROR",
+          field: "name",
+          value: validateName(formState.name),
+        })
+      }
+      onEmailBlur={() =>
+        dispatchForm({
+          type: "SET_ERROR",
+          field: "email",
+          value: validateEmail(formState.email),
+        })
+      }
+      onPasswordBlur={() =>
+        dispatchForm({
+          type: "SET_ERROR",
+          field: "password",
+          value: validatePassword(formState.password),
+        })
+      }
+      onSignUp={handleSignUp}
+      onSkip={() => {
+        if (router.canGoBack()) {
+          router.back();
+          return;
+        }
+        router.replace("/(onboarding)" as Href);
+      }}
+      onNavigateSignIn={() => router.replace("/(public)/sign-in" as Href)}
+    />
+  );
+}
+
+interface SignUpContentProps {
+  isFromOnboarding: boolean;
+  formState: SignUpFormState;
+  isLoading: boolean;
+  isEmailPending: boolean;
+  onAppleSignUp: () => void;
+  onNameChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onNameBlur: () => void;
+  onEmailBlur: () => void;
+  onPasswordBlur: () => void;
+  onSignUp: () => void;
+  onSkip: () => void;
+  onNavigateSignIn: () => void;
+}
+
+function SignUpContent({
+  isFromOnboarding,
+  formState,
+  isLoading,
+  isEmailPending,
+  onAppleSignUp,
+  onNameChange,
+  onEmailChange,
+  onPasswordChange,
+  onNameBlur,
+  onEmailBlur,
+  onPasswordBlur,
+  onSignUp,
+  onSkip,
+  onNavigateSignIn,
+}: SignUpContentProps) {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView
@@ -231,7 +371,7 @@ export default function SignUpScreen() {
                 }
                 cornerRadius={12}
                 style={{ height: 52, width: "100%" }}
-                onPress={() => appleSignIn.mutate()}
+                onPress={onAppleSignUp}
               />
 
               <View className="my-6 flex-row items-center">
@@ -247,70 +387,49 @@ export default function SignUpScreen() {
             </>
           )}
 
-          <View className="mb-4">
-            <TextInput
-              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-              placeholder="Name"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              value={name}
-              onChangeText={handleNameChange}
-              onBlur={() => setNameError(validateName(name))}
-              autoCapitalize="words"
-              autoComplete="name"
-              accessibilityLabel="Full name"
-            />
-            {nameError ? (
-              <ThemedText variant="small" className="mt-1 text-error">
-                {nameError}
-              </ThemedText>
-            ) : null}
-          </View>
+          <SignUpField
+            containerClassName="mb-4"
+            placeholder="Name"
+            value={formState.name}
+            onChangeText={onNameChange}
+            onBlur={onNameBlur}
+            autoCapitalize="words"
+            autoComplete="name"
+            accessibilityLabel="Full name"
+            errorMessage={formState.errors.name}
+          />
 
-          <View className="mb-4">
-            <TextInput
-              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-              placeholder="Email"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              value={email}
-              onChangeText={handleEmailChange}
-              onBlur={() => setEmailError(validateEmail(email))}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect={false}
-              accessibilityLabel="Email address"
-            />
-            {emailError ? (
-              <ThemedText variant="small" className="mt-1 text-error">
-                {emailError}
-              </ThemedText>
-            ) : null}
-          </View>
+          <SignUpField
+            containerClassName="mb-4"
+            placeholder="Email"
+            value={formState.email}
+            onChangeText={onEmailChange}
+            onBlur={onEmailBlur}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            accessibilityLabel="Email address"
+            errorMessage={formState.errors.email}
+          />
 
-          <View className="mb-6">
-            <TextInput
-              className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
-              placeholder="Password"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              value={password}
-              onChangeText={handlePasswordChange}
-              onBlur={() => setPasswordError(validatePassword(password))}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="new-password"
-              accessibilityLabel="Password"
-            />
-            {passwordError ? (
-              <ThemedText variant="small" className="mt-1 text-error">
-                {passwordError}
-              </ThemedText>
-            ) : null}
-          </View>
+          <SignUpField
+            containerClassName="mb-6"
+            placeholder="Password"
+            value={formState.password}
+            onChangeText={onPasswordChange}
+            onBlur={onPasswordBlur}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+            accessibilityLabel="Password"
+            errorMessage={formState.errors.password}
+          />
 
           <Button
             label={isFromOnboarding ? "Create Free Account" : "Create Account"}
-            onPress={handleSignUp}
-            isLoading={emailSignUp.isPending}
+            onPress={onSignUp}
+            isLoading={isEmailPending}
             disabled={isLoading}
           />
 
@@ -319,13 +438,7 @@ export default function SignUpScreen() {
               <Button
                 label="Skip for now"
                 variant="ghost"
-                onPress={() => {
-                  if (router.canGoBack()) {
-                    router.back();
-                    return;
-                  }
-                  router.replace("/(onboarding)" as Href);
-                }}
+                onPress={onSkip}
                 disabled={isLoading}
                 accessibilityHint="Returns to onboarding to try more combinations"
               />
@@ -333,7 +446,7 @@ export default function SignUpScreen() {
               <Button
                 label="Already have an account? Sign in"
                 variant="ghost"
-                onPress={() => router.replace("/(public)/sign-in" as Href)}
+                onPress={onNavigateSignIn}
                 disabled={isLoading}
               />
             )}
@@ -341,5 +454,59 @@ export default function SignUpScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+interface SignUpFieldProps {
+  containerClassName: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  onBlur: () => void;
+  accessibilityLabel: string;
+  errorMessage: string;
+  keyboardType?: "default" | "email-address";
+  autoCapitalize?: "none" | "words";
+  autoComplete?: "name" | "email" | "new-password";
+  autoCorrect?: boolean;
+  secureTextEntry?: boolean;
+}
+
+function SignUpField({
+  containerClassName,
+  placeholder,
+  value,
+  onChangeText,
+  onBlur,
+  accessibilityLabel,
+  errorMessage,
+  keyboardType,
+  autoCapitalize,
+  autoComplete,
+  autoCorrect,
+  secureTextEntry,
+}: SignUpFieldProps) {
+  return (
+    <View className={containerClassName}>
+      <TextInput
+        className="h-[52px] rounded-xl border border-border bg-surface px-4 text-[15px] text-text-primary"
+        placeholder={placeholder}
+        placeholderTextColor={PLACEHOLDER_COLOR}
+        value={value}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoComplete={autoComplete}
+        autoCorrect={autoCorrect}
+        secureTextEntry={secureTextEntry}
+        accessibilityLabel={accessibilityLabel}
+      />
+      {errorMessage ? (
+        <ThemedText variant="small" className="mt-1 text-error">
+          {errorMessage}
+        </ThemedText>
+      ) : null}
+    </View>
   );
 }

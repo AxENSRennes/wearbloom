@@ -24,12 +24,14 @@ export function SkeletonGrid({ columnWidth }: SkeletonGridProps) {
 
   useEffect(() => {
     if (reducedMotion) return;
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(0.7, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+    opacity.set(
+      withRepeat(
+        withSequence(
+          withTiming(0.7, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
       ),
-      -1,
     );
   }, [opacity, reducedMotion]);
 

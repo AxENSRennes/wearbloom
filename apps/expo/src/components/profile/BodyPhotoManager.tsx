@@ -8,7 +8,7 @@ import { User } from "lucide-react-native";
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { trpc } from "~/utils/api";
-import { authClient } from "~/utils/auth";
+import { getAuthHeaders } from "~/utils/authHeaders";
 import { getBaseUrl } from "~/utils/base-url";
 import { appendLocalImage } from "~/utils/formData";
 import { compressImage } from "~/utils/imageCompressor";
@@ -35,71 +35,84 @@ export function BodyPhotoManager() {
     }),
   );
 
-  const cookies = authClient.getCookie();
+  const imageHeaders = getAuthHeaders();
   const hasPhoto = bodyPhotoQuery.data != null;
   const imageUrl = bodyPhotoQuery.data
     ? `${getBaseUrl()}${bodyPhotoQuery.data.imageUrl}`
     : null;
 
   async function handleUpload(source: "camera" | "gallery") {
-    try {
-      let result: ImagePicker.ImagePickerResult;
+    let result: ImagePicker.ImagePickerResult;
 
-      if (source === "camera") {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Camera permission is required to take a photo.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 1,
+    if (source === "camera") {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+      if (permission.status !== "granted") {
+        showToast({
+          message: "Camera permission is required to take a photo.",
+          variant: "error",
         });
-      } else {
-        const permission =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-        if (permission.status !== "granted") {
-          showToast({
-            message: "Photo library permission is required.",
-            variant: "error",
-          });
-          return;
-        }
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 1,
-        });
+        return;
       }
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 1,
+      });
+    } else {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+      if (permission.status !== "granted") {
+        showToast({
+          message: "Photo library permission is required.",
+          variant: "error",
+        });
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        quality: 1,
+      });
+    }
 
-      if (result.canceled || !result.assets[0]) return;
+    if (result.canceled) return;
 
-      const asset = result.assets[0];
-      const compressed = await compressImage(asset.uri);
+    const asset = result.assets[0];
+    if (!asset) return;
 
-      const formData = new FormData();
-      await appendLocalImage(
-        formData,
-        "photo",
-        compressed.uri,
-        "body-avatar.jpg",
-      );
-      formData.append("width", String(compressed.width));
-      formData.append("height", String(compressed.height));
-
-      uploadMutation.mutate(formData);
-    } catch {
+    const compressed = await compressImage(asset.uri).catch(() => null);
+    if (!compressed) {
       showToast({
         message: "Could not process the photo. Please try again.",
         variant: "error",
       });
+      return;
     }
+
+    const formData = new FormData();
+    const didAppend = await appendLocalImage(
+      formData,
+      "photo",
+      compressed.uri,
+      "body-avatar.jpg",
+    )
+      .then(() => true)
+      .catch(() => false);
+
+    if (!didAppend) {
+      showToast({
+        message: "Could not process the photo. Please try again.",
+        variant: "error",
+      });
+      return;
+    }
+
+    formData.append("width", String(compressed.width));
+    formData.append("height", String(compressed.height));
+
+    uploadMutation.mutate(formData);
   }
 
   return (
@@ -115,7 +128,7 @@ export function BodyPhotoManager() {
               <Image
                 source={{
                   uri: imageUrl,
-                  headers: cookies ? { Cookie: cookies } : undefined,
+                  headers: imageHeaders,
                 }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"

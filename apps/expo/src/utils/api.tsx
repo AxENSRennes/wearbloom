@@ -5,7 +5,7 @@ import superjson from "superjson";
 
 import type { AppRouter } from "@acme/api";
 
-import { authClient } from "./auth";
+import { getAuthHeaders } from "./authHeaders";
 import { getBaseUrl } from "./base-url";
 
 export const queryClient = new QueryClient({
@@ -31,9 +31,9 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
         headers() {
           const headers = new Map<string, string>();
           headers.set("x-trpc-source", "expo-react");
-          const cookies = authClient.getCookie();
-          if (cookies) {
-            headers.set("Cookie", cookies);
+          const authHeaders = getAuthHeaders();
+          if (authHeaders?.Cookie) {
+            headers.set("Cookie", authHeaders.Cookie);
           }
           return Object.fromEntries(headers);
         },
@@ -46,4 +46,4 @@ export const trpc = createTRPCOptionsProxy<AppRouter>({
   queryClient,
 });
 
-export type { RouterInputs, RouterOutputs } from "@acme/api";
+export type { RouterOutputs } from "@acme/api";
