@@ -40,4 +40,4 @@ COPY packages/validators/ ./packages/validators/
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["bun", "run", "apps/server/src/index.ts"]
+CMD ["sh", "-c", "cd packages/db && bun drizzle-kit push && cd /app && bun run apps/server/src/index.ts"]
