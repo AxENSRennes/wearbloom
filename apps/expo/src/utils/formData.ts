@@ -13,9 +13,7 @@ const LOCAL_URI_PREFIXES = [
 
 function isLocalNativeUri(uri: string): boolean {
   const normalizedUri = uri.toLowerCase();
-  return LOCAL_URI_PREFIXES.some((prefix) =>
-    normalizedUri.startsWith(prefix),
-  );
+  return LOCAL_URI_PREFIXES.some((prefix) => normalizedUri.startsWith(prefix));
 }
 
 function inferImageMimeType(uri: string, filename: string): string {
