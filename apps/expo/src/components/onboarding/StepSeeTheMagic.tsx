@@ -17,7 +17,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { Button, showToast, Spinner, ThemedText } from "@acme/ui";
 
-import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
+import { STOCK_BODY_PHOTO } from "~/constants/stockGarments";
 import { mockRequestRender } from "~/services/mockRenderService";
 import { authClient } from "~/utils/auth";
 

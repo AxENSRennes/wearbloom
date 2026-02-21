@@ -148,7 +148,7 @@ describe("WardrobeScreen", () => {
     // Stock garments ensure the grid is never empty for "all" category
     expect(html).not.toContain("Nothing here yet");
     // Stock garment IDs should appear
-    expect(html).toContain("stock-tops-1");
+    expect(html).toContain("stock-tops-01");
   });
 
   // -------------------------------------------------------------------------
@@ -338,10 +338,10 @@ describe("WardrobeScreen", () => {
     // Personal garment should appear
     expect(html).toContain("garment-1");
     // Stock garments should also appear
-    expect(html).toContain("stock-tops-1");
+    expect(html).toContain("stock-tops-01");
     // Personal garment should come before stock garment in HTML
     const personalIdx = html.indexOf("garment-1");
-    const stockIdx = html.indexOf("stock-tops-1");
+    const stockIdx = html.indexOf("stock-tops-01");
     expect(personalIdx).toBeLessThan(stockIdx);
   });
 
@@ -377,15 +377,16 @@ describe("WardrobeScreen", () => {
 
     const html = renderToStaticMarkup(<WardrobeScreen />);
 
-    // All 8 stock garments should appear for "all" category
-    expect(html).toContain("stock-tops-1");
-    expect(html).toContain("stock-tops-2");
-    expect(html).toContain("stock-tops-3");
-    expect(html).toContain("stock-bottoms-1");
-    expect(html).toContain("stock-bottoms-2");
-    expect(html).toContain("stock-dresses-1");
-    expect(html).toContain("stock-dresses-2");
-    expect(html).toContain("stock-outerwear-1");
+    // All 9 stock garments should appear for "all" category
+    expect(html).toContain("stock-tops-01");
+    expect(html).toContain("stock-tops-02");
+    expect(html).toContain("stock-tops-03");
+    expect(html).toContain("stock-bottoms-01");
+    expect(html).toContain("stock-bottoms-02");
+    expect(html).toContain("stock-dresses-01");
+    expect(html).toContain("stock-dresses-02");
+    expect(html).toContain("stock-outerwear-01");
+    expect(html).toContain("stock-shoes-01");
   });
 
   // -------------------------------------------------------------------------
@@ -658,7 +659,7 @@ describe("WardrobeScreen", () => {
     // Stock garment cards should have an onLongPress handler (not undefined)
     // The mock-ThemedPressable renders the onLongPress prop
     // Stock garments should be rendered with long-press capability
-    expect(html).toContain("stock-tops-1");
+    expect(html).toContain("stock-tops-01");
   });
 
   test("no offline indicator when connected", () => {

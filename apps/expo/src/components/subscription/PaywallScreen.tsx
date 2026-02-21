@@ -16,7 +16,7 @@ import {
 } from "@acme/ui";
 
 import { SafeScreen } from "~/components/common/SafeScreen";
-import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
+import { STOCK_BODY_PHOTO } from "~/constants/stockGarments";
 import { useStoreKit } from "~/hooks/useStoreKit";
 import { useSubscription } from "~/hooks/useSubscription";
 import { trpc } from "~/utils/api";

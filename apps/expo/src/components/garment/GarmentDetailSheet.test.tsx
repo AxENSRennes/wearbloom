@@ -27,10 +27,11 @@ const mockPersonalGarment: WardrobeItem = {
 };
 
 const mockStockGarment: WardrobeItem = {
-  id: "stock-tops-1",
+  id: "stock-tops-01",
   category: "tops",
   isStock: true as const,
   imageSource: 42, // mock require() number
+  label: "White T-Shirt",
 };
 
 describe("GarmentDetailSheet", () => {

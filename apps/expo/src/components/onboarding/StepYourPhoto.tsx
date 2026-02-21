@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
-import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
+import { STOCK_BODY_PHOTO } from "~/constants/stockGarments";
 import {
   clearOnboardingOwnBodyPhotoUri,
   setOnboardingBodyPhotoSource,

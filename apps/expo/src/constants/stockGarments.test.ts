@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { getStockGarmentsByCategory, STOCK_GARMENTS } from "./stockGarments";
+import {
+  getStockGarmentsByCategory,
+  STOCK_BODY_PHOTO,
+  STOCK_GARMENTS,
+} from "./stockGarments";
 
 describe("STOCK_GARMENTS", () => {
-  test("has exactly 8 items", () => {
-    expect(STOCK_GARMENTS).toHaveLength(8);
+  test("has exactly 9 items", () => {
+    expect(STOCK_GARMENTS).toHaveLength(9);
   });
 
   test("all stock garments have unique ids", () => {
@@ -19,11 +23,13 @@ describe("STOCK_GARMENTS", () => {
     }
   });
 
-  test("categories include tops, bottoms, and dresses", () => {
+  test("categories include tops, bottoms, dresses, outerwear, and shoes", () => {
     const categories = new Set(STOCK_GARMENTS.map((g) => g.category));
     expect(categories.has("tops")).toBe(true);
     expect(categories.has("bottoms")).toBe(true);
     expect(categories.has("dresses")).toBe(true);
+    expect(categories.has("outerwear")).toBe(true);
+    expect(categories.has("shoes")).toBe(true);
   });
 
   test("all garments have isStock === true", () => {
@@ -36,6 +42,19 @@ describe("STOCK_GARMENTS", () => {
     for (const garment of STOCK_GARMENTS) {
       expect(garment.imageSource).toBeDefined();
     }
+  });
+
+  test("all garments have a non-empty label", () => {
+    for (const garment of STOCK_GARMENTS) {
+      expect(garment.label).toEqual(expect.any(String));
+      expect(garment.label.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("STOCK_BODY_PHOTO", () => {
+  test("is defined", () => {
+    expect(STOCK_BODY_PHOTO).toBeDefined();
   });
 });
 
@@ -66,9 +85,9 @@ describe("getStockGarmentsByCategory", () => {
     expect(all).toHaveLength(STOCK_GARMENTS.length);
   });
 
-  test("returns empty array for category with no stock garments (shoes)", () => {
+  test("returns 1 shoe for shoes category", () => {
     const shoes = getStockGarmentsByCategory("shoes");
-    expect(shoes).toHaveLength(0);
+    expect(shoes).toHaveLength(1);
   });
 
   test("returns correct count for each category", () => {
@@ -76,5 +95,6 @@ describe("getStockGarmentsByCategory", () => {
     expect(getStockGarmentsByCategory("bottoms")).toHaveLength(2);
     expect(getStockGarmentsByCategory("dresses")).toHaveLength(2);
     expect(getStockGarmentsByCategory("outerwear")).toHaveLength(1);
+    expect(getStockGarmentsByCategory("shoes")).toHaveLength(1);
   });
 });

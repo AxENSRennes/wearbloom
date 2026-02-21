@@ -12,8 +12,9 @@ import * as ImagePicker from "expo-image-picker";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
-import type { GarmentCategory, StockGarment } from "~/constants/stockAssets";
-import { STOCK_GARMENTS } from "~/constants/stockAssets";
+import type { StockGarment } from "~/constants/stockGarments";
+import type { GarmentCategory } from "~/constants/categories";
+import { STOCK_GARMENTS } from "~/constants/stockGarments";
 
 // TODO(Epic-2): Add garment category picker when user photographs own garment
 const DEFAULT_PHOTO_CATEGORY: GarmentCategory = "tops";
@@ -62,7 +63,7 @@ function GarmentCard({
       >
         <View style={{ aspectRatio: 1 / 1.2 }}>
           <Image
-            source={garment.source}
+            source={garment.imageSource}
             style={{ width: "100%", height: "100%" }}
             contentFit="cover"
             accessibilityLabel={garment.label}

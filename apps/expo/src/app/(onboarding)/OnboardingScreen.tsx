@@ -2,7 +2,7 @@ import type { Href } from "expo-router";
 import { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
 
-import type { GarmentCategory } from "~/constants/stockAssets";
+import type { GarmentCategory } from "~/constants/categories";
 import { OnboardingFlow } from "~/components/onboarding/OnboardingFlow";
 
 export default function OnboardingScreen() {

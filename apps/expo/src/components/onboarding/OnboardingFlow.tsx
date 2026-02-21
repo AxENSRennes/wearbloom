@@ -4,7 +4,7 @@ import { View } from "react-native";
 
 import { wearbloomTheme } from "@acme/ui";
 
-import type { GarmentCategory } from "~/constants/stockAssets";
+import type { GarmentCategory } from "~/constants/categories";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { StepPickGarment } from "./StepPickGarment";
 import { StepSeeTheMagic } from "./StepSeeTheMagic";

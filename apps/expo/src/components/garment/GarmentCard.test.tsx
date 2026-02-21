@@ -21,10 +21,11 @@ const mockGarment = {
 };
 
 const mockStockGarment: StockGarment = {
-  id: "stock-dresses-1",
+  id: "stock-dresses-01",
   category: "dresses",
   isStock: true,
   imageSource: 42,
+  label: "Summer Dress",
 };
 
 describe("GarmentCard", () => {
