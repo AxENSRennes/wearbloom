@@ -1,4 +1,4 @@
-import { Dimensions, Pressable } from "react-native";
+import { Pressable, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
@@ -42,11 +42,11 @@ export function RenderCompletedView({
   isSubmittingFeedback,
 }: RenderCompletedViewProps) {
   const router = useRouter();
+  const { height: screenHeight } = useWindowDimensions();
 
   // Swipe-down dismiss gesture
   const translateY = useSharedValue(0);
   const dismissOpacity = useSharedValue(1);
-  const screenHeight = Dimensions.get("window").height;
 
   const dismissModal = () => {
     router.back();

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, Dimensions, View } from "react-native";
+import { ActivityIndicator, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -33,7 +33,7 @@ export function RenderLoadingAnimation({
   imageHeaders,
 }: RenderLoadingAnimationProps) {
   const reducedMotion = useReducedMotion();
-  const screenWidth = Dimensions.get("window").width;
+  const { width: screenWidth } = useWindowDimensions();
   const shimmerTranslateX = useSharedValue(-screenWidth);
   const pulseScale = useSharedValue(1);
   const thumbnailOpacity = useSharedValue(0);
@@ -157,11 +157,7 @@ export function RenderLoadingAnimation({
               height: 64,
               borderRadius: 12,
               overflow: "hidden",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 5,
+              boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
             },
             thumbnailAnimatedStyle,
           ]}

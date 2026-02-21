@@ -18,13 +18,13 @@ export interface ScrollFeedbackEvent {
   timestamp: number;
 }
 
-export interface ScrollMetrics {
+interface ScrollMetrics {
   offsetY: number;
   contentHeight: number;
   viewportHeight: number;
 }
 
-export interface ScrollFeedbackState extends ScrollMetrics {
+interface ScrollFeedbackState extends ScrollMetrics {
   canScroll: boolean;
   isAtTop: boolean;
   isAtBottom: boolean;
@@ -49,7 +49,7 @@ interface ScrollContainerHandlers {
   onTouchMove: () => void;
 }
 
-export interface UseScrollFeedbackResult {
+interface UseScrollFeedbackResult {
   scrollProps: ScrollFeedbackHandlers;
   containerProps: ScrollContainerHandlers;
   state: ScrollFeedbackState;

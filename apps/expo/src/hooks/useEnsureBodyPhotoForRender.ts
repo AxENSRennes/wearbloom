@@ -5,8 +5,6 @@ import { trpc } from "~/utils/api";
 import { getOnboardingBodyPhotoSource } from "~/utils/onboardingState";
 import { uploadStockBodyPhoto } from "~/utils/stockBodyPhotoUpload";
 
-export type EnsureBodyPhotoStatus = "ready" | "missing" | "error";
-
 export function useEnsureBodyPhotoForRender() {
   const queryClient = useQueryClient();
   const uploadBodyPhotoMutation = useMutation(

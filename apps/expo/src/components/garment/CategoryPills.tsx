@@ -61,6 +61,8 @@ export function CategoryPills({
     <ScrollView
       ref={scrollRef}
       horizontal
+      directionalLockEnabled
+      nestedScrollEnabled
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="gap-2 px-4"
       onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}

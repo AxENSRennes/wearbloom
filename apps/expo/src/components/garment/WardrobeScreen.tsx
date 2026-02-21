@@ -1,7 +1,7 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
 import { useCallback, useMemo, useReducer, useRef } from "react";
-import { Dimensions, Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
@@ -31,9 +31,6 @@ import { trpc } from "~/utils/api";
 
 const GUTTER = 2;
 const NUM_COLUMNS = 2;
-const { width: screenWidth } = Dimensions.get("window");
-const COLUMN_WIDTH = (screenWidth - GUTTER * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const ITEM_HEIGHT = Math.round(COLUMN_WIDTH * 1.2);
 const CATEGORY_PILLS_HEIGHT = 60;
 
 interface WardrobeUiState {
@@ -85,10 +82,13 @@ function wardrobeUiReducer(
 
 export default function WardrobeScreen() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [uiState, dispatch] = useReducer(
     wardrobeUiReducer,
     initialWardrobeUiState,
   );
+  const columnWidth = (screenWidth - GUTTER * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+  const itemHeight = Math.round(columnWidth * 1.2);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -280,10 +280,10 @@ export default function WardrobeScreen() {
                 dispatch({ type: "SET_STOCK_GARMENT_TO_HIDE", garment: item })
             : () => dispatch({ type: "SET_GARMENT_TO_DELETE", garment: item })
         }
-        columnWidth={COLUMN_WIDTH}
+        columnWidth={columnWidth}
       />
     ),
-    [handleGarmentPress],
+    [columnWidth, handleGarmentPress],
   );
 
   const keyExtractor = useCallback((item: WardrobeItem) => item.id, []);
@@ -301,7 +301,7 @@ export default function WardrobeScreen() {
   const headerOffsetTop = insets.top;
   const listContentTopPadding = CATEGORY_PILLS_HEIGHT + insets.top;
   const listContentBottomPadding = Math.max(24, insets.bottom + 32);
-  const { scrollProps, containerProps } = useScrollFeedback({
+  const { scrollProps } = useScrollFeedback({
     screen: "wardrobe-grid",
   });
 
@@ -334,6 +334,7 @@ export default function WardrobeScreen() {
       <SafeScreen className="bg-background" edges={["bottom"]}>
         {/* Sticky CategoryPills header */}
         <View
+          pointerEvents="box-none"
           className="absolute left-0 right-0 z-10 overflow-hidden px-4 py-2"
           style={{
             top: headerOffsetTop,
@@ -348,6 +349,7 @@ export default function WardrobeScreen() {
               testID="wardrobe-category-header-blur"
               tint="light"
               intensity={25}
+              pointerEvents="none"
               style={StyleSheet.absoluteFill}
             />
           ) : null}
@@ -369,7 +371,7 @@ export default function WardrobeScreen() {
 
         {isLoading ? (
           <View style={{ paddingTop: listContentTopPadding }}>
-            <SkeletonGrid columnWidth={COLUMN_WIDTH} />
+            <SkeletonGrid columnWidth={columnWidth} />
           </View>
         ) : (
           <LegendList
@@ -378,7 +380,7 @@ export default function WardrobeScreen() {
             keyExtractor={keyExtractor}
             numColumns={NUM_COLUMNS}
             style={{ flex: 1 }}
-            estimatedItemSize={ITEM_HEIGHT}
+            estimatedItemSize={itemHeight}
             recycleItems
             bounces
             alwaysBounceVertical
@@ -398,7 +400,6 @@ export default function WardrobeScreen() {
             onScroll={scrollProps.onScroll}
             onScrollBeginDrag={scrollProps.onScrollBeginDrag}
             onScrollEndDrag={scrollProps.onScrollEndDrag}
-            onTouchMove={containerProps.onTouchMove}
           />
         )}
       </SafeScreen>
