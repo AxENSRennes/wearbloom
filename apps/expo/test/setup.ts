@@ -731,6 +731,7 @@ mockModuleWithResolve("react-native-gesture-handler", () => {
     LongPressGestureHandler: mockComponent("LongPressGestureHandler"),
     ScrollView: mockComponent("GHScrollView"),
     FlatList: mockComponent("GHFlatList"),
+    Pressable: mockComponent("Pressable"),
   };
 });
 

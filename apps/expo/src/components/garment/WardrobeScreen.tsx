@@ -440,6 +440,10 @@ export default function WardrobeScreen() {
             onSnapToItem={handleSnapToItem}
             onProgressChange={carouselProgress}
             renderItem={renderCarouselPage}
+            onConfigurePanGesture={(gesture) => {
+              "worklet";
+              gesture.activeOffsetX([-10, 10]).failOffsetY([-5, 5]);
+            }}
           />
         </View>
       </SafeScreen>
