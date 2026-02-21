@@ -1,7 +1,6 @@
 import { Asset } from "expo-asset";
 
 import { STOCK_BODY_PHOTO } from "~/constants/stockGarments";
-
 import { appendLocalImage } from "./formData";
 import { compressImage } from "./imageCompressor";
 

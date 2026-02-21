@@ -13,7 +13,7 @@
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
     "routes:types": "expo customize tsconfig.json",
     "test": "bun test",
-    "react-doctor": "npx react-doctor . -y --verbose",
+    "react-doctor": "npm_config_cache=../../.cache/npm npx react-doctor . -y --verbose",
     "typecheck": "pnpm routes:types && tsc --noEmit"
   },
   "dependencies": {

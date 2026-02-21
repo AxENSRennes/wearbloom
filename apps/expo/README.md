@@ -25,4 +25,3 @@ Recommended mitigation:
 
 If this becomes frequent, plan a dedicated dependency-upgrade ticket for Expo
 SDK / React Native patch alignment.
-

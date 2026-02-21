@@ -58,4 +58,3 @@ export function useEnsureBodyPhotoForRender() {
     isEnsuringBodyPhoto: uploadBodyPhotoMutation.isPending,
   };
 }
-
