@@ -20,6 +20,7 @@ import {
   getOnboardingOwnBodyPhotoUri,
   markOnboardingComplete,
 } from "~/utils/onboardingState";
+import { uploadStockBodyPhoto } from "~/utils/stockBodyPhotoUpload";
 
 const PLACEHOLDER_COLOR = wearbloomTheme.colors["text-tertiary"];
 
@@ -145,6 +146,18 @@ export default function SignUpScreen() {
             await clearOnboardingOwnBodyPhotoUri();
           }
         }
+      } else if (source === "stock") {
+        const result = await uploadStockBodyPhoto({
+          uploadBodyPhoto: uploadBodyPhoto.mutateAsync,
+        });
+        if (!result.success) {
+          showToast({
+            message:
+              "We'll finish setting up your example photo on your first try-on.",
+            variant: "info",
+          });
+        }
+        await clearOnboardingOwnBodyPhotoUri();
       } else {
         await clearOnboardingOwnBodyPhotoUri();
       }

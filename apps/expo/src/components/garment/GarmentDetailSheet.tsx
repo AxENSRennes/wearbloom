@@ -23,6 +23,7 @@ interface GarmentDetailSheetProps {
   garment: WardrobeItem | null;
   onDismiss: () => void;
   onTryOn: (garmentId: string) => void;
+  isTryOnLoading?: boolean;
   supportedCategories: readonly string[];
 }
 
@@ -30,7 +31,7 @@ export const GarmentDetailSheet = forwardRef<
   BottomSheet,
   GarmentDetailSheetProps
 >(function GarmentDetailSheet(
-  { garment, onDismiss, onTryOn, supportedCategories },
+  { garment, onDismiss, onTryOn, isTryOnLoading = false, supportedCategories },
   ref,
 ) {
   const reducedMotion = useReducedMotion();
@@ -185,7 +186,8 @@ export const GarmentDetailSheet = forwardRef<
                 label="Try On"
                 variant="primary"
                 onPress={handleTryOn}
-                disabled={!isCategorySupported}
+                disabled={!isCategorySupported || isTryOnLoading}
+                isLoading={isTryOnLoading}
                 accessibilityHint={
                   isCategorySupported
                     ? "Double tap to start virtual try-on"

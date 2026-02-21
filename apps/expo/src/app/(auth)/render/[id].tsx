@@ -12,6 +12,7 @@ import { Button, showToast, ThemedText } from "@acme/ui";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { RenderCompletedView } from "~/components/tryon/RenderCompletedView";
 import { RenderLoadingAnimation } from "~/components/tryon/RenderLoadingAnimation";
+import { useEnsureBodyPhotoForRender } from "~/hooks/useEnsureBodyPhotoForRender";
 import { trpc } from "~/utils/api";
 import { getAuthHeaders } from "~/utils/authHeaders";
 import { getBaseUrl } from "~/utils/base-url";
@@ -24,6 +25,8 @@ export default function RenderScreen() {
   const reducedMotion = useReducedMotion();
   const pollCount = useRef(0);
   const mountTime = useRef(0);
+  const { ensureBodyPhotoForRender, isEnsuringBodyPhoto } =
+    useEnsureBodyPhotoForRender();
   const [elapsedMs, setElapsedMs] = useState(0);
   const hapticFired = useRef(false);
 
@@ -39,10 +42,37 @@ export default function RenderScreen() {
     },
   });
 
+  const routeToBodyPhoto = useCallback(() => {
+    showToast({
+      message: "Add your body photo to continue.",
+      variant: "info",
+    });
+    router.push("/(auth)/body-photo" as Href);
+  }, [router]);
+
   const requestRenderMutation = useMutation(
     trpc.tryon.requestRender.mutationOptions({
       onSuccess: (newData) => {
         router.replace(`/render/${newData.renderId}` as Href);
+      },
+      onError: (error, variables) => {
+        if (error.message === "NO_BODY_PHOTO") {
+          routeToBodyPhoto();
+          return;
+        }
+        if (error.message === "INSUFFICIENT_CREDITS") {
+          const garmentId = variables.garmentId;
+          router.push(
+            garmentId
+              ? (`/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}` as Href)
+              : ("/(auth)/paywall" as Href),
+          );
+          return;
+        }
+        showToast({
+          message: "Something went wrong. Try again.",
+          variant: "error",
+        });
       },
     }),
   );
@@ -72,6 +102,33 @@ export default function RenderScreen() {
   );
 
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+  const garmentId = data?.garmentId;
+
+  const handleTryAgain = useCallback(() => {
+    if (!garmentId) return;
+
+    void (async () => {
+      const bodyPhotoResult = await ensureBodyPhotoForRender();
+      if (bodyPhotoResult.status === "missing") {
+        routeToBodyPhoto();
+        return;
+      }
+      if (bodyPhotoResult.status === "error") {
+        showToast({
+          message: "Couldn't verify your body photo. Try again.",
+          variant: "error",
+        });
+        return;
+      }
+
+      requestRenderMutation.mutate({ garmentId });
+    })();
+  }, [
+    ensureBodyPhotoForRender,
+    garmentId,
+    requestRenderMutation,
+    routeToBodyPhoto,
+  ]);
 
   const handleFeedbackSubmit = useCallback(
     (rating: "thumbs_up" | "thumbs_down", category?: string) => {
@@ -156,12 +213,8 @@ export default function RenderScreen() {
         <Button
           variant="secondary"
           label="Try Again"
-          onPress={() => {
-            if (data?.garmentId) {
-              requestRenderMutation.mutate({ garmentId: data.garmentId });
-            }
-          }}
-          isLoading={requestRenderMutation.isPending}
+          onPress={handleTryAgain}
+          isLoading={requestRenderMutation.isPending || isEnsuringBodyPhoto}
         />
         <View style={{ marginTop: 12 }}>
           <Button

@@ -208,6 +208,15 @@ describe("SignUpScreen (onboarding context)", () => {
     expect(source).toContain("requiresBodyPhoto");
   });
 
+  test("uploads stock body photo during onboarding completion when source is stock", async () => {
+    const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
+    expect(source).toContain('source === "stock"');
+    expect(source).toContain("uploadStockBodyPhoto");
+    expect(source).toContain(
+      "We'll finish setting up your example photo on your first try-on.",
+    );
+  });
+
   test("uses back stack fallback when Skip for now is pressed", async () => {
     const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
     expect(source).toContain("router.canGoBack()");

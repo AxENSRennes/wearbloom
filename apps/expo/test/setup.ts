@@ -316,6 +316,19 @@ mockModuleWithResolve("expo-constants", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// expo-asset — avoid requiring native ExpoAsset module in bun test runtime
+// ---------------------------------------------------------------------------
+mockModuleWithResolve("expo-asset", () => ({
+  Asset: {
+    fromModule: (moduleId: number) => ({
+      uri: `file:///mock-asset-${String(moduleId)}.jpg`,
+      localUri: `file:///mock-asset-${String(moduleId)}.jpg`,
+      downloadAsync: async () => {},
+    }),
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // expo-haptics — mock haptic feedback
 // ---------------------------------------------------------------------------
 mockModuleWithResolve("expo-haptics", () => ({

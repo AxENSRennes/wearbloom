@@ -23,6 +23,7 @@ import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { usePaywallGuard } from "~/hooks/usePaywallGuard";
+import { useEnsureBodyPhotoForRender } from "~/hooks/useEnsureBodyPhotoForRender";
 import { useScrollFeedback } from "~/hooks/useScrollFeedback";
 import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
 import { isStockGarment } from "~/types/wardrobe";
@@ -93,6 +94,8 @@ export default function WardrobeScreen() {
   const router = useRouter();
   const { isConnected } = useNetworkStatus();
   const { guardRender } = usePaywallGuard();
+  const { ensureBodyPhotoForRender, isEnsuringBodyPhoto } =
+    useEnsureBodyPhotoForRender();
   const { hiddenIds, showStock, hideGarment } = useStockGarmentPreferences();
 
   const supportedCategoriesQuery = useQuery(
@@ -170,44 +173,79 @@ export default function WardrobeScreen() {
     trpc.tryon.requestRender.mutationOptions(),
   );
 
+  const routeToBodyPhoto = useCallback(() => {
+    bottomSheetRef.current?.close();
+    showToast({
+      message: "Add your body photo to continue.",
+      variant: "info",
+    });
+    router.push("/(auth)/body-photo" as Href);
+  }, [router]);
+
   const handleTryOn = useCallback(
     (garmentId: string) => {
-      if (!guardRender(garmentId)) {
-        bottomSheetRef.current?.close();
-        return;
-      }
+      void (async () => {
+        if (!guardRender(garmentId)) {
+          bottomSheetRef.current?.close();
+          return;
+        }
 
-      requestRenderMutation.mutate(
-        { garmentId },
-        {
-          onSuccess: (data) => {
-            bottomSheetRef.current?.close();
-            router.push(`/render/${data.renderId}` as Href);
-          },
-          onError: (err) => {
-            if (err.message === "INSUFFICIENT_CREDITS") {
+        const bodyPhotoResult = await ensureBodyPhotoForRender();
+        if (bodyPhotoResult.status === "missing") {
+          routeToBodyPhoto();
+          return;
+        }
+        if (bodyPhotoResult.status === "error") {
+          showToast({
+            message: "Couldn't verify your body photo. Try again.",
+            variant: "error",
+          });
+          return;
+        }
+
+        requestRenderMutation.mutate(
+          { garmentId },
+          {
+            onSuccess: (data) => {
               bottomSheetRef.current?.close();
-              router.push(
-                `/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}` as Href,
-              );
-            } else if (err.message === "INVALID_CATEGORY") {
-              showToast({
-                message: "Try-on not available for this category.",
-                variant: "error",
-              });
-            } else if (err.message === "RENDER_FAILED") {
-              showToast({
-                message: "Render failed. Try again.",
-                variant: "error",
-              });
-            } else {
-              showToast({ message: "Something went wrong.", variant: "error" });
-            }
+              router.push(`/render/${data.renderId}` as Href);
+            },
+            onError: (err) => {
+              if (err.message === "INSUFFICIENT_CREDITS") {
+                bottomSheetRef.current?.close();
+                router.push(
+                  `/(auth)/paywall?garmentId=${encodeURIComponent(garmentId)}` as Href,
+                );
+              } else if (err.message === "NO_BODY_PHOTO") {
+                routeToBodyPhoto();
+              } else if (err.message === "INVALID_CATEGORY") {
+                showToast({
+                  message: "Try-on not available for this category.",
+                  variant: "error",
+                });
+              } else if (err.message === "RENDER_FAILED") {
+                showToast({
+                  message: "Render failed. Try again.",
+                  variant: "error",
+                });
+              } else {
+                showToast({
+                  message: "Something went wrong.",
+                  variant: "error",
+                });
+              }
+            },
           },
-        },
-      );
+        );
+      })();
     },
-    [guardRender, requestRenderMutation, router],
+    [
+      ensureBodyPhotoForRender,
+      guardRender,
+      requestRenderMutation,
+      routeToBodyPhoto,
+      router,
+    ],
   );
 
   const wardrobeItems: WardrobeItem[] = useMemo(() => {
@@ -391,6 +429,7 @@ export default function WardrobeScreen() {
         garment={uiState.selectedGarment}
         onDismiss={handleSheetDismiss}
         onTryOn={handleTryOn}
+        isTryOnLoading={requestRenderMutation.isPending || isEnsuringBodyPhoto}
         supportedCategories={supportedCategories}
       />
     </>

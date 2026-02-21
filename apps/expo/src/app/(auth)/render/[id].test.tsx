@@ -295,6 +295,19 @@ describe("RenderScreen", () => {
     expect(html).toContain("Back to Wardrobe");
   });
 
+  test("Try Again flow verifies body photo before retrying render (structural)", async () => {
+    const source = await Bun.file(import.meta.dir + "/[id].tsx").text();
+    expect(source).toContain("useEnsureBodyPhotoForRender");
+    expect(source).toContain("ensureBodyPhotoForRender()");
+    expect(source).toContain("handleTryAgain");
+  });
+
+  test("requestRender NO_BODY_PHOTO error routes to body-photo screen (structural)", async () => {
+    const source = await Bun.file(import.meta.dir + "/[id].tsx").text();
+    expect(source).toContain('error.message === "NO_BODY_PHOTO"');
+    expect(source).toContain('router.push("/(auth)/body-photo" as Href)');
+  });
+
   // -------------------------------------------------------------------------
   // 13. Shows static image swap when Reduce Motion enabled
   // -------------------------------------------------------------------------
@@ -504,7 +517,7 @@ describe("RenderScreen", () => {
   test("shows thumbs_down success toast with credit refund message", () => {
     const showToastSpy = spyOn(acmeUI, "showToast");
 
-    // Capture onSuccess from the second useMutation call (submitFeedback)
+    // Capture onSuccess from the third useMutation call (submitFeedback)
     let submitFeedbackOnSuccess:
       | ((result: { success: boolean; creditRefunded: boolean }) => void)
       | undefined;
@@ -512,8 +525,8 @@ describe("RenderScreen", () => {
     let callIndex = 0;
     mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
-      // Second useMutation call is submitFeedback
-      if (callIndex === 2 && typeof opts.onSuccess === "function") {
+      // Third useMutation call is submitFeedback
+      if (callIndex === 3 && typeof opts.onSuccess === "function") {
         submitFeedbackOnSuccess =
           opts.onSuccess as typeof submitFeedbackOnSuccess;
       }
@@ -561,7 +574,7 @@ describe("RenderScreen", () => {
     let callIndex = 0;
     mutationSpy.mockImplementation(((opts: Record<string, unknown>) => {
       callIndex++;
-      if (callIndex === 2 && typeof opts.onSuccess === "function") {
+      if (callIndex === 3 && typeof opts.onSuccess === "function") {
         submitFeedbackOnSuccess =
           opts.onSuccess as typeof submitFeedbackOnSuccess;
       }
@@ -606,8 +619,8 @@ describe("RenderScreen", () => {
     let callIndex = 0;
     mutationSpy.mockImplementation(((_opts: Record<string, unknown>) => {
       callIndex++;
-      const mutateFn = callIndex === 2 ? feedbackMutateMock : mock(() => {});
-      if (callIndex === 2) submitFeedbackMutate = feedbackMutateMock;
+      const mutateFn = callIndex === 3 ? feedbackMutateMock : mock(() => {});
+      if (callIndex === 3) submitFeedbackMutate = feedbackMutateMock;
       return {
         mutate: mutateFn,
         mutateAsync: mock(() => Promise.resolve()),
@@ -634,11 +647,11 @@ describe("RenderScreen", () => {
     // submitFeedbackMutation.mutate({ renderId: id ?? "", rating, category })
     expect(submitFeedbackMutate).toBeDefined();
 
-    // Verify the mutate function is the one from the second useMutation call
+    // Verify the mutate function is the one from the third useMutation call
     // by checking it was provided to the FeedbackButton's onSubmit handler.
     // The component calls: submitFeedbackMutation.mutate({ renderId: id, rating, category })
     // where id comes from useLocalSearchParams (mocked as "mock-render-id")
-    expect(callIndex).toBe(2); // Both mutations were created
+    expect(callIndex).toBe(3); // All mutations were created
   });
 
   // -------------------------------------------------------------------------

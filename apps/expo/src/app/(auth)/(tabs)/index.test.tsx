@@ -471,12 +471,17 @@ describe("WardrobeScreen", () => {
     renderToStaticMarkup(<WardrobeScreen />);
 
     expect(mutationSpy).toHaveBeenCalled();
-    const firstCall = mutationSpy.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const mutationOpts = (firstCall as unknown[])[0] as Record<string, unknown>;
+    const mutationOpts = mutationSpy.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .find(
+        (opts) =>
+          typeof opts.onSuccess === "function" &&
+          typeof opts.onError === "function",
+      );
+    expect(mutationOpts).toBeDefined();
 
     // Call onSuccess and verify toast + cache invalidation
-    const onSuccess = mutationOpts.onSuccess as () => void;
+    const onSuccess = mutationOpts?.onSuccess as () => void;
     expect(onSuccess).toBeDefined();
     onSuccess();
 
@@ -498,10 +503,16 @@ describe("WardrobeScreen", () => {
 
     renderToStaticMarkup(<WardrobeScreen />);
 
-    const firstCall = mutationSpy.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const mutationOpts = (firstCall as unknown[])[0] as Record<string, unknown>;
-    const onError = mutationOpts.onError as () => void;
+    const mutationOpts = mutationSpy.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .find(
+        (opts) =>
+          typeof opts.onSuccess === "function" &&
+          typeof opts.onError === "function",
+      );
+    expect(mutationOpts).toBeDefined();
+
+    const onError = mutationOpts?.onError as () => void;
     expect(onError).toBeDefined();
     onError();
 
@@ -553,6 +564,22 @@ describe("WardrobeScreen", () => {
     ).text();
     expect(source).toContain('err.message === "INVALID_CATEGORY"');
     expect(source).toContain("Try-on not available for this category.");
+  });
+
+  test("NO_BODY_PHOTO error path routes to body-photo screen", async () => {
+    const source = await Bun.file(
+      import.meta.dir + "/../../../components/garment/WardrobeScreen.tsx",
+    ).text();
+    expect(source).toContain('err.message === "NO_BODY_PHOTO"');
+    expect(source).toContain('router.push("/(auth)/body-photo" as Href)');
+  });
+
+  test("tries to ensure body photo before requesting render", async () => {
+    const source = await Bun.file(
+      import.meta.dir + "/../../../components/garment/WardrobeScreen.tsx",
+    ).text();
+    expect(source).toContain("useEnsureBodyPhotoForRender");
+    expect(source).toContain("ensureBodyPhotoForRender()");
   });
 
   // -------------------------------------------------------------------------
