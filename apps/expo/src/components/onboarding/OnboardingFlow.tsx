@@ -1,8 +1,9 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
+import { ArrowLeft } from "lucide-react-native";
 
-import { wearbloomTheme } from "@acme/ui";
+import { ThemedText, wearbloomTheme } from "@acme/ui";
 
 import type { GarmentCategory } from "~/constants/categories";
 import { SafeScreen } from "~/components/common/SafeScreen";
@@ -14,6 +15,11 @@ const PAGES = [0, 1, 2] as const;
 const PAGE_COUNT = PAGES.length;
 const GARMENT_TO_RESULT_DELAY_MS = 500;
 type OnboardingStep = (typeof PAGES)[number];
+const PREVIOUS_STEP: Record<OnboardingStep, OnboardingStep> = {
+  0: 0,
+  1: 0,
+  2: 1,
+};
 
 interface OnboardingFlowProps {
   onPhotoSelected: (uri: string, isStock: boolean) => void;
@@ -80,6 +86,14 @@ export function OnboardingFlow({
     goToPage(1);
   }, [onTryAnother, goToPage]);
 
+  const handleGoBack = useCallback(() => {
+    if (delayedStepRef.current !== null) {
+      clearTimeout(delayedStepRef.current);
+      delayedStepRef.current = null;
+    }
+    setCurrentStep((step) => PREVIOUS_STEP[step]);
+  }, []);
+
   const stepLabel = `Onboarding step ${currentStep + 1} of ${PAGE_COUNT}`;
   const content =
     currentStep === 0 ? (
@@ -97,30 +111,49 @@ export function OnboardingFlow({
 
   return (
     <SafeScreen className="bg-white" edges={["top"]}>
-      <View
-        className="items-center pb-4 pt-2"
-        accessibilityLabel="Onboarding progress"
-        accessibilityRole="tablist"
-      >
-        <View className="flex-row gap-2">
-          {PAGES.map((step) => {
-            const isActive = step === currentStep;
-            return (
-              <View
-                key={step}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: isActive
-                    ? wearbloomTheme.colors["text-primary"]
-                    : wearbloomTheme.colors.border,
-                }}
-              />
-            );
-          })}
+      <View className="pb-4 pt-2">
+        {currentStep > 0 ? (
+          <Pressable
+            onPress={handleGoBack}
+            className="absolute left-4 top-0 z-10 flex-row items-center gap-1 py-1"
+            accessibilityRole="button"
+            accessibilityLabel="Go to previous step"
+          >
+            <ArrowLeft
+              size={18}
+              color={wearbloomTheme.colors["text-secondary"]}
+            />
+            <ThemedText variant="body" className="text-text-secondary">
+              Back
+            </ThemedText>
+          </Pressable>
+        ) : null}
+
+        <View
+          className="items-center"
+          accessibilityLabel="Onboarding progress"
+          accessibilityRole="tablist"
+        >
+          <View className="flex-row gap-2">
+            {PAGES.map((step) => {
+              const isActive = step === currentStep;
+              return (
+                <View
+                  key={step}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: isActive
+                      ? wearbloomTheme.colors["text-primary"]
+                      : wearbloomTheme.colors.border,
+                  }}
+                />
+              );
+            })}
+          </View>
         </View>
       </View>
 

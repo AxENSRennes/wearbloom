@@ -222,6 +222,13 @@ describe("SignUpScreen (onboarding context)", () => {
     expect(source).toContain("router.canGoBack()");
     expect(source).toContain('router.replace("/(onboarding)" as Href)');
   });
+
+  test("includes explicit back action with onboarding fallback", async () => {
+    const source = await Bun.file(import.meta.dir + "/sign-up.tsx").text();
+    expect(source).toContain("Go back");
+    expect(source).toContain("isFromOnboarding");
+    expect(source).toContain('router.replace("/(public)/sign-in" as Href)');
+  });
 });
 
 describe("SignUpScreen credit grant behavior", () => {

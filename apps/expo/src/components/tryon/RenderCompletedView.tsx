@@ -1,3 +1,4 @@
+import type { Href } from "expo-router";
 import { Pressable, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -48,8 +49,13 @@ export function RenderCompletedView({
   const translateY = useSharedValue(0);
   const dismissOpacity = useSharedValue(1);
 
-  const dismissModal = () => {
-    router.back();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(auth)/(tabs)/" as Href);
   };
 
   const panGesture = Gesture.Pan()
@@ -63,7 +69,7 @@ export function RenderCompletedView({
       if (event.velocityY > 500 || event.translationY > screenHeight * 0.25) {
         translateY.value = withSpring(screenHeight);
         dismissOpacity.value = withTiming(0, { duration: 200 });
-        runOnJS(dismissModal)();
+        runOnJS(handleBack)();
       } else {
         translateY.value = withSpring(0);
         dismissOpacity.value = withSpring(1);
@@ -142,7 +148,7 @@ export function RenderCompletedView({
           <Animated.View entering={uiEntering}>
             <Pressable
               testID="back-button"
-              onPress={() => router.back()}
+              onPress={handleBack}
               style={{
                 position: "absolute",
                 top: 8,

@@ -1,8 +1,9 @@
 import type { Href } from "expo-router";
 import { useReducer } from "react";
-import { Platform, TextInput, View } from "react-native";
+import { Platform, Pressable, TextInput, View } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
 import { useMutation } from "@tanstack/react-query";
 
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
@@ -271,47 +272,80 @@ export default function SignUpScreen() {
     });
   };
 
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    if (isFromOnboarding) {
+      router.replace("/(onboarding)" as Href);
+      return;
+    }
+
+    router.replace("/(public)/sign-in" as Href);
+  };
+
   return (
-    <SignUpContent
-      isFromOnboarding={isFromOnboarding}
-      formState={formState}
-      isLoading={isLoading}
-      isEmailPending={emailSignUp.isPending}
-      onAppleSignUp={() => appleSignIn.mutate()}
-      onNameChange={handleNameChange}
-      onEmailChange={handleEmailChange}
-      onPasswordChange={handlePasswordChange}
-      onNameBlur={() =>
-        dispatchForm({
-          type: "SET_ERROR",
-          field: "name",
-          value: validateName(formState.name),
-        })
-      }
-      onEmailBlur={() =>
-        dispatchForm({
-          type: "SET_ERROR",
-          field: "email",
-          value: validateEmail(formState.email),
-        })
-      }
-      onPasswordBlur={() =>
-        dispatchForm({
-          type: "SET_ERROR",
-          field: "password",
-          value: validatePassword(formState.password),
-        })
-      }
-      onSignUp={handleSignUp}
-      onSkip={() => {
-        if (router.canGoBack()) {
-          router.back();
-          return;
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "",
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <Pressable
+              onPress={handleGoBack}
+              className="-ml-1 flex-row items-center gap-1 px-2 py-1"
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <ArrowLeft
+                size={18}
+                color={wearbloomTheme.colors["text-secondary"]}
+              />
+              <ThemedText variant="body" className="text-text-secondary">
+                Back
+              </ThemedText>
+            </Pressable>
+          ),
+        }}
+      />
+      <SignUpContent
+        isFromOnboarding={isFromOnboarding}
+        formState={formState}
+        isLoading={isLoading}
+        isEmailPending={emailSignUp.isPending}
+        onAppleSignUp={() => appleSignIn.mutate()}
+        onNameChange={handleNameChange}
+        onEmailChange={handleEmailChange}
+        onPasswordChange={handlePasswordChange}
+        onNameBlur={() =>
+          dispatchForm({
+            type: "SET_ERROR",
+            field: "name",
+            value: validateName(formState.name),
+          })
         }
-        router.replace("/(onboarding)" as Href);
-      }}
-      onNavigateSignIn={() => router.replace("/(public)/sign-in" as Href)}
-    />
+        onEmailBlur={() =>
+          dispatchForm({
+            type: "SET_ERROR",
+            field: "email",
+            value: validateEmail(formState.email),
+          })
+        }
+        onPasswordBlur={() =>
+          dispatchForm({
+            type: "SET_ERROR",
+            field: "password",
+            value: validatePassword(formState.password),
+          })
+        }
+        onSignUp={handleSignUp}
+        onSkip={handleGoBack}
+        onNavigateSignIn={() => router.replace("/(public)/sign-in" as Href)}
+      />
+    </>
   );
 }
 

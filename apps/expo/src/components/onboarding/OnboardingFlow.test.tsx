@@ -57,4 +57,12 @@ describe("OnboardingFlow", () => {
     );
     expect(html).toContain("Onboarding step 1 of 3");
   });
+
+  test("includes previous-step back control for steps after the first", async () => {
+    const source = await Bun.file(
+      import.meta.dir + "/OnboardingFlow.tsx",
+    ).text();
+    expect(source).toContain("Go to previous step");
+    expect(source).toContain("currentStep > 0");
+  });
 });

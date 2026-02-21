@@ -1,13 +1,14 @@
 import type { Href } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { ArrowLeft } from "lucide-react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { Button, showToast, ThemedText } from "@acme/ui";
+import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { RenderCompletedView } from "~/components/tryon/RenderCompletedView";
@@ -48,6 +49,15 @@ export default function RenderScreen() {
       variant: "info",
     });
     router.push("/(auth)/body-photo" as Href);
+  }, [router]);
+
+  const handleExitRender = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(auth)/(tabs)/" as Href);
   }, [router]);
 
   const requestRenderMutation = useMutation(
@@ -176,6 +186,19 @@ export default function RenderScreen() {
     return (
       <SafeScreen className="bg-black">
         <StatusBar style="light" />
+        <View className="absolute left-4 top-4 z-10">
+          <Pressable
+            className="flex-row items-center gap-1 rounded-full bg-black/40 px-3 py-2"
+            onPress={handleExitRender}
+            accessibilityRole="button"
+            accessibilityLabel="Exit render"
+          >
+            <ArrowLeft size={16} color={wearbloomTheme.colors.background} />
+            <ThemedText variant="caption" className="text-white">
+              Exit render
+            </ThemedText>
+          </Pressable>
+        </View>
         <RenderLoadingAnimation
           personImageUrl={
             data?.personImageUrl ? `${getBaseUrl()}${data.personImageUrl}` : ""
@@ -220,7 +243,7 @@ export default function RenderScreen() {
           <Button
             variant="ghost"
             label="Back to Wardrobe"
-            onPress={() => router.back()}
+            onPress={handleExitRender}
           />
         </View>
       </SafeScreen>

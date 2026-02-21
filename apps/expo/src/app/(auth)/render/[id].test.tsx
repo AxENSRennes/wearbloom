@@ -350,6 +350,23 @@ describe("RenderScreen", () => {
     expect(html).not.toContain('testID="feedback-button"');
   });
 
+  test("shows exit control during loading", () => {
+    stubUseQuery({
+      data: {
+        status: "pending",
+        resultImageUrl: null,
+        errorCode: null,
+        garmentId: "garment-1",
+        personImageUrl: "/api/images/bp-1",
+        garmentImageUrl: "/api/images/garment-1",
+      },
+    });
+
+    const html = renderToStaticMarkup(<RenderScreen />);
+
+    expect(html).toContain("Exit render");
+  });
+
   // -------------------------------------------------------------------------
   // 15. Polling uses refetchInterval and stops on terminal status
   // -------------------------------------------------------------------------
