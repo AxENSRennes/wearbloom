@@ -107,7 +107,7 @@ describe("CategoryPills", () => {
       <CategoryPills categories={[]} selected="" onSelect={() => {}} />,
     );
 
-    expect(html).toContain("mock-View");
+    expect(html).toContain("mock-ScrollView");
     expect(html).not.toContain("mock-Pressable");
   });
 });

@@ -1,27 +1,19 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
-import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import type { ICarouselInstance } from "react-native-reanimated-carousel";
+import { useCallback, useMemo, useReducer, useRef, useState } from "react";
 import { useWindowDimensions, View } from "react-native";
-import { GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import { useSharedValue } from "react-native-reanimated";
+import Carousel from "react-native-reanimated-carousel";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list";
-import type { LegendListRef } from "@legendapp/list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
 import type { CategoryFilter } from "~/constants/categories";
-import type { CategorySwipeSource } from "~/hooks/useCategorySwipeNavigation";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
 import { EmptyState } from "~/components/common/EmptyState";
 import { SafeScreen } from "~/components/common/SafeScreen";
@@ -31,7 +23,6 @@ import { GarmentDetailSheet } from "~/components/garment/GarmentDetailSheet";
 import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
-import { useCategorySwipeNavigation } from "~/hooks/useCategorySwipeNavigation";
 import { useEnsureBodyPhotoForRender } from "~/hooks/useEnsureBodyPhotoForRender";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { usePaywallGuard } from "~/hooks/usePaywallGuard";
@@ -44,8 +35,6 @@ const GUTTER = 6;
 const NUM_COLUMNS = 2;
 const GRID_HORIZONTAL_PADDING = 8;
 const LIST_BOTTOM_EXTRA_PADDING = 120;
-const CATEGORY_TRANSITION_OUT_MS = 100;
-const CATEGORY_TRANSITION_IN_MS = 160;
 
 interface WardrobeUiState {
   selectedCategory: CategoryFilter;
@@ -106,16 +95,11 @@ export default function WardrobeScreen() {
     initialWardrobeUiState,
   );
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const listRef = useRef<LegendListRef>(null);
-  const categoryScrollOffsetsRef = useRef<Map<CategoryFilter, number>>(
-    new Map(),
-  );
-  const pendingRestoreOffsetRef = useRef<number | null>(null);
+  const carouselRef = useRef<ICarouselInstance>(null);
+  const carouselProgress = useSharedValue<number>(0);
+  const [carouselHeight, setCarouselHeight] = useState(0);
   const queryClient = useQueryClient();
   const router = useRouter();
-  const reducedMotion = useReducedMotion();
-  const categoryTransitionProgress = useSharedValue(0);
-  const categoryTransitionDirection = useSharedValue(-1);
   const { isConnected } = useNetworkStatus();
   const { guardRender } = usePaywallGuard();
   const { ensureBodyPhotoForRender, isEnsuringBodyPhoto } =
@@ -132,18 +116,6 @@ export default function WardrobeScreen() {
     LIST_BOTTOM_EXTRA_PADDING,
     insets.bottom + 88,
   );
-  const animatedListStyle = useAnimatedStyle(() => ({
-    opacity: reducedMotion ? 1 : 1 - categoryTransitionProgress.value * 0.08,
-    transform: [
-      {
-        translateX: reducedMotion
-          ? 0
-          : categoryTransitionDirection.value *
-            categoryTransitionProgress.value *
-            8,
-      },
-    ],
-  }));
 
   const supportedCategoriesQuery = useQuery(
     trpc.tryon.getSupportedCategories.queryOptions(),
@@ -172,67 +144,30 @@ export default function WardrobeScreen() {
     }
   }, [deleteMutation, uiState.garmentToDelete]);
 
+  // Fetch ALL garments without category filter so swiping between pages is instant
   const {
     data: garments,
     isLoading,
     isFetching,
     isError,
     error: _error,
-  } = useQuery(
-    trpc.garment.list.queryOptions(
-      uiState.selectedCategory === "all"
-        ? undefined
-        : { category: uiState.selectedCategory },
-    ),
-  );
+  } = useQuery(trpc.garment.list.queryOptions());
 
-  const playCategoryTransition = useCallback(
-    (direction: "left" | "right") => {
-      if (reducedMotion) return;
-      categoryTransitionDirection.set(direction === "left" ? -1 : 1);
-      categoryTransitionProgress.set(
-        withSequence(
-          withTiming(1, { duration: CATEGORY_TRANSITION_OUT_MS }),
-          withTiming(0, { duration: CATEGORY_TRANSITION_IN_MS }),
-        ),
+  const getItemsForCategory = useCallback(
+    (category: CategoryFilter): WardrobeItem[] => {
+      const personal: WardrobeItem[] = (garments ?? [])
+        .filter((g) => category === "all" || g.category === category)
+        .map((garment) => ({
+          ...garment,
+          isStock: false as const,
+        }));
+      if (!showStock) return personal;
+      const stockItems = getStockGarmentsByCategory(category).filter(
+        (stockItem) => !hiddenIds.includes(stockItem.id),
       );
+      return [...personal, ...stockItems];
     },
-    [categoryTransitionDirection, categoryTransitionProgress, reducedMotion],
-  );
-
-  const handleCategorySelection = useCallback(
-    (category: CategoryFilter, source: CategorySwipeSource) => {
-      if (category === uiState.selectedCategory) return;
-
-      const currentOffset =
-        categoryScrollOffsetsRef.current.get(uiState.selectedCategory) ?? 0;
-      categoryScrollOffsetsRef.current.set(uiState.selectedCategory, currentOffset);
-      pendingRestoreOffsetRef.current =
-        categoryScrollOffsetsRef.current.get(category) ?? 0;
-
-      const currentIndex = ALL_CATEGORIES.indexOf(uiState.selectedCategory);
-      const nextIndex = ALL_CATEGORIES.indexOf(category);
-      const direction =
-        source === "swipe-right" || nextIndex < currentIndex ? "right" : "left";
-      playCategoryTransition(direction);
-      dispatch({ type: "SET_CATEGORY", category });
-    },
-    [playCategoryTransition, uiState.selectedCategory],
-  );
-
-  const { selectedIndex, selectFromTap, swipeGesture } =
-    useCategorySwipeNavigation({
-      categories: ALL_CATEGORIES,
-      selectedCategory: uiState.selectedCategory,
-      onCategorySelect: handleCategorySelection,
-    });
-
-  const handleCategoryPillSelect = useCallback(
-    (category: string) => {
-      if (!isCategoryFilter(category)) return;
-      selectFromTap(category);
-    },
-    [selectFromTap],
+    [garments, hiddenIds, showStock],
   );
 
   const handleRefresh = useCallback(() => {
@@ -338,33 +273,6 @@ export default function WardrobeScreen() {
     ],
   );
 
-  const wardrobeItems: WardrobeItem[] = useMemo(() => {
-    const personal: WardrobeItem[] = (garments ?? []).map((garment) => ({
-      ...garment,
-      isStock: false as const,
-    }));
-    if (!showStock) return personal;
-    const stockItems = getStockGarmentsByCategory(
-      uiState.selectedCategory,
-    ).filter((stockItem) => !hiddenIds.includes(stockItem.id));
-    return [...personal, ...stockItems];
-  }, [garments, hiddenIds, showStock, uiState.selectedCategory]);
-
-  useEffect(() => {
-    if (pendingRestoreOffsetRef.current === null) return;
-    const targetOffset = pendingRestoreOffsetRef.current;
-    const frame = requestAnimationFrame(() => {
-      listRef.current?.scrollToOffset({
-        offset: Math.max(0, targetOffset),
-        animated: false,
-      });
-      pendingRestoreOffsetRef.current = null;
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [uiState.selectedCategory, wardrobeItems.length]);
-
   const handleHideStockConfirm = useCallback(() => {
     if (uiState.stockGarmentToHide) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -393,22 +301,6 @@ export default function WardrobeScreen() {
 
   const keyExtractor = useCallback((item: WardrobeItem) => item.id, []);
 
-  const emptyComponent = useMemo(() => {
-    if (isLoading) {
-      return (
-        <View className="pt-3">
-          <SkeletonGrid columnWidth={columnWidth} />
-        </View>
-      );
-    }
-    return (
-      <EmptyState
-        headline="Nothing here yet"
-        subtext={`Add a ${uiState.selectedCategory}`}
-      />
-    );
-  }, [columnWidth, isLoading, uiState.selectedCategory]);
-
   const unsupportedCategories = useMemo(() => {
     if (!supportedCategoriesQuery.data) return [];
     return ALL_CATEGORIES.filter(
@@ -417,54 +309,79 @@ export default function WardrobeScreen() {
     );
   }, [supportedCategoriesQuery.data]);
 
-  const listHeaderComponent = useMemo(
-    () => (
-      <View className="border-b border-black/5 bg-background px-4 pb-3 pt-2">
-        <View className="mb-2 flex-row items-center justify-between">
-          <ThemedText variant="small" className="text-text-tertiary">
-            Swipe left or right to switch category
-          </ThemedText>
-          <ThemedText variant="small" className="text-text-tertiary">
-            {`${Math.max(1, selectedIndex + 1)}/${ALL_CATEGORIES.length}`}
-          </ThemedText>
-        </View>
-        <CategoryPills
-          categories={ALL_CATEGORIES}
-          selected={uiState.selectedCategory}
-          onSelect={handleCategoryPillSelect}
-          unsupportedCategories={unsupportedCategories}
-        />
-        {!isConnected && (
-          <View className="mt-2 items-center rounded bg-amber-100 py-1">
-            <ThemedText variant="caption" className="text-amber-800">
-              Offline
-            </ThemedText>
-          </View>
-        )}
-      </View>
-    ),
-    [
-      handleCategoryPillSelect,
-      isConnected,
-      selectedIndex,
-      uiState.selectedCategory,
-      unsupportedCategories,
-    ],
-  );
+  const handleCategoryPillSelect = useCallback((category: string) => {
+    if (!isCategoryFilter(category)) return;
+    const index = ALL_CATEGORIES.indexOf(category);
+    if (index < 0) return;
+    carouselRef.current?.scrollTo({ index, animated: true });
+  }, []);
+
+  const handleSnapToItem = useCallback((index: number) => {
+    const category = ALL_CATEGORIES[index];
+    if (category) {
+      dispatch({ type: "SET_CATEGORY", category });
+    }
+  }, []);
 
   const { scrollProps } = useScrollFeedback({
     screen: "wardrobe-grid",
   });
 
-  const handleListScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      scrollProps.onScroll(event);
-      categoryScrollOffsetsRef.current.set(
-        uiState.selectedCategory,
-        Math.max(0, event.nativeEvent.contentOffset.y),
+  const renderCarouselPage = useCallback(
+    ({ item: category }: { item: CategoryFilter }) => {
+      const items = getItemsForCategory(category);
+
+      const emptyComponent = isLoading ? (
+        <View className="pt-3">
+          <SkeletonGrid columnWidth={columnWidth} />
+        </View>
+      ) : (
+        <EmptyState headline="Nothing here yet" subtext={`Add a ${category}`} />
+      );
+
+      return (
+        <LegendList
+          data={isLoading ? [] : items}
+          renderItem={renderGarment}
+          keyExtractor={keyExtractor}
+          numColumns={NUM_COLUMNS}
+          style={{ flex: 1 }}
+          estimatedItemSize={itemHeight}
+          recycleItems
+          bounces
+          alwaysBounceVertical
+          overScrollMode="always"
+          showsVerticalScrollIndicator={false}
+          refreshing={uiState.isManualRefresh && isFetching}
+          onRefresh={handleRefresh}
+          contentContainerStyle={{
+            paddingHorizontal: GRID_HORIZONTAL_PADDING,
+            paddingBottom: listContentBottomPadding,
+          }}
+          columnWrapperStyle={{ gap: GUTTER }}
+          ListEmptyComponent={emptyComponent}
+          scrollEventThrottle={scrollProps.scrollEventThrottle}
+          onLayout={scrollProps.onLayout}
+          onContentSizeChange={scrollProps.onContentSizeChange}
+          onScroll={scrollProps.onScroll}
+          onScrollBeginDrag={scrollProps.onScrollBeginDrag}
+          onScrollEndDrag={scrollProps.onScrollEndDrag}
+        />
       );
     },
-    [scrollProps, uiState.selectedCategory],
+    [
+      columnWidth,
+      getItemsForCategory,
+      handleRefresh,
+      isFetching,
+      isLoading,
+      itemHeight,
+      keyExtractor,
+      listContentBottomPadding,
+      renderGarment,
+      scrollProps,
+      uiState.isManualRefresh,
+    ],
   );
 
   if (isError) {
@@ -494,40 +411,37 @@ export default function WardrobeScreen() {
   return (
     <>
       <SafeScreen className="bg-background">
-        <GestureDetector gesture={swipeGesture}>
-          <Animated.View className="flex-1" style={animatedListStyle}>
-            <LegendList
-              ref={listRef}
-              data={isLoading ? [] : wardrobeItems}
-              renderItem={renderGarment}
-              keyExtractor={keyExtractor}
-              numColumns={NUM_COLUMNS}
-              style={{ flex: 1 }}
-              estimatedItemSize={itemHeight}
-              recycleItems
-              bounces
-              alwaysBounceVertical
-              overScrollMode="always"
-              showsVerticalScrollIndicator={false}
-              refreshing={uiState.isManualRefresh && isFetching}
-              onRefresh={handleRefresh}
-              ListHeaderComponent={listHeaderComponent}
-              stickyIndices={[0]}
-              contentContainerStyle={{
-                paddingHorizontal: GRID_HORIZONTAL_PADDING,
-                paddingBottom: listContentBottomPadding,
-              }}
-              columnWrapperStyle={{ gap: GUTTER }}
-              ListEmptyComponent={emptyComponent}
-              scrollEventThrottle={scrollProps.scrollEventThrottle}
-              onLayout={scrollProps.onLayout}
-              onContentSizeChange={scrollProps.onContentSizeChange}
-              onScroll={handleListScroll}
-              onScrollBeginDrag={scrollProps.onScrollBeginDrag}
-              onScrollEndDrag={scrollProps.onScrollEndDrag}
-            />
-          </Animated.View>
-        </GestureDetector>
+        <View className="border-b border-black/5 bg-background pb-3 pt-2">
+          <CategoryPills
+            categories={ALL_CATEGORIES}
+            selected={uiState.selectedCategory}
+            onSelect={handleCategoryPillSelect}
+            unsupportedCategories={unsupportedCategories}
+          />
+          {!isConnected && (
+            <View className="mx-4 mt-2 items-center rounded bg-amber-100 py-1">
+              <ThemedText variant="caption" className="text-amber-800">
+                Offline
+              </ThemedText>
+            </View>
+          )}
+        </View>
+        <View
+          className="flex-1"
+          onLayout={(e) => setCarouselHeight(e.nativeEvent.layout.height)}
+        >
+          <Carousel
+            ref={carouselRef}
+            width={screenWidth}
+            height={carouselHeight}
+            data={ALL_CATEGORIES as unknown as CategoryFilter[]}
+            loop={false}
+            pagingEnabled
+            onSnapToItem={handleSnapToItem}
+            onProgressChange={carouselProgress}
+            renderItem={renderCarouselPage}
+          />
+        </View>
       </SafeScreen>
       <AlertDialog
         isOpen={uiState.garmentToDelete !== null}

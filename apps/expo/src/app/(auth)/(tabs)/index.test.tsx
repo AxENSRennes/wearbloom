@@ -75,10 +75,10 @@ describe("WardrobeScreen", () => {
     mock.restore();
   });
 
-  test("renders with GestureDetector + LegendList main structure", () => {
+  test("renders with Carousel pager and LegendList per page", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
     expect(html).toContain("mock-SafeAreaView");
-    expect(html).toContain("mock-GestureDetector");
+    expect(html).toContain("mock-Carousel");
     expect(html).toContain("mock-LegendList");
   });
 
@@ -92,13 +92,10 @@ describe("WardrobeScreen", () => {
     expect(html).toContain("Outerwear");
   });
 
-  test("shows swipe hint and keeps sticky header wiring in source", async () => {
+  test("pills are inside a horizontal ScrollView", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
-    expect(html).toContain("Swipe left or right to switch category");
-    const source = await Bun.file(
-      import.meta.dir + "/../../../components/garment/WardrobeScreen.tsx",
-    ).text();
-    expect(source).toContain("stickyIndices={[0]}");
+    expect(html).toContain("mock-ScrollView");
+    expect(html).toContain('horizontal=""');
   });
 
   test("loading state renders skeleton in list empty component", () => {
@@ -115,7 +112,7 @@ describe("WardrobeScreen", () => {
     expect(html).toContain("skeleton-item");
   });
 
-  test("error state renders retry UI and no list", () => {
+  test("error state renders retry UI and no carousel", () => {
     stubUseQuery({
       isError: true,
       error: { message: "Server error" },
@@ -127,10 +124,10 @@ describe("WardrobeScreen", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
     expect(html).toContain("Something went wrong");
     expect(html).toContain("Try again");
-    expect(html).not.toContain("mock-LegendList");
+    expect(html).not.toContain("mock-Carousel");
   });
 
-  test("list keeps 2-column grid and recycling settings", () => {
+  test("each carousel page has a LegendList with 2-column grid and recycling", () => {
     stubUseQuery({
       data: [],
       isLoading: false,

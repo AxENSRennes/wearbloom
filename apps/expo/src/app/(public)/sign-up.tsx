@@ -3,8 +3,8 @@ import { useReducer } from "react";
 import { Platform, Pressable, TextInput, View } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
 import { useMutation } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react-native";
 
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
