@@ -1,38 +1,28 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
 import { useCallback, useMemo, useReducer, useRef } from "react";
-import { useWindowDimensions, View } from "react-native";
+import { View } from "react-native";
 import PagerView from "react-native-pager-view";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { LegendList } from "@legendapp/list";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 
 import type { CategoryFilter } from "~/constants/categories";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
-import { EmptyState } from "~/components/common/EmptyState";
 import { SafeScreen } from "~/components/common/SafeScreen";
+import { CarouselPage } from "~/components/garment/CarouselPage";
 import { CategoryPills } from "~/components/garment/CategoryPills";
-import { GarmentCard } from "~/components/garment/GarmentCard";
 import { GarmentDetailSheet } from "~/components/garment/GarmentDetailSheet";
-import { SkeletonGrid } from "~/components/garment/SkeletonGrid";
 import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 import { useEnsureBodyPhotoForRender } from "~/hooks/useEnsureBodyPhotoForRender";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { usePaywallGuard } from "~/hooks/usePaywallGuard";
-import { useScrollFeedback } from "~/hooks/useScrollFeedback";
 import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
 import { isStockGarment } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
-
-const GUTTER = 6;
-const NUM_COLUMNS = 2;
-const GRID_HORIZONTAL_PADDING = 8;
-const LIST_BOTTOM_EXTRA_PADDING = 120;
 
 interface WardrobeUiState {
   selectedCategory: CategoryFilter;
@@ -85,9 +75,27 @@ function isCategoryFilter(value: string): value is CategoryFilter {
   return ALL_CATEGORIES.includes(value as CategoryFilter);
 }
 
+function WardrobeErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <SafeScreen className="bg-background">
+      <View className="flex-1 items-center justify-center p-4">
+        <ThemedText variant="heading">Something went wrong</ThemedText>
+        <ThemedText
+          variant="body"
+          className="mt-2 text-center text-text-secondary"
+        >
+          We couldn't load your wardrobe. Please check your connection and try
+          again.
+        </ThemedText>
+        <View className="mt-6">
+          <Button variant="secondary" label="Try again" onPress={onRetry} />
+        </View>
+      </View>
+    </SafeScreen>
+  );
+}
+
 export default function WardrobeScreen() {
-  const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
   const [uiState, dispatch] = useReducer(
     wardrobeUiReducer,
     initialWardrobeUiState,
@@ -101,17 +109,6 @@ export default function WardrobeScreen() {
   const { ensureBodyPhotoForRender, isEnsuringBodyPhoto } =
     useEnsureBodyPhotoForRender();
   const { hiddenIds, showStock, hideGarment } = useStockGarmentPreferences();
-
-  const availableWidth = Math.max(
-    0,
-    screenWidth - GRID_HORIZONTAL_PADDING * 2 - GUTTER * (NUM_COLUMNS - 1),
-  );
-  const columnWidth = availableWidth / NUM_COLUMNS;
-  const itemHeight = Math.round(columnWidth * 1.2);
-  const listContentBottomPadding = Math.max(
-    LIST_BOTTOM_EXTRA_PADDING,
-    insets.bottom + 88,
-  );
 
   const supportedCategoriesQuery = useQuery(
     trpc.tryon.getSupportedCategories.queryOptions(),
@@ -278,24 +275,13 @@ export default function WardrobeScreen() {
     }
   }, [hideGarment, uiState.stockGarmentToHide]);
 
-  const renderGarment = useCallback(
-    ({ item }: { item: WardrobeItem }) => (
-      <GarmentCard
-        garment={item}
-        onPress={() => handleGarmentPress(item)}
-        onLongPress={
-          isStockGarment(item)
-            ? () =>
-                dispatch({ type: "SET_STOCK_GARMENT_TO_HIDE", garment: item })
-            : () => dispatch({ type: "SET_GARMENT_TO_DELETE", garment: item })
-        }
-        columnWidth={columnWidth}
-      />
-    ),
-    [columnWidth, handleGarmentPress],
-  );
-
-  const keyExtractor = useCallback((item: WardrobeItem) => item.id, []);
+  const handleGarmentLongPress = useCallback((garment: WardrobeItem) => {
+    if (isStockGarment(garment)) {
+      dispatch({ type: "SET_STOCK_GARMENT_TO_HIDE", garment });
+    } else {
+      dispatch({ type: "SET_GARMENT_TO_DELETE", garment });
+    }
+  }, []);
 
   const unsupportedCategories = useMemo(() => {
     if (!supportedCategoriesQuery.data) return [];
@@ -319,89 +305,8 @@ export default function WardrobeScreen() {
     }
   }, []);
 
-  const { scrollProps } = useScrollFeedback({
-    screen: "wardrobe-grid",
-  });
-
-  const renderCarouselPage = useCallback(
-    (category: CategoryFilter) => {
-      const items = getItemsForCategory(category);
-
-      const emptyComponent = isLoading ? (
-        <View className="pt-3">
-          <SkeletonGrid columnWidth={columnWidth} />
-        </View>
-      ) : (
-        <EmptyState headline="Nothing here yet" subtext={`Add a ${category}`} />
-      );
-
-      return (
-        <LegendList
-          data={isLoading ? [] : items}
-          renderItem={renderGarment}
-          keyExtractor={keyExtractor}
-          numColumns={NUM_COLUMNS}
-          style={{ flex: 1 }}
-          estimatedItemSize={itemHeight}
-          recycleItems
-          bounces
-          alwaysBounceVertical
-          overScrollMode="always"
-          showsVerticalScrollIndicator={false}
-          refreshing={uiState.isManualRefresh && isFetching}
-          onRefresh={handleRefresh}
-          contentContainerStyle={{
-            paddingHorizontal: GRID_HORIZONTAL_PADDING,
-            paddingBottom: listContentBottomPadding,
-          }}
-          columnWrapperStyle={{ gap: GUTTER }}
-          ListEmptyComponent={emptyComponent}
-          scrollEventThrottle={scrollProps.scrollEventThrottle}
-          onLayout={scrollProps.onLayout}
-          onContentSizeChange={scrollProps.onContentSizeChange}
-          onScroll={scrollProps.onScroll}
-          onScrollBeginDrag={scrollProps.onScrollBeginDrag}
-          onScrollEndDrag={scrollProps.onScrollEndDrag}
-        />
-      );
-    },
-    [
-      columnWidth,
-      getItemsForCategory,
-      handleRefresh,
-      isFetching,
-      isLoading,
-      itemHeight,
-      keyExtractor,
-      listContentBottomPadding,
-      renderGarment,
-      scrollProps,
-      uiState.isManualRefresh,
-    ],
-  );
-
   if (isError) {
-    return (
-      <SafeScreen className="bg-background">
-        <View className="flex-1 items-center justify-center p-4">
-          <ThemedText variant="heading">Something went wrong</ThemedText>
-          <ThemedText
-            variant="body"
-            className="mt-2 text-center text-text-secondary"
-          >
-            We couldn't load your wardrobe. Please check your connection and try
-            again.
-          </ThemedText>
-          <View className="mt-6">
-            <Button
-              variant="secondary"
-              label="Try again"
-              onPress={handleRefresh}
-            />
-          </View>
-        </View>
-      </SafeScreen>
-    );
+    return <WardrobeErrorState onRetry={handleRefresh} />;
   }
 
   return (
@@ -430,7 +335,16 @@ export default function WardrobeScreen() {
         >
           {ALL_CATEGORIES.map((category) => (
             <View key={category} collapsable={false}>
-              {renderCarouselPage(category)}
+              <CarouselPage
+                category={category}
+                items={getItemsForCategory(category)}
+                isLoading={isLoading}
+                isFetching={isFetching}
+                isManualRefresh={uiState.isManualRefresh}
+                onRefresh={handleRefresh}
+                onGarmentPress={handleGarmentPress}
+                onGarmentLongPress={handleGarmentLongPress}
+              />
             </View>
           ))}
         </PagerView>
