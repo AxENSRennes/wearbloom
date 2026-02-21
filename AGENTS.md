@@ -317,6 +317,16 @@ mock.module("../services/imageProcessor", () => ({ ... }));
 - Secrets: Dokploy secrets (server), EAS secrets (mobile)
 - Health check: `GET /health` on server returns `{ status: "ok", timestamp: ... }`
 
+**Dev Client on iPhone (WSL — no Mac needed):**
+- Build the dev client (once, or when native plugins change):
+  `cd apps/expo && npx eas-cli build --profile development --platform ios`
+- Install on iPhone via the link/QR EAS provides after build
+- Start Metro each dev session:
+  `cd apps/expo && pnpm expo start --dev-client --tunnel`
+- Open the app on iPhone → scan QR from terminal → hot reload active
+- Requires `@expo/ngrok` for tunnel mode: `pnpm add -D @expo/ngrok --filter @acme/expo`
+- Dev mode points to VPS (`api.wearbloom.app`), not a local server
+
 **Git Workflow:**
 - Main branch: `main`
 - Feature branches from `main`
