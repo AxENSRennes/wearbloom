@@ -323,10 +323,13 @@ mock.module("../services/imageProcessor", () => ({ ... }));
 - Build the dev client (once, or when native plugins change):
   `cd apps/expo && npx eas-cli build --profile development --platform ios`
 - Install on iPhone via the link/QR EAS provides after build
-- Start Metro each dev session:
-  `cd apps/expo && pnpm expo start --dev-client --tunnel`
+- Why this setup: ngrok tunnel mode is currently intermittent in this environment (`ERR_NGROK_108` / `Cannot read properties of undefined (reading 'body')`), so day-to-day iteration uses Expo WS tunnel mode.
+- Start Metro each dev session (recommended):
+  `cd apps/expo && EXPO_FORCE_WEBCONTAINER_ENV=1 pnpm expo start --dev-client --tunnel --port 8081`
 - Open the app on iPhone → scan QR from terminal → hot reload active
-- Requires `@expo/ngrok` for tunnel mode: `pnpm add -D @expo/ngrok --filter @acme/expo`
+- If `8081` is busy, stop stale Expo processes first:
+  `pkill -f "expo/bin/cli start" || true && pkill -f "@expo/ngrok-bin" || true`
+- Keep `@expo/ngrok` installed for fallback/debug tunnel mode: `pnpm add -D @expo/ngrok --filter @acme/expo`
 - Dev mode points to VPS (`api.wearbloom.app`), not a local server
 
 **Git Workflow:**
