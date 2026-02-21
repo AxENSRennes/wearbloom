@@ -12,8 +12,8 @@ import * as ImagePicker from "expo-image-picker";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
-import type { StockGarment } from "~/constants/stockGarments";
 import type { GarmentCategory } from "~/constants/categories";
+import type { StockGarment } from "~/constants/stockGarments";
 import { STOCK_GARMENTS } from "~/constants/stockGarments";
 
 // TODO(Epic-2): Add garment category picker when user photographs own garment

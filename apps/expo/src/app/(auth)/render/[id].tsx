@@ -1,26 +1,16 @@
 import type { Href } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Dimensions, Pressable, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
+import { View } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react-native";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
 import { SafeScreen } from "~/components/common/SafeScreen";
-import { FeedbackButton } from "~/components/tryon/FeedbackButton";
+import { RenderCompletedView } from "~/components/tryon/RenderCompletedView";
 import { RenderLoadingAnimation } from "~/components/tryon/RenderLoadingAnimation";
 import { trpc } from "~/utils/api";
 import { getAuthHeaders } from "~/utils/authHeaders";
@@ -33,13 +23,9 @@ export default function RenderScreen() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const pollCount = useRef(0);
-  const mountTime = useRef(Date.now());
+  const mountTime = useRef(0);
   const [elapsedMs, setElapsedMs] = useState(0);
   const hapticFired = useRef(false);
-
-  // Cross-fade animation
-  const resultOpacity = useSharedValue(0);
-  const uiOpacity = useSharedValue(0);
 
   const { data } = useQuery({
     ...trpc.tryon.getRenderStatus.queryOptions({ renderId: id }),
@@ -96,6 +82,11 @@ export default function RenderScreen() {
 
   const status = data?.status ?? "pending";
 
+  // Capture mount timestamp in effect (Date.now is impure, cannot be called during render)
+  useEffect(() => {
+    mountTime.current = Date.now();
+  }, []);
+
   // Elapsed time tracker for loading animation
   useEffect(() => {
     if (status === "completed" || status === "failed") return;
@@ -107,72 +98,18 @@ export default function RenderScreen() {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Haptic feedback and cross-fade animation on status change
+  // Haptic feedback on status change
   useEffect(() => {
     if (hapticFired.current) return;
 
     if (status === "completed") {
       hapticFired.current = true;
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      if (reducedMotion) {
-        resultOpacity.value = 1;
-        uiOpacity.value = 1;
-      } else {
-        resultOpacity.value = withTiming(1, { duration: 500 });
-        uiOpacity.value = withTiming(1, { duration: 300 });
-      }
     } else if (status === "failed") {
       hapticFired.current = true;
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [status, reducedMotion, resultOpacity, uiOpacity]);
-
-  const resultAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: resultOpacity.value,
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  }));
-
-  const uiAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: uiOpacity.value,
-  }));
-
-  // Swipe-down dismiss gesture
-  const translateY = useSharedValue(0);
-  const dismissOpacity = useSharedValue(1);
-  const screenHeight = Dimensions.get("window").height;
-
-  const dismissModal = () => {
-    router.back();
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      if (event.translationY > 0) {
-        translateY.value = event.translationY;
-        dismissOpacity.value = 1 - event.translationY / (screenHeight * 0.5);
-      }
-    })
-    .onEnd((event) => {
-      if (event.velocityY > 500 || event.translationY > screenHeight * 0.25) {
-        translateY.value = withSpring(screenHeight);
-        dismissOpacity.value = withTiming(0, { duration: 200 });
-        runOnJS(dismissModal)();
-      } else {
-        translateY.value = withSpring(0);
-        dismissOpacity.value = withSpring(1);
-      }
-    });
-
-  const gestureAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: dismissOpacity.value,
-    flex: 1,
-  }));
+  }, [status]);
 
   // Auth headers for image loading
   const imageHeaders = getAuthHeaders();
@@ -238,99 +175,16 @@ export default function RenderScreen() {
   }
 
   // --- COMPLETED STATE ---
-  const resultImageSource = data?.resultImageUrl
-    ? {
-        uri: `${getBaseUrl()}${data.resultImageUrl}`,
-        headers: imageHeaders,
-      }
-    : undefined;
-
   return (
-    <SafeScreen className="bg-black">
-      <GestureDetector gesture={reducedMotion ? Gesture.Pan() : panGesture}>
-        <Animated.View
-          style={[
-            { flex: 1, backgroundColor: "black" },
-            reducedMotion ? undefined : gestureAnimatedStyle,
-          ]}
-        >
-          <StatusBar style="light" />
-
-          {/* Layer 1: Body photo (always visible) */}
-          <Image
-            source={
-              data?.personImageUrl
-                ? {
-                    uri: `${getBaseUrl()}${data.personImageUrl}`,
-                    headers: imageHeaders,
-                  }
-                : undefined
-            }
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-            contentFit="cover"
-            testID="body-photo-layer"
-          />
-
-          {/* Layer 2: Render result (cross-fades in) */}
-          <Animated.View style={resultAnimatedStyle}>
-            <Image
-              source={resultImageSource}
-              style={{ flex: 1 }}
-              contentFit="cover"
-              testID="render-result"
-            />
-          </Animated.View>
-
-          {/* Floating back button — top-left (touchable ~300ms before fully visible) */}
-          <Animated.View style={uiAnimatedStyle}>
-            <Pressable
-              testID="back-button"
-              onPress={() => router.back()}
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 16,
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(0,0,0,0.3)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              accessibilityLabel="Go back"
-              accessibilityRole="button"
-            >
-              <ArrowLeft size={20} color="white" />
-            </Pressable>
-          </Animated.View>
-
-          {/* Floating feedback button — bottom-right */}
-          {!feedbackDismissed && (
-            <Animated.View
-              style={[
-                uiAnimatedStyle,
-                {
-                  position: "absolute",
-                  bottom: 16,
-                  right: 16,
-                },
-              ]}
-            >
-              <FeedbackButton
-                onSubmit={handleFeedbackSubmit}
-                onDismiss={() => setFeedbackDismissed(true)}
-                isSubmitting={submitFeedbackMutation.isPending}
-              />
-            </Animated.View>
-          )}
-        </Animated.View>
-      </GestureDetector>
-    </SafeScreen>
+    <RenderCompletedView
+      personImageUrl={data?.personImageUrl}
+      resultImageUrl={data?.resultImageUrl}
+      imageHeaders={imageHeaders}
+      reducedMotion={reducedMotion}
+      feedbackDismissed={feedbackDismissed}
+      onFeedbackSubmit={handleFeedbackSubmit}
+      onFeedbackDismiss={() => setFeedbackDismissed(true)}
+      isSubmittingFeedback={submitFeedbackMutation.isPending}
+    />
   );
 }
