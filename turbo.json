@@ -30,6 +30,9 @@
       "dependsOn": ["^topo", "^build"],
       "outputs": [".cache/tsbuildinfo.json"]
     },
+    "react-doctor": {
+      "cache": false
+    },
     "clean": {
       "cache": false
     },

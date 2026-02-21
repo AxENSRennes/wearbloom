@@ -164,7 +164,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **Running Tests:**
 - Single package: `bun test` from package directory
-- All packages: `turbo test` from root
+- All packages: `pnpm test` from root (runs `turbo run test`)
 - Specific file: `bun test src/services/imageProcessor.test.ts`
 - Coverage: `bun test --coverage`
 - Watch: `bun test --watch`
@@ -300,6 +300,8 @@ mock.module("../services/imageProcessor", () => ({ ... }));
 - `pnpm lint` / `pnpm lint:fix` — ESLint across all packages
 - `pnpm format` / `pnpm format:fix` — Prettier across all packages
 - `pnpm typecheck` — TypeScript check across all packages
+- `pnpm test` — run tests across all packages
+- `pnpm quality` — lint + format + typecheck + test + react-doctor in parallel
 - `pnpm db:push` — push Drizzle schema to PostgreSQL
 - `pnpm db:studio` — open Drizzle Studio
 
@@ -330,7 +332,7 @@ mock.module("../services/imageProcessor", () => ({ ... }));
 **Git Workflow:**
 - Main branch: `main`
 - Feature branches from `main`
-- Run `pnpm lint` and `pnpm typecheck` before committing
+- Run `pnpm quality` before committing (lint + format + typecheck + test + react-doctor)
 - Commit messages: conventional commits style (feat:, fix:, chore:, etc.)
 
 ### Critical Don't-Miss Rules

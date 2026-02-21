@@ -22,6 +22,8 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "quality": "turbo run lint format typecheck test react-doctor --continue",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
