@@ -256,32 +256,38 @@ export default function RenderScreen() {
         >
           <StatusBar style="light" />
 
-        {/* Layer 1: Body photo (always visible) */}
-        <Image
-          source={
-            data?.personImageUrl
-              ? {
-                  uri: `${getBaseUrl()}${data.personImageUrl}`,
-                  headers: imageHeaders,
-                }
-              : undefined
-          }
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          contentFit="cover"
-          testID="body-photo-layer"
-        />
-
-        {/* Layer 2: Render result (cross-fades in) */}
-        <Animated.View style={resultAnimatedStyle}>
+          {/* Layer 1: Body photo (always visible) */}
           <Image
-            source={resultImageSource}
-            style={{ flex: 1 }}
+            source={
+              data?.personImageUrl
+                ? {
+                    uri: `${getBaseUrl()}${data.personImageUrl}`,
+                    headers: imageHeaders,
+                  }
+                : undefined
+            }
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
             contentFit="cover"
-            testID="render-result"
+            testID="body-photo-layer"
           />
-        </Animated.View>
 
-        {/* Floating back button — top-left (touchable ~300ms before fully visible) */}
+          {/* Layer 2: Render result (cross-fades in) */}
+          <Animated.View style={resultAnimatedStyle}>
+            <Image
+              source={resultImageSource}
+              style={{ flex: 1 }}
+              contentFit="cover"
+              testID="render-result"
+            />
+          </Animated.View>
+
+          {/* Floating back button — top-left (touchable ~300ms before fully visible) */}
           <Animated.View style={uiAnimatedStyle}>
             <Pressable
               testID="back-button"
@@ -304,7 +310,7 @@ export default function RenderScreen() {
             </Pressable>
           </Animated.View>
 
-        {/* Floating feedback button — bottom-right */}
+          {/* Floating feedback button — bottom-right */}
           {!feedbackDismissed && (
             <Animated.View
               style={[

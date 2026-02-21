@@ -18,11 +18,7 @@ export function SafeScreen({
   ...props
 }: SafeScreenProps) {
   return (
-    <SafeAreaView
-      className={cn("flex-1", className)}
-      edges={edges}
-      {...props}
-    >
+    <SafeAreaView className={cn("flex-1", className)} edges={edges} {...props}>
       {children}
     </SafeAreaView>
   );
