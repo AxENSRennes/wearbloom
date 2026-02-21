@@ -1,10 +1,8 @@
 import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
-import type { ICarouselInstance } from "react-native-reanimated-carousel";
-import { useCallback, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useMemo, useReducer, useRef } from "react";
 import { useWindowDimensions, View } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
-import Carousel from "react-native-reanimated-carousel";
+import PagerView from "react-native-pager-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -95,9 +93,7 @@ export default function WardrobeScreen() {
     initialWardrobeUiState,
   );
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const carouselRef = useRef<ICarouselInstance>(null);
-  const carouselProgress = useSharedValue<number>(0);
-  const [carouselHeight, setCarouselHeight] = useState(0);
+  const pagerRef = useRef<PagerView>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isConnected } = useNetworkStatus();
@@ -313,7 +309,7 @@ export default function WardrobeScreen() {
     if (!isCategoryFilter(category)) return;
     const index = ALL_CATEGORIES.indexOf(category);
     if (index < 0) return;
-    carouselRef.current?.scrollTo({ index, animated: true });
+    pagerRef.current?.setPage(index);
   }, []);
 
   const handleSnapToItem = useCallback((index: number) => {
@@ -328,7 +324,7 @@ export default function WardrobeScreen() {
   });
 
   const renderCarouselPage = useCallback(
-    ({ item: category }: { item: CategoryFilter }) => {
+    (category: CategoryFilter) => {
       const items = getItemsForCategory(category);
 
       const emptyComponent = isLoading ? (
@@ -426,26 +422,18 @@ export default function WardrobeScreen() {
             </View>
           )}
         </View>
-        <View
-          className="flex-1"
-          onLayout={(e) => setCarouselHeight(e.nativeEvent.layout.height)}
+        <PagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageSelected={(e) => handleSnapToItem(e.nativeEvent.position)}
         >
-          <Carousel
-            ref={carouselRef}
-            width={screenWidth}
-            height={carouselHeight}
-            data={ALL_CATEGORIES as unknown as CategoryFilter[]}
-            loop={false}
-            pagingEnabled
-            onSnapToItem={handleSnapToItem}
-            onProgressChange={carouselProgress}
-            renderItem={renderCarouselPage}
-            onConfigurePanGesture={(gesture) => {
-              "worklet";
-              gesture.activeOffsetX([-10, 10]).failOffsetY([-5, 5]);
-            }}
-          />
-        </View>
+          {ALL_CATEGORIES.map((category) => (
+            <View key={category} collapsable={false}>
+              {renderCarouselPage(category)}
+            </View>
+          ))}
+        </PagerView>
       </SafeScreen>
       <AlertDialog
         isOpen={uiState.garmentToDelete !== null}

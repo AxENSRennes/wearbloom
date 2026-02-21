@@ -992,45 +992,31 @@ mockModuleWithResolve("@react-native-community/netinfo", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// react-native-reanimated-carousel — carousel component mock
+// react-native-pager-view — native page view mock
 // ---------------------------------------------------------------------------
-mockModuleWithResolve("react-native-reanimated-carousel", () => {
-  const CarouselComponent = React.forwardRef(
+mockModuleWithResolve("react-native-pager-view", () => {
+  const PagerViewComponent = React.forwardRef(
     (props: Record<string, unknown>, ref: React.Ref<unknown>) => {
-      const { data, renderItem, ...rest } = props as {
-        data: unknown[];
-        renderItem: (info: { item: unknown; index: number }) => React.ReactNode;
-        [key: string]: unknown;
-      };
       React.useImperativeHandle(ref, () => ({
-        scrollTo: mock(() => {}),
-        getCurrentIndex: () => 0,
+        setPage: mock(() => {}),
+        setPageWithoutAnimation: mock(() => {}),
+        setScrollEnabled: mock(() => {}),
       }));
-      const items = Array.isArray(data)
-        ? data.map((item, index) =>
-            React.createElement(
-              "mock-CarouselPage",
-              { key: index },
-              renderItem({ item, index }),
-            ),
-          )
-        : null;
-      return React.createElement("mock-Carousel", rest, items);
+      const { children, ...rest } = props;
+      return React.createElement(
+        "mock-PagerView",
+        rest,
+        children as React.ReactNode,
+      );
     },
   );
-  (CarouselComponent as { displayName?: string }).displayName = "Carousel";
+  (PagerViewComponent as { displayName?: string }).displayName = "PagerView";
 
-  const PaginationBasic = (props: Record<string, unknown>) =>
-    React.createElement("mock-PaginationBasic", props);
-
-  return {
-    default: CarouselComponent,
-    Pagination: { Basic: PaginationBasic },
-  };
+  return { default: PagerViewComponent };
 });
 
 // ---------------------------------------------------------------------------
-// react-native-worklets — required by carousel
+// react-native-worklets — required by react-native-reanimated
 // ---------------------------------------------------------------------------
 mockModuleWithResolve("react-native-worklets", () => ({}));
 

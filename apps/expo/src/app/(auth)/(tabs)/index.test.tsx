@@ -75,10 +75,10 @@ describe("WardrobeScreen", () => {
     mock.restore();
   });
 
-  test("renders with Carousel pager and LegendList per page", () => {
+  test("renders with PagerView and LegendList per page", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
     expect(html).toContain("mock-SafeAreaView");
-    expect(html).toContain("mock-Carousel");
+    expect(html).toContain("mock-PagerView");
     expect(html).toContain("mock-LegendList");
   });
 
@@ -124,7 +124,7 @@ describe("WardrobeScreen", () => {
     const html = renderToStaticMarkup(<WardrobeScreen />);
     expect(html).toContain("Something went wrong");
     expect(html).toContain("Try again");
-    expect(html).not.toContain("mock-Carousel");
+    expect(html).not.toContain("mock-PagerView");
   });
 
   test("each carousel page has a LegendList with 2-column grid and recycling", () => {
