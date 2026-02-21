@@ -1,9 +1,10 @@
 import type { Href } from "expo-router";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 
 import { Button, ThemedPressable, ThemedText } from "@acme/ui";
 
+import { AppScrollView } from "~/components/common/AppScrollView";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { setConsentAccepted } from "~/utils/consent-store";
 
@@ -18,7 +19,8 @@ export default function ConsentScreen() {
   return (
     <SafeScreen className="bg-background">
       <Stack.Screen options={{ gestureEnabled: false }} />
-      <ScrollView
+      <AppScrollView
+        screen="public-consent"
         className="flex-1 px-4"
         contentContainerClassName="flex-grow justify-center py-6"
         showsVerticalScrollIndicator={false}
@@ -53,7 +55,7 @@ export default function ConsentScreen() {
             </ThemedText>
           </ThemedPressable>
         </View>
-      </ScrollView>
+      </AppScrollView>
 
       <View className="px-4 pb-6 pt-2">
         <Button

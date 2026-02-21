@@ -23,6 +23,7 @@ import { ALL_CATEGORIES } from "~/constants/categories";
 import { getStockGarmentsByCategory } from "~/constants/stockGarments";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
 import { usePaywallGuard } from "~/hooks/usePaywallGuard";
+import { useScrollFeedback } from "~/hooks/useScrollFeedback";
 import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
 import { isStockGarment } from "~/types/wardrobe";
 import { trpc } from "~/utils/api";
@@ -261,6 +262,10 @@ export default function WardrobeScreen() {
   }, [isLoading, uiState.selectedCategory]);
   const headerOffsetTop = insets.top;
   const listContentTopPadding = CATEGORY_PILLS_HEIGHT + insets.top;
+  const listContentBottomPadding = Math.max(24, insets.bottom + 32);
+  const { scrollProps, containerProps } = useScrollFeedback({
+    screen: "wardrobe-grid",
+  });
 
   if (isError) {
     return (
@@ -334,13 +339,28 @@ export default function WardrobeScreen() {
             renderItem={renderGarment}
             keyExtractor={keyExtractor}
             numColumns={NUM_COLUMNS}
+            style={{ flex: 1 }}
             estimatedItemSize={ITEM_HEIGHT}
             recycleItems
+            bounces
+            alwaysBounceVertical
+            overScrollMode="always"
+            showsVerticalScrollIndicator
             refreshing={uiState.isManualRefresh && isFetching}
             onRefresh={handleRefresh}
-            contentContainerStyle={{ paddingTop: listContentTopPadding }}
+            contentContainerStyle={{
+              paddingTop: listContentTopPadding,
+              paddingBottom: listContentBottomPadding,
+            }}
             columnWrapperStyle={{ gap: GUTTER }}
             ListEmptyComponent={emptyComponent}
+            scrollEventThrottle={scrollProps.scrollEventThrottle}
+            onLayout={scrollProps.onLayout}
+            onContentSizeChange={scrollProps.onContentSizeChange}
+            onScroll={scrollProps.onScroll}
+            onScrollBeginDrag={scrollProps.onScrollBeginDrag}
+            onScrollEndDrag={scrollProps.onScrollEndDrag}
+            onTouchMove={containerProps.onTouchMove}
           />
         )}
       </SafeScreen>

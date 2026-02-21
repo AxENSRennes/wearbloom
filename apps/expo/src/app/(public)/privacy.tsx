@@ -1,8 +1,9 @@
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 
 import { ThemedText } from "@acme/ui";
 
+import { AppScrollView } from "~/components/common/AppScrollView";
 import { SafeScreen } from "~/components/common/SafeScreen";
 
 function Section({ title, children }: { title: string; children: string }) {
@@ -27,7 +28,8 @@ export default function PrivacyScreen() {
           headerBackTitle: "Back",
         }}
       />
-      <ScrollView
+      <AppScrollView
+        screen="public-privacy"
         className="flex-1 px-4"
         contentContainerClassName="gap-6 pb-8 pt-4"
       >
@@ -71,7 +73,7 @@ export default function PrivacyScreen() {
         <Section title="Data Deletion">
           {`You can request full deletion of your account and all associated data at any time through the Profile screen in the app. Upon deletion, we permanently remove:\n\n\u2022 Your account and profile information\n\u2022 All uploaded photos (body avatar and garments)\n\u2022 All virtual try-on renders\n\u2022 Your usage history and subscription records\n\nDeletion is processed immediately and cannot be reversed.`}
         </Section>
-      </ScrollView>
+      </AppScrollView>
     </SafeScreen>
   );
 }

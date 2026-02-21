@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
+import { Linking, Platform, Pressable, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { AppScrollView } from "~/components/common/AppScrollView";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { STOCK_BODY_PHOTO } from "~/constants/stockGarments";
 import { useStoreKit } from "~/hooks/useStoreKit";
@@ -416,7 +417,8 @@ function PaywallReadyState({
     <SafeScreen className="bg-background">
       <CloseButton onClose={onClose} />
 
-      <ScrollView
+      <AppScrollView
+        screen="paywall"
         className="flex-1 p-6"
         contentContainerClassName="flex-grow justify-center pb-8 pt-12"
         showsVerticalScrollIndicator={false}
@@ -549,7 +551,7 @@ function PaywallReadyState({
             </ThemedText>
           </ThemedPressable>
         </View>
-      </ScrollView>
+      </AppScrollView>
     </SafeScreen>
   );
 }

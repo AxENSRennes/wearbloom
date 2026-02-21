@@ -1,12 +1,13 @@
 import type { Href } from "expo-router";
 import { useState } from "react";
-import { Platform, ScrollView, TextInput, View } from "react-native";
+import { Platform, TextInput, View } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
+import { AppScrollView } from "~/components/common/AppScrollView";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { useAppleSignIn } from "~/hooks/useAppleSignIn";
 import { trpc } from "~/utils/api";
@@ -84,7 +85,8 @@ export default function SignInScreen() {
 
   return (
     <SafeScreen className="bg-background">
-      <ScrollView
+      <AppScrollView
+        screen="public-sign-in"
         className="flex-1 px-6"
         contentContainerClassName="flex-grow justify-center py-6"
         keyboardShouldPersistTaps="handled"
@@ -179,7 +181,7 @@ export default function SignInScreen() {
             />
           </View>
         </View>
-      </ScrollView>
+      </AppScrollView>
     </SafeScreen>
   );
 }

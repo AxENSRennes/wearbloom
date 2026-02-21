@@ -264,6 +264,10 @@ describe("WardrobeScreen", () => {
     expect(html).toContain('numColumns="2"');
     // Boolean prop rendered as empty attribute in SSR
     expect(html).toContain("recycleItems");
+    expect(html).toContain("bounces");
+    expect(html).toContain("alwaysBounceVertical");
+    expect(html).toContain('scrollEventThrottle="16"');
+    expect(html).toContain("showsVerticalScrollIndicator");
   });
 
   // -------------------------------------------------------------------------

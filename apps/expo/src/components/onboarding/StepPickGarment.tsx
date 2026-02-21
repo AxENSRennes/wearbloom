@@ -15,6 +15,7 @@ import { Button, showToast, ThemedText } from "@acme/ui";
 import type { GarmentCategory } from "~/constants/categories";
 import type { StockGarment } from "~/constants/stockGarments";
 import { STOCK_GARMENTS } from "~/constants/stockGarments";
+import { useScrollFeedback } from "~/hooks/useScrollFeedback";
 
 // TODO(Epic-2): Add garment category picker when user photographs own garment
 const DEFAULT_PHOTO_CATEGORY: GarmentCategory = "tops";
@@ -78,6 +79,9 @@ export function StepPickGarment({
   onGarmentSelected,
 }: StepPickGarmentProps): ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { scrollProps, containerProps } = useScrollFeedback({
+    screen: "onboarding-garment-picker",
+  });
 
   const handleGarmentPress = useCallback(
     (garment: StockGarment) => {
@@ -135,6 +139,16 @@ export function StepPickGarment({
           contentContainerStyle={{ gap: 8, paddingTop: 24, paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
           className="flex-1"
+          bounces
+          alwaysBounceVertical
+          overScrollMode="always"
+          scrollEventThrottle={scrollProps.scrollEventThrottle}
+          onLayout={scrollProps.onLayout}
+          onContentSizeChange={scrollProps.onContentSizeChange}
+          onScroll={scrollProps.onScroll}
+          onScrollBeginDrag={scrollProps.onScrollBeginDrag}
+          onScrollEndDrag={scrollProps.onScrollEndDrag}
+          onTouchMove={containerProps.onTouchMove}
         />
 
         <Button

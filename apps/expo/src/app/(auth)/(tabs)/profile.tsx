@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Switch, View } from "react-native";
+import { Switch, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -16,6 +16,7 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { AppScrollView } from "~/components/common/AppScrollView";
 import { SafeScreen } from "~/components/common/SafeScreen";
 import { StockPhotoReplacementBanner } from "~/components/profile/StockPhotoReplacementBanner";
 import { CreditCounter } from "~/components/subscription/CreditCounter";
@@ -74,7 +75,8 @@ export default function ProfileScreen() {
 
   return (
     <SafeScreen className="bg-background">
-      <ScrollView
+      <AppScrollView
+        screen="profile"
         className="flex-1 px-4"
         contentContainerClassName="pb-6 pt-4"
         showsVerticalScrollIndicator={false}
@@ -244,7 +246,7 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
-      </ScrollView>
+      </AppScrollView>
 
       <AlertDialog
         isOpen={showDeleteDialog}
