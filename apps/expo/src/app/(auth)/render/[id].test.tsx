@@ -364,9 +364,9 @@ describe("RenderScreen", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 16. Uses immersive layout (no SafeAreaView)
+  // 16. Uses SafeAreaView container for camera-notch compatibility
   // -------------------------------------------------------------------------
-  test("uses immersive layout without SafeAreaView", () => {
+  test("uses SafeAreaView root container", () => {
     stubUseQuery({
       data: {
         status: "pending",
@@ -380,8 +380,7 @@ describe("RenderScreen", () => {
 
     const html = renderToStaticMarkup(<RenderScreen />);
 
-    // Should NOT use SafeAreaView (immersive, edge-to-edge)
-    expect(html).not.toContain("mock-SafeAreaView");
+    expect(html).toContain("mock-SafeAreaView");
   });
 
   // -------------------------------------------------------------------------

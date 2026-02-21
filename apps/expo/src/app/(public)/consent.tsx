@@ -1,10 +1,10 @@
 import type { Href } from "expo-router";
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 
 import { Button, ThemedPressable, ThemedText } from "@acme/ui";
 
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { setConsentAccepted } from "~/utils/consent-store";
 
 export default function ConsentScreen() {
@@ -16,7 +16,7 @@ export default function ConsentScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <Stack.Screen options={{ gestureEnabled: false }} />
       <ScrollView
         className="flex-1 px-4"
@@ -62,6 +62,6 @@ export default function ConsentScreen() {
           onPress={handleAccept}
         />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }

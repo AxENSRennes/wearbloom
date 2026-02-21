@@ -2,7 +2,7 @@ import type BottomSheet from "@gorhom/bottom-sheet";
 import type { Href } from "expo-router";
 import { useCallback, useMemo, useReducer, useRef } from "react";
 import { Dimensions, Platform, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -14,6 +14,7 @@ import { AlertDialog, Button, showToast, ThemedText } from "@acme/ui";
 import type { CategoryFilter } from "~/constants/categories";
 import type { PersonalGarment, WardrobeItem } from "~/types/wardrobe";
 import { EmptyState } from "~/components/common/EmptyState";
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { GarmentCard } from "~/components/garment/GarmentCard";
 import { GarmentDetailSheet } from "~/components/garment/GarmentDetailSheet";
@@ -81,6 +82,7 @@ function wardrobeUiReducer(
 }
 
 export default function WardrobeScreen() {
+  const insets = useSafeAreaInsets();
   const [uiState, dispatch] = useReducer(
     wardrobeUiReducer,
     initialWardrobeUiState,
@@ -257,10 +259,12 @@ export default function WardrobeScreen() {
       />
     );
   }, [isLoading, uiState.selectedCategory]);
+  const headerOffsetTop = insets.top;
+  const listContentTopPadding = CATEGORY_PILLS_HEIGHT + insets.top;
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeScreen className="bg-background">
         <View className="flex-1 items-center justify-center p-4">
           <ThemedText variant="heading">Something went wrong</ThemedText>
           <ThemedText
@@ -278,17 +282,18 @@ export default function WardrobeScreen() {
             />
           </View>
         </View>
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
   return (
     <>
-      <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+      <SafeScreen className="bg-background" edges={["bottom"]}>
         {/* Sticky CategoryPills header */}
         <View
-          className="absolute left-0 right-0 top-0 z-10 overflow-hidden px-4 py-2"
+          className="absolute left-0 right-0 z-10 overflow-hidden px-4 py-2"
           style={{
+            top: headerOffsetTop,
             backgroundColor:
               Platform.OS === "ios"
                 ? "rgba(255,255,255,0.78)"
@@ -320,7 +325,7 @@ export default function WardrobeScreen() {
         </View>
 
         {isLoading ? (
-          <View style={{ paddingTop: CATEGORY_PILLS_HEIGHT }}>
+          <View style={{ paddingTop: listContentTopPadding }}>
             <SkeletonGrid columnWidth={COLUMN_WIDTH} />
           </View>
         ) : (
@@ -333,12 +338,12 @@ export default function WardrobeScreen() {
             recycleItems
             refreshing={uiState.isManualRefresh && isFetching}
             onRefresh={handleRefresh}
-            contentContainerStyle={{ paddingTop: CATEGORY_PILLS_HEIGHT }}
+            contentContainerStyle={{ paddingTop: listContentTopPadding }}
             columnWrapperStyle={{ gap: GUTTER }}
             ListEmptyComponent={emptyComponent}
           />
         )}
-      </SafeAreaView>
+      </SafeScreen>
       <AlertDialog
         isOpen={uiState.garmentToDelete !== null}
         onClose={() =>

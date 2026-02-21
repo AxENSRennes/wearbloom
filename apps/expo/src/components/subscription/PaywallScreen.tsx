@@ -1,7 +1,6 @@
 import type { ComponentProps } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +15,7 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { STOCK_BODY_PHOTO } from "~/constants/stockAssets";
 import { useStoreKit } from "~/hooks/useStoreKit";
 import { useSubscription } from "~/hooks/useSubscription";
@@ -291,11 +291,11 @@ export function PaywallScreen({
 
 function PaywallLoadingState() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 items-center justify-center">
         <Spinner />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -313,7 +313,7 @@ function PaywallProductErrorState({
   onRestore,
 }: PaywallProductErrorStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <CloseButton onClose={onClose} />
       <View className="flex-1 items-center justify-center gap-4 p-6">
         <ThemedText variant="body" className="text-center text-error">
@@ -336,13 +336,13 @@ function PaywallProductErrorState({
           <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
         </View>
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 function PaywallSuccessState() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 items-center justify-center gap-4 p-6">
         <CircleCheck size={64} color={wearbloomTheme.colors.success} />
         <ThemedText variant="display">Welcome!</ThemedText>
@@ -350,13 +350,13 @@ function PaywallSuccessState() {
           Try on anything, anytime.
         </ThemedText>
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 function PaywallDeclinedState({ onClose }: { onClose: () => void }) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <CloseButton onClose={onClose} />
       <View className="flex-1 items-center justify-center gap-4 p-6">
         <ThemedText variant="body" className="text-center text-text-secondary">
@@ -364,7 +364,7 @@ function PaywallDeclinedState({ onClose }: { onClose: () => void }) {
         </ThemedText>
         <Button label="Back to wardrobe" variant="ghost" onPress={onClose} />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -375,7 +375,7 @@ interface PaywallErrorStateProps {
 
 function PaywallErrorState({ onClose, onRetry }: PaywallErrorStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <CloseButton onClose={onClose} />
       <View className="flex-1 items-center justify-center gap-4 p-6">
         <ThemedText variant="body" className="text-center text-error">
@@ -383,7 +383,7 @@ function PaywallErrorState({ onClose, onRetry }: PaywallErrorStateProps) {
         </ThemedText>
         <Button label="Try again" onPress={onRetry} />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -413,7 +413,7 @@ function PaywallReadyState({
   heroImageSource,
 }: PaywallReadyStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <CloseButton onClose={onClose} />
 
       <ScrollView
@@ -550,7 +550,7 @@ function PaywallReadyState({
           </ThemedPressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

@@ -2,7 +2,6 @@ import type { Href } from "expo-router";
 import type { ComponentRef, MutableRefObject } from "react";
 import { useCallback, useReducer, useRef } from "react";
 import { Pressable, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -20,6 +19,7 @@ import {
 } from "@acme/ui";
 
 import type { GarmentCategory } from "~/constants/categories";
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { CategoryPills } from "~/components/garment/CategoryPills";
 import { GARMENT_CATEGORIES, isGarmentCategory } from "~/constants/categories";
 import { useNetworkStatus } from "~/hooks/useNetworkStatus";
@@ -467,7 +467,7 @@ function AddCameraCaptureState({
   onToggleFlash,
 }: AddCameraCaptureStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <SafeScreen className="bg-black">
       <CameraView
         ref={cameraRef}
         style={{ flex: 1 }}
@@ -535,7 +535,7 @@ function AddCameraCaptureState({
           </View>
         </View>
       </CameraView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -549,7 +549,7 @@ function AddSuccessState({
   onBrowseWardrobe,
 }: AddSuccessStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 items-center justify-center p-6">
         <ThemedText variant="heading" className="mb-2 text-center">
           Garment Saved!
@@ -578,7 +578,7 @@ function AddSuccessState({
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -602,7 +602,7 @@ function AddPreviewState({
   isSaving,
 }: AddPreviewStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 p-6">
         <ThemedText variant="heading" className="mb-4 text-center">
           Preview & Categorize
@@ -650,7 +650,7 @@ function AddPreviewState({
           />
         </View>
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
@@ -668,7 +668,7 @@ function AddIdleState({
   onCapture,
 }: AddIdleStateProps) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 items-center justify-center p-6">
         <ThemedText variant="heading" className="mb-2 text-center">
           Add a Garment
@@ -729,6 +729,6 @@ function AddIdleState({
           ]}
         />
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }

@@ -1,7 +1,6 @@
 import type { Href } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Switch, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -17,6 +16,7 @@ import {
   wearbloomTheme,
 } from "@acme/ui";
 
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { StockPhotoReplacementBanner } from "~/components/profile/StockPhotoReplacementBanner";
 import { CreditCounter } from "~/components/subscription/CreditCounter";
 import { useStockGarmentPreferences } from "~/hooks/useStockGarmentPreferences";
@@ -73,7 +73,7 @@ export default function ProfileScreen() {
   });
 
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <ScrollView
         className="flex-1 px-4"
         contentContainerClassName="pb-6 pt-4"
@@ -256,6 +256,6 @@ export default function ProfileScreen() {
         variant="destructive"
         isLoading={deleteAccountMutation.isPending}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }

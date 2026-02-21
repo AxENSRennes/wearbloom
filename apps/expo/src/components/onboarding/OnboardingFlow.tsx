@@ -1,11 +1,11 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { wearbloomTheme } from "@acme/ui";
 
 import type { GarmentCategory } from "~/constants/stockAssets";
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { StepPickGarment } from "./StepPickGarment";
 import { StepSeeTheMagic } from "./StepSeeTheMagic";
 import { StepYourPhoto } from "./StepYourPhoto";
@@ -36,7 +36,6 @@ export function OnboardingFlow({
   bodyPhotoUri,
   garmentUri,
 }: OnboardingFlowProps): ReactElement {
-  const insets = useSafeAreaInsets();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(0);
   const delayedStepRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -97,7 +96,7 @@ export function OnboardingFlow({
     );
 
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <SafeScreen className="bg-white" edges={["top"]}>
       <View
         className="items-center pb-4 pt-2"
         accessibilityLabel="Onboarding progress"
@@ -132,6 +131,6 @@ export function OnboardingFlow({
       >
         {content}
       </View>
-    </View>
+    </SafeScreen>
   );
 }

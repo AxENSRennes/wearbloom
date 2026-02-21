@@ -10,7 +10,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,6 +19,7 @@ import { ArrowLeft } from "lucide-react-native";
 
 import { Button, showToast, ThemedText } from "@acme/ui";
 
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { FeedbackButton } from "~/components/tryon/FeedbackButton";
 import { RenderLoadingAnimation } from "~/components/tryon/RenderLoadingAnimation";
 import { trpc } from "~/utils/api";
@@ -31,7 +31,6 @@ const MAX_POLLS = 15;
 export default function RenderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const pollCount = useRef(0);
   const mountTime = useRef(Date.now());
@@ -181,7 +180,7 @@ export default function RenderScreen() {
   // --- LOADING STATE ---
   if (status === "pending" || status === "processing") {
     return (
-      <View style={{ flex: 1, backgroundColor: "black" }}>
+      <SafeScreen className="bg-black">
         <StatusBar style="light" />
         <RenderLoadingAnimation
           personImageUrl={
@@ -195,17 +194,16 @@ export default function RenderScreen() {
           elapsedMs={elapsedMs}
           imageHeaders={imageHeaders}
         />
-      </View>
+      </SafeScreen>
     );
   }
 
   // --- FAILED STATE ---
   if (status === "failed") {
     return (
-      <View
+      <SafeScreen
+        className="bg-black"
         style={{
-          flex: 1,
-          backgroundColor: "black",
           justifyContent: "center",
           alignItems: "center",
           padding: 24,
@@ -235,7 +233,7 @@ export default function RenderScreen() {
             onPress={() => router.back()}
           />
         </View>
-      </View>
+      </SafeScreen>
     );
   }
 
@@ -248,14 +246,15 @@ export default function RenderScreen() {
     : undefined;
 
   return (
-    <GestureDetector gesture={reducedMotion ? Gesture.Pan() : panGesture}>
-      <Animated.View
-        style={[
-          { flex: 1, backgroundColor: "black" },
-          reducedMotion ? undefined : gestureAnimatedStyle,
-        ]}
-      >
-        <StatusBar style="light" />
+    <SafeScreen className="bg-black">
+      <GestureDetector gesture={reducedMotion ? Gesture.Pan() : panGesture}>
+        <Animated.View
+          style={[
+            { flex: 1, backgroundColor: "black" },
+            reducedMotion ? undefined : gestureAnimatedStyle,
+          ]}
+        >
+          <StatusBar style="light" />
 
         {/* Layer 1: Body photo (always visible) */}
         <Image
@@ -283,48 +282,49 @@ export default function RenderScreen() {
         </Animated.View>
 
         {/* Floating back button — top-left (touchable ~300ms before fully visible) */}
-        <Animated.View style={uiAnimatedStyle}>
-          <Pressable
-            testID="back-button"
-            onPress={() => router.back()}
-            style={{
-              position: "absolute",
-              top: insets.top + 8,
-              left: 16,
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "rgba(0,0,0,0.3)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <ArrowLeft size={20} color="white" />
-          </Pressable>
-        </Animated.View>
+          <Animated.View style={uiAnimatedStyle}>
+            <Pressable
+              testID="back-button"
+              onPress={() => router.back()}
+              style={{
+                position: "absolute",
+                top: 8,
+                left: 16,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+            >
+              <ArrowLeft size={20} color="white" />
+            </Pressable>
+          </Animated.View>
 
         {/* Floating feedback button — bottom-right */}
-        {!feedbackDismissed && (
-          <Animated.View
-            style={[
-              uiAnimatedStyle,
-              {
-                position: "absolute",
-                bottom: insets.bottom + 16,
-                right: 16,
-              },
-            ]}
-          >
-            <FeedbackButton
-              onSubmit={handleFeedbackSubmit}
-              onDismiss={() => setFeedbackDismissed(true)}
-              isSubmitting={submitFeedbackMutation.isPending}
-            />
-          </Animated.View>
-        )}
-      </Animated.View>
-    </GestureDetector>
+          {!feedbackDismissed && (
+            <Animated.View
+              style={[
+                uiAnimatedStyle,
+                {
+                  position: "absolute",
+                  bottom: 16,
+                  right: 16,
+                },
+              ]}
+            >
+              <FeedbackButton
+                onSubmit={handleFeedbackSubmit}
+                onDismiss={() => setFeedbackDismissed(true)}
+                isSubmitting={submitFeedbackMutation.isPending}
+              />
+            </Animated.View>
+          )}
+        </Animated.View>
+      </GestureDetector>
+    </SafeScreen>
   );
 }

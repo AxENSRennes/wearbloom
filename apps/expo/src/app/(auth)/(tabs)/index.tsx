@@ -1,1 +1,1 @@
-export { default } from "./WardrobeScreen";
+export { default } from "~/components/garment/WardrobeScreen";

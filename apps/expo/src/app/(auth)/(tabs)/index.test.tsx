@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { showToast } from "@acme/ui";
 
-import WardrobeScreen from "./WardrobeScreen";
+import WardrobeScreen from "~/components/garment/WardrobeScreen";
 
 // ---------------------------------------------------------------------------
 // Mock garment fixtures
@@ -544,7 +544,7 @@ describe("WardrobeScreen", () => {
 
   test("INVALID_CATEGORY error path is wired in source", async () => {
     const source = await Bun.file(
-      import.meta.dir + "/WardrobeScreen.tsx",
+      import.meta.dir + "/../../../components/garment/WardrobeScreen.tsx",
     ).text();
     expect(source).toContain('err.message === "INVALID_CATEGORY"');
     expect(source).toContain("Try-on not available for this category.");
@@ -683,7 +683,7 @@ describe("WardrobeScreen", () => {
 
   test("wires paywall guard before requesting render", async () => {
     const source = await Bun.file(
-      import.meta.dir + "/WardrobeScreen.tsx",
+      import.meta.dir + "/../../../components/garment/WardrobeScreen.tsx",
     ).text();
     expect(source).toContain("usePaywallGuard");
     expect(source).toContain("guardRender(garmentId)");

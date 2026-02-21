@@ -1,5 +1,4 @@
 import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +6,7 @@ import { User } from "lucide-react-native";
 
 import { Button, showToast, ThemedText, wearbloomTheme } from "@acme/ui";
 
+import { SafeScreen } from "~/components/common/SafeScreen";
 import { trpc } from "~/utils/api";
 import { getAuthHeaders } from "~/utils/authHeaders";
 import { getBaseUrl } from "~/utils/base-url";
@@ -123,7 +123,7 @@ export function BodyPhotoManager() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeScreen className="bg-background">
       <View className="flex-1 items-center justify-center p-6">
         {hasPhoto && imageUrl ? (
           <>
@@ -187,6 +187,6 @@ export function BodyPhotoManager() {
           </>
         )}
       </View>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
