@@ -12,6 +12,7 @@ COPY packages/validators/package.json ./packages/validators/
 COPY tooling/typescript/package.json ./tooling/typescript/
 COPY tooling/eslint/package.json ./tooling/eslint/
 COPY tooling/prettier/package.json ./tooling/prettier/
+COPY patches/ ./patches/
 
 RUN pnpm install --frozen-lockfile
 
