@@ -40,6 +40,7 @@
     "react": "catalog:react19",
     "react-dom": "catalog:react19",
     "react-native": "*",
+    "tailwindcss": "catalog:",
     "typescript": "catalog:"
   },
   "peerDependencies": {
