@@ -1,6 +1,5 @@
-import type { LayoutChangeEvent } from "react-native";
-import { useCallback, useRef, useState } from "react";
-import { LayoutAnimation, Pressable, ScrollView, Text } from "react-native";
+import { useMemo } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import { cn } from "@acme/ui";
 
@@ -11,71 +10,27 @@ interface CategoryPillsProps {
   unsupportedCategories?: readonly string[];
 }
 
-interface PillLayout {
-  x: number;
-  width: number;
-}
-
 export function CategoryPills({
   categories,
   selected,
   onSelect,
   unsupportedCategories,
 }: CategoryPillsProps) {
-  const scrollRef = useRef<ScrollView>(null);
-  const pillLayouts = useRef<Map<number, PillLayout>>(new Map());
-  const [scrollViewWidth, setScrollViewWidth] = useState(0);
-
-  const handleSelect = useCallback(
-    (category: string, index: number) => {
-      LayoutAnimation.configureNext(
-        LayoutAnimation.create(
-          150,
-          LayoutAnimation.Types.easeInEaseOut,
-          LayoutAnimation.Properties.opacity,
-        ),
-      );
-      onSelect(category);
-      const layout = pillLayouts.current.get(index);
-      if (layout && scrollViewWidth > 0) {
-        // Center the pill in the scroll view
-        const targetX = layout.x - scrollViewWidth / 2 + layout.width / 2;
-        scrollRef.current?.scrollTo({
-          x: Math.max(0, targetX),
-          animated: true,
-        });
-      }
-    },
-    [onSelect, scrollViewWidth],
-  );
-
-  const handlePillLayout = useCallback(
-    (index: number, event: LayoutChangeEvent) => {
-      const { x, width } = event.nativeEvent.layout;
-      pillLayouts.current.set(index, { x, width });
-    },
-    [],
+  const unsupportedCategorySet = useMemo(
+    () => new Set(unsupportedCategories ?? []),
+    [unsupportedCategories],
   );
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      directionalLockEnabled
-      nestedScrollEnabled
-      showsHorizontalScrollIndicator={false}
-      contentContainerClassName="gap-2 px-4"
-      onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
-    >
-      {categories.map((category, index) => {
+    <View className="flex-row flex-wrap gap-2">
+      {categories.map((category) => {
         const isActive = category === selected;
-        const isUnsupported =
-          unsupportedCategories?.includes(category) ?? false;
+        const isUnsupported = unsupportedCategorySet.has(category);
+
         return (
           <Pressable
             key={category}
-            onPress={() => handleSelect(category, index)}
-            onLayout={(e) => handlePillLayout(index, e)}
+            onPress={() => onSelect(category)}
             accessibilityRole="button"
             accessibilityLabel={
               isUnsupported ? `${category}, try-on not available` : category
@@ -85,7 +40,7 @@ export function CategoryPills({
               "items-center justify-center rounded-full px-3 py-2",
               isActive ? "bg-text-primary" : "bg-surface",
             )}
-            style={{ height: 44 }}
+            style={{ minHeight: 42 }}
           >
             <Text
               className={cn(
@@ -108,6 +63,6 @@ export function CategoryPills({
           </Pressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
