@@ -1,13 +1,15 @@
 import SwiftUI
 
 enum BloomColor {
-    static let ink = Color(hex: "171717")
-    static let cream = Color(hex: "F6F0E7")
-    static let paper = Color(hex: "FFFDF8")
-    static let violet = Color(hex: "5B3DF5")
-    static let lime = Color(hex: "D8FF3E")
-    static let coral = Color(hex: "FF6A55")
-    static let muted = Color(hex: "756F67")
+    static let ink = Color(hex: "191919")
+    static let cream = Color(hex: "F6F5F1")
+    static let paper = Color.white
+    static let violet = Color(hex: "6547F5")
+    static let lime = Color(hex: "DDF66A")
+    static let coral = Color(hex: "FF7A68")
+    static let muted = Color(hex: "77746E")
+    static let line = Color.black.opacity(0.08)
+    static let softViolet = Color(hex: "EEEAFE")
 }
 
 extension Color {
@@ -22,67 +24,54 @@ extension Color {
 }
 
 struct BloomShadow: ViewModifier {
-    var radius: CGFloat = 22
-    var offset: CGFloat = 5
+    var radius: CGFloat = 24
+    var offset: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(BloomColor.ink, lineWidth: 2)
+                    .stroke(BloomColor.line, lineWidth: 1)
             }
-            .background {
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(BloomColor.ink)
-                    .offset(x: offset, y: offset)
-            }
+            .shadow(color: .black.opacity(0.06), radius: 16, y: 6)
     }
 }
 
 extension View {
-    func bloomCard(radius: CGFloat = 22, offset: CGFloat = 5) -> some View {
+    func bloomCard(radius: CGFloat = 24, offset: CGFloat = 0) -> some View {
         modifier(BloomShadow(radius: radius, offset: offset))
     }
 }
 
 struct BloomButtonStyle: ButtonStyle {
-    var fill: Color = BloomColor.lime
+    var fill: Color = BloomColor.ink
     var compact = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: compact ? 14 : 16, weight: .bold, design: .rounded))
-            .foregroundStyle(BloomColor.ink)
+            .font(.system(size: compact ? 14 : 16, weight: .semibold))
+            .foregroundStyle(fill == BloomColor.ink || fill == BloomColor.violet ? .white : BloomColor.ink)
             .frame(maxWidth: compact ? nil : .infinity)
             .padding(.horizontal, compact ? 16 : 20)
-            .frame(height: compact ? 40 : 54)
-            .background(fill, in: RoundedRectangle(cornerRadius: compact ? 13 : 17, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: compact ? 13 : 17, style: .continuous)
-                    .stroke(BloomColor.ink, lineWidth: 2)
-            }
-            .background {
-                RoundedRectangle(cornerRadius: compact ? 13 : 17, style: .continuous)
-                    .fill(BloomColor.ink)
-                    .offset(x: 4, y: 4)
-            }
-            .offset(y: configuration.isPressed ? 3 : 0)
-            .opacity(configuration.isPressed ? 0.88 : 1)
-            .animation(.snappy(duration: 0.18), value: configuration.isPressed)
+            .frame(height: compact ? 42 : 54)
+            .background(fill, in: RoundedRectangle(cornerRadius: compact ? 14 : 18, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(configuration.isPressed ? 0.86 : 1)
+            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
 struct BloomOutlineButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .semibold, design: .rounded))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(BloomColor.ink)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .stroke(BloomColor.ink, lineWidth: 2)
+                    .stroke(BloomColor.line, lineWidth: 1)
             }
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
     }
@@ -93,9 +82,7 @@ struct SectionEyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .bold, design: .monospaced))
-            .textCase(.uppercase)
-            .tracking(1.2)
+            .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(BloomColor.muted)
     }
 }
@@ -103,16 +90,13 @@ struct SectionEyebrow: View {
 struct BloomWordmark: View {
     var body: some View {
         HStack(spacing: 7) {
-            ZStack {
-                Circle().fill(BloomColor.violet)
-                Image(systemName: "sparkle")
-                    .font(.system(size: 12, weight: .black))
-                    .foregroundStyle(BloomColor.lime)
-            }
-            .frame(width: 27, height: 27)
+            Image(systemName: "sparkle")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(BloomColor.violet)
+                .frame(width: 24, height: 24)
+                .background(BloomColor.lime, in: Circle())
             Text("WearBloom")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .tracking(-0.5)
+                .font(.system(size: 17, weight: .semibold))
         }
         .foregroundStyle(BloomColor.ink)
     }
@@ -130,9 +114,9 @@ struct ImageDataView: View {
                 .aspectRatio(contentMode: contentMode)
         } else {
             ZStack {
-                BloomColor.cream
+                BloomColor.softViolet
                 Image(systemName: fallback)
-                    .font(.system(size: 28, weight: .medium))
+                    .font(.system(size: 27, weight: .regular))
                     .foregroundStyle(BloomColor.violet)
             }
         }

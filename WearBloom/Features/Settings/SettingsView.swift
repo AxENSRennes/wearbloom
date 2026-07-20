@@ -30,7 +30,7 @@ struct SettingsView: View {
                         .frame(width: 52, height: 52)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(subscriptions.isPro ? "WearBloom Pro" : "Your WearBloom")
-                                .font(.system(size: 20, weight: .black, design: .serif))
+                                .font(.system(size: 19, weight: .semibold))
                             Text(subscriptions.isPro ? "Pro generation is active" : "\(session.freeRendersRemaining) free renders remaining")
                                 .foregroundStyle(.secondary)
                         }
@@ -52,9 +52,6 @@ struct SettingsView: View {
                         .signInWithAppleButtonStyle(.black)
                         .frame(height: 48)
                     }
-                    Text("Apple sign-in is optional. It protects your library across sessions without exposing your photo content.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
                 Section("Membership") {
                     if !subscriptions.isPro {
@@ -89,7 +86,7 @@ struct SettingsView: View {
                 }
             }
             .tint(BloomColor.violet)
-            .navigationTitle("Profile & settings")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .sheet(isPresented: $isCustomerCenterPresented) {
@@ -210,13 +207,13 @@ private struct PrivacyView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 54)).foregroundStyle(BloomColor.violet)
-                Text("Private by design")
-                    .font(.system(size: 34, weight: .black, design: .serif))
-                Text("WearBloom stores your working library locally on this device. When production generation is connected, selected images are uploaded privately for that request and are never made public unless you explicitly choose to share.")
-                Text("Deleting a look or account requests cleanup of associated business records and files. Analytics must never include photos, prompts, free-form notes, tokens, or secrets.")
-                Text("An on-device preview is labeled clearly. It is not an exact prediction of fit, sizing, drape, or body shape.")
+                Text("Your photos stay private")
+                    .font(.system(size: 30, weight: .bold))
+                Text("Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them.")
+                Text("Deleting your account removes its associated records and files. WearBloom does not include photos or prompts in analytics.")
+                Text("Previews are style inspiration—not a prediction of exact fit or sizing.")
             }
-            .font(.system(size: 16, design: .rounded))
+            .font(.system(size: 16))
             .lineSpacing(4)
             .padding(22)
         }

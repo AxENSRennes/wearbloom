@@ -1,5 +1,4 @@
 import Photos
-import RevenueCatUI
 import SwiftData
 import SwiftUI
 
@@ -11,133 +10,103 @@ struct LooksView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                header
-                if looks.isEmpty {
-                    emptyState
-                } else {
+            if looks.isEmpty {
+                ContentUnavailableView {
+                    Label("No looks yet", systemImage: "square.grid.2x2")
+                } description: {
+                    Text("Your saved outfits and previews will appear here.")
+                } actions: {
+                    Button("Create a look") { session.selectedTab = 1 }
+                        .buttonStyle(BloomButtonStyle(fill: BloomColor.violet, compact: true))
+                }
+                .padding(.top, 90)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 24) {
                     ForEach(looks) { look in
-                        LookRow(look: look) { selectedVariant = $0 }
-                            .contextMenu {
-                                Button("Edit composition", systemImage: "slider.horizontal.3") { session.load(look) }
-                                Button("Delete look", systemImage: "trash", role: .destructive) {
-                                    let id = look.id
-                                    modelContext.delete(look)
-                                    Task {
-                                        do { try await WearBloomAPI.shared.deleteLook(id) }
-                                        catch { Telemetry.error(error, context: ["operation": "look_delete"]) }
-                                    }
+                        LookCard(look: look) { variant in
+                            selectedVariant = variant
+                        } edit: {
+                            session.load(look)
+                        }
+                        .contextMenu {
+                            Button("Edit look", systemImage: "slider.horizontal.3") { session.load(look) }
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                let id = look.id
+                                modelContext.delete(look)
+                                Task {
+                                    do { try await WearBloomAPI.shared.deleteLook(id) }
+                                    catch { Telemetry.error(error, context: ["operation": "look_delete"]) }
                                 }
                             }
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 32)
         }
         .background(BloomColor.cream)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Looks")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar { WearBloomToolbar() }
         .fullScreenCover(item: $selectedVariant) { variant in
             NavigationStack {
-                ResultView(variant: variant)
-                    .environment(session)
+                ResultView(variant: variant).environment(session)
             }
         }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            SectionEyebrow(text: "COMPOSITIONS / \(looks.count)")
-            Text("Looks worth\ncoming back to.")
-                .font(.system(size: 38, weight: .black, design: .serif))
-                .tracking(-1.7)
-                .lineSpacing(-4)
-            Text("Every render stays as its own variant, even when you edit the pieces.")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(BloomColor.muted)
-        }
-        .padding(.top, 18)
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 15) {
-            Image(systemName: "sparkles.rectangle.stack")
-                .font(.system(size: 50, weight: .light))
-                .foregroundStyle(BloomColor.violet)
-            Text("Your looks land here")
-                .font(.system(size: 22, weight: .black, design: .serif))
-            Text("Compose your first outfit in Create. Save it before rendering or keep it after the reveal.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(BloomColor.muted)
-            Button("Create a look") { session.selectedTab = 1 }
-                .buttonStyle(BloomButtonStyle())
-        }
-        .padding(34)
-        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 25))
-        .bloomCard(radius: 25)
     }
 }
 
-private struct LookRow: View {
+private struct LookCard: View {
     let look: Look
     let open: (RenderVariant) -> Void
+    let edit: () -> Void
 
-    private var readyVariants: [RenderVariant] {
-        look.variants.filter { $0.state == .ready }.sorted { $0.createdAt > $1.createdAt }
+    private var latest: RenderVariant? {
+        look.variants
+            .filter { $0.state == .ready }
+            .max { $0.createdAt < $1.createdAt }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(look.name)
-                        .font(.system(size: 23, weight: .black, design: .serif))
-                    Text("\(look.garments.count) PIECES • \(look.variants.count) VARIANT\(look.variants.count == 1 ? "" : "S")")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundStyle(BloomColor.muted)
-                }
-                Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(BloomColor.violet)
-            }
-            if let latest = readyVariants.first {
-                Button { open(latest) } label: {
-                    ZStack(alignment: .bottomLeading) {
+        Button {
+            if let latest { open(latest) } else { edit() }
+        } label: {
+            VStack(alignment: .leading, spacing: 9) {
+                ZStack {
+                    if let latest {
                         ImageDataView(data: latest.resultData)
-                            .frame(height: 305).clipped()
-                        LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
-                        HStack(alignment: .bottom) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("LATEST RESULT")
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                Text("Variant \(latest.sequence)")
-                                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    } else {
+                        BloomColor.softViolet
+                        HStack(spacing: -10) {
+                            ForEach(look.garments.prefix(3)) { garment in
+                                ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                                    .frame(width: 72, height: 92)
+                                    .background(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .rotationEffect(.degrees(garment.id.hashValue.isMultiple(of: 2) ? -4 : 4))
                             }
-                            Spacer()
-                            Image(systemName: "arrow.up.right").fontWeight(.bold)
                         }
-                        .foregroundStyle(.white)
-                        .padding(16)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 23))
-                    .overlay(RoundedRectangle(cornerRadius: 23).stroke(BloomColor.ink, lineWidth: 2))
-                }
-                .buttonStyle(.plain)
-            } else {
-                HStack(spacing: 10) {
-                    ForEach(look.garments.prefix(3)) { garment in
-                        ImageDataView(data: garment.imageData, fallback: garment.category.symbol)
-                            .frame(maxWidth: .infinity).frame(height: 118).clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 17))
                     }
                 }
+                .frame(height: 230)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20).stroke(BloomColor.line, lineWidth: 1)
+                }
+
+                Text(look.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(BloomColor.ink)
+                    .lineLimit(1)
+                Text(look.variants.isEmpty ? "Saved outfit" : "\(look.variants.count) preview\(look.variants.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundStyle(BloomColor.muted)
             }
         }
-        .padding(14)
-        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 27))
-        .bloomCard(radius: 27)
-        .padding(.trailing, 5)
-        .padding(.bottom, 5)
+        .buttonStyle(.plain)
     }
 }
 
@@ -150,37 +119,16 @@ struct ResultView: View {
 
     var body: some View {
         ZStack {
-            BloomColor.violet.ignoresSafeArea()
+            BloomColor.ink.ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 0) {
                     resultImage
-                    verdict
-                        .offset(y: -42)
+                    details
                 }
-                .padding(.bottom, 45)
             }
             .scrollIndicators(.hidden)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .top) {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").frame(width: 42, height: 42)
-                        .background(.white, in: Circle())
-                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: 2))
-                }
-                Spacer()
-                Text("LOOK \(variant.look?.name.replacingOccurrences(of: "Look ", with: "") ?? "—") / \(String(format: "%02d", variant.sequence))")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .padding(.horizontal, 11).padding(.vertical, 8)
-                    .background(BloomColor.coral, in: Capsule())
-                    .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 2))
-            }
-            .foregroundStyle(BloomColor.ink)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 18)
-            .padding(.top, 4)
-        }
         .onAppear {
             Telemetry.event("render_revealed", properties: [
                 "mode": variant.isPreviewSimulation ? "on_device_preview" : "remote",
@@ -192,87 +140,99 @@ struct ResultView: View {
     }
 
     private var resultImage: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .top) {
             ImageDataView(data: variant.resultData)
-                .frame(height: 590).clipped()
-            LinearGradient(colors: [.black.opacity(0.5), .clear], startPoint: .top, endPoint: .center)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("This one\nhas energy.")
-                    .font(.system(size: 42, weight: .black, design: .serif))
-                    .tracking(-2)
-                    .lineSpacing(-6)
-                    .foregroundStyle(.white)
-                if variant.isPreviewSimulation {
-                    Text("ON-DEVICE PREVIEW")
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 9).padding(.vertical, 6)
-                        .background(BloomColor.lime, in: Capsule())
-                        .foregroundStyle(BloomColor.ink)
+                .frame(height: 610)
+                .clipped()
+            LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .center)
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial, in: Circle())
                 }
-            }
-            .padding(.top, 30)
-            .padding(.leading, 22)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 34))
-        .overlay(RoundedRectangle(cornerRadius: 34).stroke(BloomColor.ink, lineWidth: 2))
-        .shadow(color: BloomColor.ink, radius: 0, x: 7, y: 7)
-        .padding(.horizontal, 14)
-        .padding(.top, 12)
-    }
-
-    private var verdict: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("It feels like you — louder.")
-                .font(.system(size: 25, weight: .black, design: .serif))
-                .tracking(-0.7)
-            Text(variant.isPreviewSimulation
-                 ? "This private on-device composition proves the product flow. Connect the generation API for a photoreal personal render."
-                 : "The composition keeps the outfit readable while bringing the pieces into one personal point of view.")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(BloomColor.muted)
-                .lineSpacing(2)
-            Text(variant.garmentSnapshot)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundStyle(BloomColor.violet)
-            Divider().overlay(BloomColor.ink)
-            Text("Does it look like you?")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-            FeedbackControl(value: $variant.feedbackLooksLikeMe)
-            Text("Did it help you decide?")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-            FeedbackControl(value: $variant.feedbackHelpful)
-            HStack(spacing: 10) {
-                Button("Swap a piece") {
-                    if let look = variant.look { session.load(look) }
-                    dismiss()
-                }
-                .buttonStyle(BloomOutlineButtonStyle())
+                Spacer()
                 if let data = variant.resultData, let image = UIImage(data: data) {
                     ShareLink(
                         item: Image(uiImage: image),
                         preview: SharePreview("My WearBloom look", image: Image(uiImage: image))
                     ) {
-                        Label("Share", systemImage: "square.and.arrow.up")
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 42, height: 42)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
-                    .buttonStyle(BloomButtonStyle())
                 }
             }
-            HStack {
-                Button(savedToPhotos ? "Saved" : "Save image", systemImage: savedToPhotos ? "checkmark" : "square.and.arrow.down") {
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+        }
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(variant.look?.name ?? "Your look")
+                    .font(.title2.weight(.semibold))
+                Spacer()
+                if variant.isPreviewSimulation {
+                    Text("Preview")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .frame(height: 28)
+                        .background(BloomColor.softViolet, in: Capsule())
+                        .foregroundStyle(BloomColor.violet)
+                }
+            }
+
+            Text(variant.garmentSnapshot)
+                .font(.subheadline)
+                .foregroundStyle(BloomColor.muted)
+                .lineLimit(2)
+
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Looks like you?")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    FeedbackControl(value: $variant.feedbackLooksLikeMe)
+                        .frame(width: 180)
+                }
+                HStack {
+                    Text("Helpful?")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    FeedbackControl(value: $variant.feedbackHelpful)
+                        .frame(width: 180)
+                }
+            }
+            .padding(16)
+            .background(BloomColor.cream, in: RoundedRectangle(cornerRadius: 20))
+
+            HStack(spacing: 12) {
+                Button("Edit look", systemImage: "slider.horizontal.3") {
+                    if let look = variant.look { session.load(look) }
+                    dismiss()
+                }
+                .buttonStyle(BloomOutlineButtonStyle())
+                Button(savedToPhotos ? "Saved" : "Save photo", systemImage: savedToPhotos ? "checkmark" : "arrow.down") {
                     saveToPhotos()
                 }
-                Spacer()
-                Button("Use as reference", systemImage: "person.crop.rectangle.stack") {
-                    reuseAsReference()
-                }
+                .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
             }
-            .font(.system(size: 12, weight: .bold, design: .rounded))
+
+            Button("Use as a reference photo", systemImage: "person.crop.rectangle.stack") {
+                reuseAsReference()
+            }
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(BloomColor.violet)
+            .frame(maxWidth: .infinity)
         }
         .padding(20)
-        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 26))
-        .bloomCard(radius: 26)
-        .padding(.horizontal, 25)
+        .padding(.bottom, 30)
+        .background(BloomColor.paper)
     }
 
     private func saveToPhotos() {
@@ -326,23 +286,31 @@ private struct FeedbackControl: View {
     @Binding var value: Bool?
 
     var body: some View {
-        HStack(spacing: 9) {
-            Button { value = true } label: { Label("Yes", systemImage: "hand.thumbsup") }
-                .buttonStyle(FeedbackButtonStyle(selected: value == true))
-            Button { value = false } label: { Label("Not really", systemImage: "hand.thumbsdown") }
-                .buttonStyle(FeedbackButtonStyle(selected: value == false))
+        HStack(spacing: 8) {
+            Button { value = true } label: {
+                Label("Yes", systemImage: "hand.thumbsup")
+            }
+            .buttonStyle(FeedbackButtonStyle(selected: value == true))
+            Button { value = false } label: {
+                Image(systemName: "hand.thumbsdown")
+            }
+            .buttonStyle(FeedbackButtonStyle(selected: value == false))
+            .accessibilityLabel("No")
         }
     }
 }
 
 private struct FeedbackButtonStyle: ButtonStyle {
     let selected: Bool
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .bold, design: .rounded))
-            .frame(maxWidth: .infinity).frame(height: 40)
-            .background(selected ? BloomColor.lime : BloomColor.cream, in: RoundedRectangle(cornerRadius: 13))
-            .overlay(RoundedRectangle(cornerRadius: 13).stroke(BloomColor.ink, lineWidth: selected ? 2 : 1))
+            .font(.system(size: 12, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 38)
+            .background(selected ? BloomColor.softViolet : BloomColor.paper, in: Capsule())
+            .foregroundStyle(selected ? BloomColor.violet : BloomColor.muted)
+            .overlay(Capsule().stroke(selected ? BloomColor.violet.opacity(0.35) : BloomColor.line, lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
     }
 }

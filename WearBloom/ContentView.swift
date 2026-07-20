@@ -75,13 +75,13 @@ private struct RootTabView: View {
     var body: some View {
         @Bindable var session = session
         TabView(selection: $session.selectedTab) {
-            Tab("Closet", systemImage: "square.grid.2x2", value: 0) {
+            Tab("Closet", systemImage: "tshirt", value: 0) {
                 NavigationStack { ClosetView() }
             }
-            Tab("Create", systemImage: "sparkles", value: 1) {
+            Tab("Create", systemImage: "wand.and.stars", value: 1) {
                 NavigationStack { CreateView() }
             }
-            Tab("Looks", systemImage: "heart.text.square", value: 2) {
+            Tab("Looks", systemImage: "square.grid.2x2", value: 2) {
                 NavigationStack { LooksView() }
             }
         }
@@ -105,15 +105,12 @@ struct WearBloomToolbar: ToolbarContent {
     @Environment(AppSession.self) private var session
 
     var body: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            BloomWordmark()
-        }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 session.isProfilePresented = true
             } label: {
                 Image(systemName: "person.crop.circle")
-                    .font(.system(size: 21, weight: .semibold))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(BloomColor.ink)
             }
             .accessibilityLabel("Profile and settings")

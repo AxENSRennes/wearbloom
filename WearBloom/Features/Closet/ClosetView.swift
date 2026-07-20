@@ -16,13 +16,12 @@ struct ClosetView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 22) {
-                header
+            LazyVStack(alignment: .leading, spacing: 18) {
                 categoryPicker
                 if filtered.isEmpty {
                     emptyState
                 } else {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 13), GridItem(.flexible())], spacing: 18) {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 22) {
                         ForEach(filtered) { garment in
                             Button { editingGarment = garment } label: {
                                 GarmentCard(garment: garment)
@@ -47,22 +46,21 @@ struct ClosetView: View {
                     }
                 }
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
             .padding(.bottom, 28)
         }
         .background(BloomColor.cream)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { WearBloomToolbar() }
-        .safeAreaInset(edge: .bottom) {
-            Button {
-                isAddingGarment = true
-            } label: {
-                Label("Add a piece", systemImage: "plus")
+        .navigationTitle("Closet")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { isAddingGarment = true } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Add a piece")
             }
-            .buttonStyle(BloomButtonStyle())
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+            WearBloomToolbar()
         }
         .sheet(isPresented: $isAddingGarment) {
             AddGarmentView()
@@ -70,20 +68,6 @@ struct ClosetView: View {
         .sheet(item: $editingGarment) { garment in
             EditGarmentView(garment: garment)
         }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            SectionEyebrow(text: "YOUR PIECES / \(garments.count)")
-            Text("A closet with\nideas in it.")
-                .font(.system(size: 38, weight: .black, design: .serif))
-                .tracking(-1.6)
-                .lineSpacing(-4)
-            Text("Add only what you want to style. No full closet upload required.")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(BloomColor.muted)
-        }
-        .padding(.top, 18)
     }
 
     private var categoryPicker: some View {
@@ -99,20 +83,16 @@ struct ClosetView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 13) {
-            Image(systemName: "hanger")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(BloomColor.violet)
-            Text("Nothing in this category yet")
-                .font(.system(size: 20, weight: .bold, design: .serif))
-            Text("Add a clear photo of a garment. We’ll suggest its category and you stay in control.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(BloomColor.muted)
+        ContentUnavailableView {
+            Label("No pieces yet", systemImage: "tshirt")
+        } description: {
+            Text("Add a garment to start your closet.")
+        } actions: {
+            Button("Add a piece") { isAddingGarment = true }
+                .buttonStyle(BloomButtonStyle(fill: BloomColor.violet, compact: true))
         }
         .frame(maxWidth: .infinity)
-        .padding(36)
-        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 25))
-        .bloomCard(radius: 25)
+        .padding(.top, 80)
     }
 }
 
@@ -120,34 +100,33 @@ struct GarmentCard: View {
     let garment: Garment
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 9) {
             ImageDataView(data: garment.imageData, fallback: garment.category.symbol)
-                .frame(height: 184)
+                .frame(height: 205)
                 .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20).stroke(BloomColor.line, lineWidth: 1)
+                }
                 .overlay(alignment: .topTrailing) {
                     if garment.isFavorite {
                         Image(systemName: "heart.fill")
                             .font(.system(size: 13, weight: .bold))
                             .padding(8)
-                            .background(BloomColor.paper, in: Circle())
+                            .background(.ultraThinMaterial, in: Circle())
                             .foregroundStyle(BloomColor.coral)
                             .padding(8)
                     }
                 }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(garment.category.title.uppercased())
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundStyle(BloomColor.violet)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(garment.name)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .lineLimit(2)
+                Text(garment.category.title)
+                    .font(.caption)
+                    .foregroundStyle(BloomColor.muted)
             }
-            .padding(.horizontal, 11)
-            .padding(.bottom, 12)
         }
-        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(BloomColor.ink, lineWidth: 1.5))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -159,12 +138,12 @@ private struct FilterPill: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .medium))
                 .padding(.horizontal, 14)
                 .frame(height: 38)
                 .background(selected ? BloomColor.ink : BloomColor.paper, in: Capsule())
-                .foregroundStyle(selected ? Color.white : BloomColor.ink)
-                .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.5))
+                .foregroundStyle(selected ? Color.white : BloomColor.muted)
+                .overlay(Capsule().stroke(BloomColor.line, lineWidth: 1))
         }
     }
 }
@@ -205,25 +184,20 @@ struct AddGarmentView: View {
                             .font(.caption)
                             .foregroundStyle(BloomColor.violet)
                     }
-                } header: {
-                    Text("Garment photo")
-                } footer: {
-                    Text("Background cleanup happens on-device when possible. The original is kept if cleanup cannot improve it.")
                 }
                 Section("Details") {
                     TextField("Piece name", text: $name)
                     Picker("Category", selection: $category) {
                         ForEach(GarmentCategory.allCases) { item in Text(item.title).tag(item) }
                     }
-                }
-                Section {
-                    Label(isDetectingCategory ? "Detecting category…" : "Suggested category: \(category.title)", systemImage: "sparkles")
-                        .foregroundStyle(BloomColor.violet)
-                } footer: {
-                    if let detectionConfidence {
-                        Text("Suggestion confidence: \(detectionConfidence.formatted(.percent.precision(.fractionLength(0)))). Check it before saving; categories control how pieces combine.")
-                    } else {
-                        Text("Check the suggestion before saving. Categories control how pieces combine in a look.")
+                    if isDetectingCategory {
+                        Label("Finding the category…", systemImage: "sparkles")
+                            .font(.caption)
+                            .foregroundStyle(BloomColor.violet)
+                    } else if let detectionConfidence {
+                        Text("Suggested with \(detectionConfidence.formatted(.percent.precision(.fractionLength(0)))) confidence")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

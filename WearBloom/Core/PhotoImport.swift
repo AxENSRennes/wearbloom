@@ -51,19 +51,17 @@ extension UIImage {
 
 struct PhotoGuideView: View {
     var body: some View {
-        HStack(alignment: .top, spacing: 13) {
+        HStack(spacing: 12) {
             Image(systemName: "sun.max.fill")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(BloomColor.violet)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("A stronger photo makes a stronger preview")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                Text("Stand naturally, show your full body, and use even light. Avoid mirrors and group photos.")
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundStyle(BloomColor.muted)
-            }
+            Text("Use a clear, full-length photo in even light.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(BloomColor.muted)
+            Spacer()
         }
         .padding(14)
-        .background(BloomColor.lime.opacity(0.42), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 17).stroke(BloomColor.line, lineWidth: 1))
     }
 }
