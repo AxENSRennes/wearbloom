@@ -1,0 +1,156 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ PIECE%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ PIECE%2$@"
+          }
+        }
+      }
+    },
+    "%@ PIECES • %@ VARIANT%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ PIECES • %2$@ VARIANT%3$@"
+          }
+        }
+      }
+    },
+    "%@%%" : {
+
+    },
+    "A closet with\nideas in it." : {
+
+    },
+    "A preview can take a little while. You can leave this screen; the look will keep rendering." : {
+
+    },
+    "A stronger photo makes a stronger preview" : {
+
+    },
+    "Add a clear photo of a garment. We’ll suggest its category and you stay in control." : {
+
+    },
+    "Add one from the Closet tab, then it will appear here." : {
+
+    },
+    "Add only what you want to style. No full closet upload required." : {
+
+    },
+    "ADD PIECE" : {
+
+    },
+    "Add your photo" : {
+
+    },
+    "An on-device preview is labeled clearly. It is not an exact prediction of fit, sizing, drape, or body shape." : {
+
+    },
+    "Apple sign-in is optional. It protects your library across sessions without exposing your photo content." : {
+
+    },
+    "Background cleanup happens on-device when possible. The original is kept if cleanup cannot improve it." : {
+
+    },
+    "Check the suggestion before saving. Categories control how pieces combine in a look." : {
+
+    },
+    "Compose your first outfit in Create. Save it before rendering or keep it after the reveal." : {
+
+    },
+    "DEFAULT" : {
+
+    },
+    "Deleting a look or account requests cleanup of associated business records and files. Analytics must never include photos, prompts, free-form notes, tokens, or secrets." : {
+
+    },
+    "Did it help you decide?" : {
+
+    },
+    "Does it look like you?" : {
+
+    },
+    "Every render stays as its own variant, even when you edit the pieces." : {
+
+    },
+    "FAILED RENDERS NEVER USE A GENERATION" : {
+
+    },
+    "Garment photo" : {
+
+    },
+    "GOOD LIGHT • FULL LENGTH • YOU" : {
+
+    },
+    "It feels like you — louder." : {
+
+    },
+    "LATEST RESULT" : {
+
+    },
+    "LOOK %@ / %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "LOOK %1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "Looks worth\ncoming back to." : {
+
+    },
+    "Nothing in this category yet" : {
+
+    },
+    "ON-DEVICE PREVIEW" : {
+
+    },
+    "One per category" : {
+
+    },
+    "One photo, a few pieces, and a personal preview without the second-guessing." : {
+
+    },
+    "PRIVATE BY DEFAULT / FAILED RENDERS NEVER COUNT" : {
+
+    },
+    "Private by design" : {
+
+    },
+    "Show me" : {
+
+    },
+    "Stand naturally, show your full body, and use even light. Avoid mirrors and group photos." : {
+
+    },
+    "Suggestion confidence: %@. Check it before saving; categories control how pieces combine." : {
+
+    },
+    "This one\nhas energy." : {
+
+    },
+    "This permanently deletes your local garments, photos, looks, and variants. It does not cancel an App Store subscription." : {
+
+    },
+    "Variant %@" : {
+
+    },
+    "WearBloom" : {
+
+    },
+    "WearBloom stores your working library locally on this device. When production generation is connected, selected images are uploaded privately for that request and are never made public unless you explicitly choose to share." : {
+
+    },
+    "Your looks land here" : {
+
+    }
+  },
+  "version" : "1.0"
+}

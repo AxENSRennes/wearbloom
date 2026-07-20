@@ -1,19 +1,25 @@
 # WearBloom
 
-WearBloom is being rebuilt as a native iOS application using SwiftUI.
+WearBloom is a native SwiftUI app for composing looks from a private closet and creating personal outfit previews. This repository contains the iOS app, Bun API and worker, PostgreSQL migrations, OpenAPI contract, public association/privacy site, and Dokploy deployment template described by [PRD.md](PRD.md).
 
-Open `WearBloom.xcodeproj` and run the shared `WearBloom` scheme. The initial target uses Xcode 26.6, Swift 6 strict concurrency, and iOS 26 as specified by the PRD.
+Open `WearBloom.xcodeproj` and run the shared `WearBloom` scheme. The app uses Swift 6 strict concurrency and iOS 26. Debug builds use an explicitly labeled on-device preview when `API_BASE_URL` is empty. Configure the API to exercise private uploads, category detection, queued AI generation, server quotas, feedback, and deletion.
 
-RevenueCat setup and dashboard instructions are documented in `docs/revenuecat-ios.md`.
+RevenueCat setup is documented in `docs/revenuecat-ios.md`; production deployment, smoke checks, rollback, and backups are documented in `docs/operations.md`.
 
-The product and technical source of truth is [PRD.md](PRD.md). The repository intentionally contains only the specification and bootstrap configuration until the native application is generated.
+## Local server
 
-The previous Expo/full-stack implementation remains available in Git history and under the `legacy-web-app` tag.
+Copy `server/.env.example` to `server/.env` and supply local values. From `server`, run:
 
-## Local configuration
+```sh
+bun install
+bun run typecheck
+bun test
+bun run db:migrate
+bun run dev
+```
 
-Copy `.env.example` to `.env` and supply local values. Never commit `.env`, signing credentials, provider secrets, or CI tokens.
+Run the worker separately with `bun run worker`, or use `docker compose up`. Never commit signing credentials, provider secrets, or CI tokens.
 
-## Continuous integration
+## Verification
 
-`.github/workflows/ios.yml` automatically detects the first Xcode workspace or project and builds the `WearBloom` scheme for a generic iOS Simulator. Before the Xcode project exists, the workflow succeeds with an explicit bootstrap-pending message.
+The shared Xcode scheme includes Swift Testing coverage for the composition rules. `.github/workflows/ios.yml` runs strict TypeScript checks, server tests, OpenAPI drift checks, a production Docker build, and the iOS test suite.

@@ -4,7 +4,7 @@ import RevenueCat
 enum RevenueCatConstants {
     /// Dashboard display name: "WearBloom Pro". Code always uses this identifier.
     static let proEntitlementID = "pro"
-    static let productIDs: Set<String> = ["lifetime", "yearly", "monthly"]
+    static let productIDs: Set<String> = ["yearly", "monthly"]
 }
 
 enum RevenueCatBootstrap {
@@ -36,4 +36,3 @@ enum RevenueCatBootstrap {
         Purchases.configure(with: configuration)
     }
 }
-

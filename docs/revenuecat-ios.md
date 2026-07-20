@@ -13,7 +13,6 @@ Use these values exactly and keep display names separate from code identifiers:
 | Kind | Identifier | Suggested display name |
 | --- | --- | --- |
 | Entitlement | `pro` | WearBloom Pro |
-| Product | `lifetime` | Lifetime |
 | Product | `yearly` | Yearly |
 | Product | `monthly` | Monthly |
 | Offering | `default` | Default |
@@ -31,13 +30,12 @@ Do not check `"WearBloom Pro"`; that is a user-facing name, not the stable ident
 The supplied `test_...` key is a RevenueCat Test Store public SDK key. It does not read products from App Store Connect.
 
 1. In RevenueCat, open **Product catalog → Products**.
-2. Add Test Store products named `lifetime`, `yearly`, and `monthly`.
-3. Configure `lifetime` as a one-time/non-consumable purchase, `yearly` as an annual subscription, and `monthly` as a monthly subscription.
+2. Add Test Store products named `yearly` and `monthly`.
+3. Configure `yearly` as an annual subscription and `monthly` as a monthly subscription.
 4. Open **Product catalog → Entitlements** and create identifier `pro`, display name **WearBloom Pro**.
-5. Attach all three products to `pro`.
+5. Attach both products to `pro`.
 6. Open **Offerings**, create `default`, and mark it as the current offering.
 7. Add the products using the predefined package types:
-   - Lifetime (`$rc_lifetime`) → `lifetime`
    - Annual (`$rc_annual`) → `yearly`
    - Monthly (`$rc_monthly`) → `monthly`
 8. Create a RevenueCat Paywall for the `default` offering. Include purchase, restore, legal links, and a close affordance if the paywall is dismissible.
@@ -51,12 +49,11 @@ Before shipping:
 1. Accept Apple's Paid Applications Agreement and complete tax/banking details.
 2. In App Store Connect, create one subscription group for WearBloom Pro.
 3. Add auto-renewable subscriptions with product IDs `monthly` and `yearly` to that group.
-4. Under In-App Purchases, create `lifetime` as a **non-consumable**.
-5. Add localization, price, review screenshot, and review notes for every product.
-6. In RevenueCat, add the Apple app with the production bundle ID `com.axel.wearbloom`.
-7. Configure the App Store Connect shared secret / In-App Purchase key requested by RevenueCat, then import the three Apple products.
-8. Attach the Apple products to the same `pro` entitlement and matching offering packages.
-9. Replace the placeholder in `Configuration/Release.xcconfig` with the app-specific **public Apple SDK key**.
+4. Add localization, price, review screenshot, and review notes for both products.
+5. In RevenueCat, add the Apple app with the production bundle ID `com.axel.wearbloom`.
+6. Configure the App Store Connect shared secret / In-App Purchase key requested by RevenueCat, then import both Apple products.
+7. Attach the Apple products to the same `pro` entitlement and matching offering packages.
+8. Replace the placeholder in `Configuration/Release.xcconfig` with the app-specific **public Apple SDK key**.
 
 The app deliberately crashes early if a Release build still contains the placeholder or a `test_` key. Never place a RevenueCat secret API key in an iOS app.
 
@@ -66,7 +63,7 @@ The app deliberately crashes early if a Release build still contains the placeho
 
 - reads cached customer info immediately for fast launch;
 - fetches current customer info and the current offering;
-- verifies that all three expected products exist in that offering;
+- verifies that both expected products exist in that offering;
 - observes `Purchases.shared.customerInfoStream` for later updates;
 - exposes `isPro`, active product, expiration date, renewal state, restore, login, logout, and manual package purchase methods;
 - turns common SDK failures into user-facing error messages.
@@ -96,7 +93,7 @@ Use the stable, private backend UUID—not an email, display name, or hard-coded
 
 ## 6. Customer Center
 
-Customer Center is appropriate here because monthly/yearly subscribers need self-service cancellation, plan changes, restore, refund/support flows, and billing information. Lifetime owners can still use it for restore and support. It requires a RevenueCat Pro or Enterprise plan and dashboard configuration.
+Customer Center is appropriate here because monthly/yearly subscribers need self-service cancellation, plan changes, restore, refund/support flows, and billing information. It requires a RevenueCat Pro or Enterprise plan and dashboard configuration.
 
 Keep the explicit **Restore purchases** button even when Customer Center and the paywall provide restore actions; it is easy for users and App Review to find.
 
@@ -110,17 +107,7 @@ Keep the explicit **Restore purchases** button even when Customer Center and the
 - Process RevenueCat webhooks idempotently and verify their authorization.
 - Test new purchase, renewal, cancellation, billing issue, restore, account login/linking, and reinstall flows.
 - Configure App Store Server Notifications through RevenueCat for timely subscription updates.
-- Do not offer lifetime access until the server-side generation allowance for a one-time purchase is explicitly defined; AI generation has ongoing marginal cost.
-
-## 8. PRD decisions to reconcile
-
-The current PRD says:
-
-- only monthly and annual products at launch;
-- custom WearBloom SwiftUI paywalls, not third-party UI;
-- RevenueCat entitlement identifier `pro`.
-
-This implementation preserves `pro`, but follows the newer request by adding `lifetime`, RevenueCat Paywalls, and Customer Center. Update the PRD before treating those choices as final product requirements.
+- Keep launch offerings to monthly and annual subscriptions; AI generation has ongoing marginal cost.
 
 ## Official references
 

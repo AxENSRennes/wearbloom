@@ -25,9 +25,32 @@ env:
   POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
 
 jobs:
+  server:
+    name: Validate server and API contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Type check and test
+        run: bun run typecheck && bun test
+      - name: Verify generated OpenAPI contract
+        run: bun run openapi && git diff --exit-code ../openapi/wearbloom-v1.json
+      - name: Build production image
+        run: docker build -t wearbloom-server:ci .
+
   build:
-    name: Build native iOS app
-    runs-on: macos-15
+    name: Test native iOS app
+    runs-on: macos-26
     timeout-minutes: 30
 
     steps:
@@ -59,30 +82,7 @@ jobs:
         if: steps.xcode.outputs.available != 'true'
         run: echo "No Xcode project exists yet; the repository is ready for the native iOS bootstrap."
 
-      - name: Validate integration configuration
-        if: steps.xcode.outputs.available == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          required=(
-            SENTRY_AUTH_TOKEN
-            SENTRY_ORG
-            SENTRY_PROJECT
-            SENTRY_DSN_IOS
-            POSTHOG_PROJECT_API_KEY
-            POSTHOG_HOST
-            POSTHOG_PROJECT_ID
-          )
-
-          for name in "${required[@]}"; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error::Missing GitHub Actions configuration: $name"
-              exit 1
-            fi
-          done
-
-      - name: Build for iOS Simulator
+      - name: Test on iOS Simulator
         if: steps.xcode.outputs.available == 'true'
         shell: bash
         run: |
@@ -99,6 +99,6 @@ jobs:
             "${args[@]}" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            test

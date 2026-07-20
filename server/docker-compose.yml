@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wearbloom
+      POSTGRES_USER: wearbloom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wearbloom -d wearbloom"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ROLE: api
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+    volumes:
+      - private-images:/app/data/private
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["bun", "src/worker.ts"]
+    env_file: .env
+    environment:
+      ROLE: worker
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+    volumes:
+      - private-images:/app/data/private
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  private-images:

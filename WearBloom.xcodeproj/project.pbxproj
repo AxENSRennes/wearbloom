@@ -11,7 +11,18 @@
 		A20000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A20000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		A20000000000000000000004 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		C20000000000000000000001 /* WearBloomTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearBloomTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		C50000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A80000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000001;
+			remoteInfo = WearBloom;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		A30000000000000000000002 /* Exceptions for "WearBloom" folder in "WearBloom" target */ = {
@@ -32,6 +43,11 @@
 			path = WearBloom;
 			sourceTree = "<group>";
 		};
+		C30000000000000000000001 /* WearBloomTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WearBloomTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +57,15 @@
 			files = (
 				A50000000000000000000001 /* RevenueCat in Frameworks */,
 				A50000000000000000000002 /* RevenueCatUI in Frameworks */,
+				A50000000000000000000003 /* Sentry in Frameworks */,
+				A50000000000000000000004 /* PostHog in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C40000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -49,6 +74,8 @@
 /* Begin PBXBuildFile section */
 		A50000000000000000000001 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* RevenueCat */; };
 		A50000000000000000000002 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000003 /* RevenueCatUI */; };
+		A50000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000005 /* Sentry */; };
+		A50000000000000000000004 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000007 /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXGroup section */
@@ -56,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000001 /* WearBloom */,
+				C30000000000000000000001 /* WearBloomTests */,
 				A60000000000000000000002 /* Configuration */,
 				A60000000000000000000003 /* Products */,
 			);
@@ -75,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000001 /* WearBloom.app */,
+				C20000000000000000000001 /* WearBloomTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,10 +130,35 @@
 			packageProductDependencies = (
 				B10000000000000000000002 /* RevenueCat */,
 				B10000000000000000000003 /* RevenueCatUI */,
+				B10000000000000000000005 /* Sentry */,
+				B10000000000000000000007 /* PostHog */,
 			);
 			productName = WearBloom;
 			productReference = A20000000000000000000001 /* WearBloom.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C10000000000000000000001 /* WearBloomTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C70000000000000000000001 /* Build configuration list for PBXNativeTarget "WearBloomTests" */;
+			buildPhases = (
+				C40000000000000000000001 /* Sources */,
+				C40000000000000000000002 /* Frameworks */,
+				C40000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C60000000000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C30000000000000000000001 /* WearBloomTests */,
+			);
+			name = WearBloomTests;
+			packageProductDependencies = (
+			);
+			productName = WearBloomTests;
+			productReference = C20000000000000000000001 /* WearBloomTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -136,6 +190,10 @@
 							};
 						};
 					};
+					C10000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = A10000000000000000000001;
+					};
 				};
 			};
 			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXProject "WearBloom" */;
@@ -150,6 +208,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+				B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				B10000000000000000000006 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A60000000000000000000003 /* Products */;
@@ -157,12 +217,20 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000001 /* WearBloom */,
+				C10000000000000000000001 /* WearBloomTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A40000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C40000000000000000000003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -179,7 +247,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C40000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C60000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000001 /* WearBloom */;
+			targetProxy = C50000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A90000000000000000000001 /* Debug */ = {
@@ -282,6 +365,44 @@
 			};
 			name = Release;
 		};
+		C80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DMLL8HQFCU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.axel.wearbloom.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WearBloom.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WearBloom";
+			};
+			name = Debug;
+		};
+		C80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DMLL8HQFCU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.axel.wearbloom.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WearBloom.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WearBloom";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -303,6 +424,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C70000000000000000000001 /* Build configuration list for PBXNativeTarget "WearBloomTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C80000000000000000000001 /* Debug */,
+				C80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -312,6 +442,22 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 5.74.0;
+			};
+		};
+		B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.22.0;
+			};
+		};
+		B10000000000000000000006 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.66.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -326,6 +472,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
 			productName = RevenueCatUI;
+		};
+		B10000000000000000000005 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		B10000000000000000000007 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B10000000000000000000006 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

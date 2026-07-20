@@ -1,0 +1,8 @@
+{
+  "applinks": {
+    "details": [{
+      "appIDs": ["DMLL8HQFCU.com.axel.wearbloom"],
+      "components": [{ "/": "/share/*", "comment": "Future private, revocable look shares" }]
+    }]
+  }
+}

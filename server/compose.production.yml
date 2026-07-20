@@ -1,0 +1,112 @@
+name: wearbloom
+
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wearbloom
+      POSTGRES_USER: wearbloom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [private]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wearbloom -d wearbloom"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
+    entrypoint: ["bun", "run", "db:migrate"]
+    env_file: ${WEARBLOOM_ENV_FILE:-.env}
+    environment:
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+    networks: [private]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
+    restart: unless-stopped
+    env_file: ${WEARBLOOM_ENV_FILE:-.env}
+    environment:
+      ROLE: api
+      NODE_ENV: production
+      APP_ATTEST_REQUIRED: "true"
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+    volumes: [private-images:/app/data/private]
+    networks: [private, dokploy-network]
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wearbloom-api.rule=Host(`api.wearbloom.app`)
+      - traefik.http.routers.wearbloom-api.entrypoints=websecure
+      - traefik.http.routers.wearbloom-api.tls.certresolver=letsencrypt
+      - traefik.http.services.wearbloom-api.loadbalancer.server.port=3000
+
+  worker:
+    image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
+    command: ["bun", "src/worker.ts"]
+    restart: unless-stopped
+    env_file: ${WEARBLOOM_ENV_FILE:-.env}
+    environment:
+      ROLE: worker
+      NODE_ENV: production
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+    volumes: [private-images:/app/data/private]
+    networks: [private]
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: ../web
+    restart: unless-stopped
+    networks: [dokploy-network]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wearbloom-web.rule=Host(`wearbloom.app`)
+      - traefik.http.routers.wearbloom-web.entrypoints=websecure
+      - traefik.http.routers.wearbloom-web.tls.certresolver=letsencrypt
+      - traefik.http.services.wearbloom-web.loadbalancer.server.port=8080
+
+  database-backup:
+    image: postgres:16.9-alpine
+    profiles: [backup]
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?required}
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ["while true; do pg_dump -h postgres -U wearbloom -d wearbloom -Fc -f /backups/wearbloom-$$(date -u +%Y%m%dT%H%M%SZ).dump; find /backups -type f -mtime +7 -delete; sleep 86400; done"]
+    volumes: [database-backups:/backups]
+    networks: [private]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  offsite-backup:
+    image: restic/restic:0.18.0
+    profiles: [offsite-backup]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ["restic snapshots >/dev/null 2>&1 || restic init; while true; do restic backup /sources; restic forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune; sleep 86400; done"]
+    environment:
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - database-backups:/sources/database:ro
+      - private-images:/sources/images:ro
+
+networks:
+  private: { internal: true }
+  dokploy-network: { external: true }
+
+volumes:
+  postgres-data:
+  private-images:
+  database-backups:

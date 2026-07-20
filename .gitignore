@@ -18,6 +18,9 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# JavaScript / Bun dependencies
+node_modules/
+
 # Local tools
 .codex/
 .claude/
