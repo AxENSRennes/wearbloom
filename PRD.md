@@ -142,6 +142,8 @@ The server is a strict-TypeScript modular monolith built with Bun, Hono, Zod/Ope
 
 The REST API is versioned under `/v1` and described by OpenAPI. The server validates uploads and business inputs, returns structured errors and request identifiers, and makes expensive or retryable mutations idempotent.
 
+A server-side vision-language model detects garment categories and returns suggestions that the user can correct.
+
 Image generation uses one internal provider interface. OpenAI and Gemini can be evaluated and interchanged behind that interface, while only one provider and model are active at a time. Provider, model, resolution, and prompt version are production configuration rather than App Store release decisions.
 
 ### Images and storage
