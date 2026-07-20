@@ -50,6 +50,24 @@ struct ContentView: View {
                 }
                 .onPurchaseFailure { subscriptions.report($0) }
                 .onRestoreFailure { subscriptions.report($0) }
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: 7) {
+                        Text("WearBloom Pro includes up to 20 AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        HStack(spacing: 18) {
+                            Link("Privacy", destination: URL(string: "https://wearbloom.app/privacy.html")!)
+                            Link("Terms", destination: URL(string: "https://wearbloom.app/terms.html")!)
+                            Button("Restore") { Task { await subscriptions.restorePurchases() } }
+                        }
+                        .font(.caption.weight(.semibold))
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(.ultraThinMaterial)
+                }
         }
         .sheet(isPresented: $session.isProfilePresented) {
             SettingsView()

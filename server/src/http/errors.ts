@@ -20,6 +20,11 @@ const messages: Record<string, string> = {
   APP_ATTEST_REPLAYED: "The app integrity assertion has already been used.",
   APP_ATTEST_NOT_CONFIGURED: "App integrity verification is not configured.",
   RATE_LIMITED: "Too many requests. Please wait a moment and try again.",
+  APPLE_TOKEN_EXCHANGE_FAILED: "Sign in with Apple could not be completed. Please try again.",
+  APPLE_REFRESH_TOKEN_MISSING: "Apple did not provide the account credential needed for deletion. Please try again.",
+  APPLE_TOKEN_SUBJECT_MISMATCH: "Apple returned credentials for a different account. Please try again.",
+  APPLE_TOKEN_REVOCATION_FAILED: "Apple account access could not be revoked. Please try deleting again.",
+  APPLE_REAUTH_REQUIRED: "Continue with Apple again, then retry account deletion.",
 };
 
 type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 500;

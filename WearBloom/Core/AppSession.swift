@@ -19,6 +19,7 @@ final class AppSession {
     var isPaywallPresented = false
     var toast: String?
     var hasLinkedAppleAccount = UserDefaults.standard.bool(forKey: "hasLinkedAppleAccount")
+    var hasAIProcessingConsent = PrivacyChoices.hasAIProcessingConsent
     var serverRendersRemaining: Int?
 
     private(set) var freeRendersUsed: Int {
@@ -57,6 +58,11 @@ final class AppSession {
         activeLookID = nil
         resultVariantID = nil
         renderingVariantID = nil
+    }
+
+    func setAIProcessingConsent(_ allowed: Bool) {
+        PrivacyChoices.setAIProcessingConsent(allowed)
+        hasAIProcessingConsent = allowed
     }
 
     func load(_ look: Look) {

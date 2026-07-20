@@ -13,6 +13,8 @@ struct CreateView: View {
     @State private var pickingCategory: GarmentCategory?
     @State private var isReferencePickerPresented = false
     @State private var isRenderingPresented = false
+    @State private var isAIConsentPresented = false
+    @State private var shouldRenderAfterConsent = false
     @State private var resultVariant: RenderVariant?
 
     private var selectedReference: ReferencePhoto? {
@@ -57,6 +59,16 @@ struct CreateView: View {
         }
         .sheet(isPresented: $isReferencePickerPresented) {
             ReferencePickerView()
+        }
+        .sheet(isPresented: $isAIConsentPresented, onDismiss: {
+            guard shouldRenderAfterConsent else { return }
+            shouldRenderAfterConsent = false
+            startRender()
+        }) {
+            AIProcessingConsentView {
+                session.setAIProcessingConsent(true)
+                shouldRenderAfterConsent = true
+            }
         }
         .fullScreenCover(isPresented: $isRenderingPresented) {
             RenderProgressView().environment(session)
@@ -218,16 +230,12 @@ struct CreateView: View {
             .accessibilityLabel("Save look")
 
             Button {
-                isRenderingPresented = true
                 Task {
-                    await RenderNotificationCenter.shared.requestPermission()
-                    await session.beginRender(
-                        garments: garments,
-                        references: references,
-                        looks: looks,
-                        context: modelContext,
-                        isPro: subscriptions.isPro
-                    )
+                    if await WearBloomAPI.shared.isConfigured && !session.hasAIProcessingConsent {
+                        isAIConsentPresented = true
+                    } else {
+                        startRender()
+                    }
                 }
             } label: {
                 Label("Create preview", systemImage: "sparkles")
@@ -239,6 +247,20 @@ struct CreateView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
+    }
+
+    private func startRender() {
+        isRenderingPresented = true
+        Task {
+            await RenderNotificationCenter.shared.requestPermission()
+            await session.beginRender(
+                garments: garments,
+                references: references,
+                looks: looks,
+                context: modelContext,
+                isPro: subscriptions.isPro
+            )
+        }
     }
 
     private func saveDraft() {
@@ -258,6 +280,47 @@ struct CreateView: View {
         try? modelContext.save()
         Telemetry.event("look_saved", properties: ["piece_count": selected.count])
         session.showToast(String(localized: "Look saved."))
+    }
+}
+
+private struct AIProcessingConsentView: View {
+    @Environment(\.dismiss) private var dismiss
+    let consent: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Image(systemName: "wand.and.stars.inverse")
+                        .font(.system(size: 52))
+                        .foregroundStyle(BloomColor.violet)
+                    Text("Allow AI photo processing?")
+                        .font(.system(size: 30, weight: .bold))
+                    Text("To create a preview, WearBloom uploads the reference photo and garment photos you selected to our private servers and shares them with OpenAI, our AI image provider.")
+                    Text("The photos are used to classify garments and create your requested preview. They are not used for advertising or cross-app tracking. You can withdraw permission in Settings and delete stored photos and account data at any time.")
+                        .foregroundStyle(.secondary)
+                    Link("Read the privacy policy", destination: URL(string: "https://wearbloom.app/privacy.html")!)
+                        .fontWeight(.semibold)
+                    Button("Allow and create preview") {
+                        dismiss()
+                        consent()
+                    }
+                    .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
+                    Button("Not now") { dismiss() }
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(BloomColor.muted)
+                }
+                .padding(22)
+            }
+            .background(BloomColor.cream)
+            .navigationTitle("AI processing")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
     }
 }
 

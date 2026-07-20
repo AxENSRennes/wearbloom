@@ -8,7 +8,7 @@ struct WearBloomApp: App {
     private let modelContainer: ModelContainer
 
     init() {
-        Telemetry.configure()
+        Telemetry.configureIfAllowed()
         RevenueCatBootstrap.configure()
         _subscriptions = State(initialValue: SubscriptionManager())
         do {

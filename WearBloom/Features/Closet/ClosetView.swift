@@ -149,6 +149,7 @@ private struct FilterPill: View {
 }
 
 struct AddGarmentView: View {
+    @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var name = ""
@@ -246,7 +247,7 @@ struct AddGarmentView: View {
         isCleaningBackground = true
         imageData = await GarmentImageProcessor.shared.cleanBackground(from: data)
         isCleaningBackground = false
-        guard await WearBloomAPI.shared.isConfigured else { return }
+        guard await WearBloomAPI.shared.isConfigured, session.hasAIProcessingConsent else { return }
         isDetectingCategory = true
         do {
             let detection = try await WearBloomAPI.shared.detectGarment(data: data)

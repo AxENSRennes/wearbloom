@@ -2,27 +2,10 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { anonymous } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
-import { importPKCS8, SignJWT } from "jose";
+import { appleClientSecret } from "./apple-auth";
 import type { AppConfig } from "./config";
 import type { Database } from "./db/client";
 import * as schema from "./db/schema";
-
-async function appleClientSecret(config: AppConfig): Promise<string> {
-  const privateKey = config.APPLE_PRIVATE_KEY?.replaceAll("\\n", "\n");
-  if (!config.APPLE_CLIENT_ID || !config.APPLE_TEAM_ID || !config.APPLE_KEY_ID || !privateKey) {
-    throw new Error("Incomplete Apple authentication configuration");
-  }
-  const key = await importPKCS8(privateKey, "ES256");
-  const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "ES256", kid: config.APPLE_KEY_ID })
-    .setIssuer(config.APPLE_TEAM_ID)
-    .setSubject(config.APPLE_CLIENT_ID)
-    .setAudience("https://appleid.apple.com")
-    .setIssuedAt(now)
-    .setExpirationTime(now + 180 * 24 * 60 * 60)
-    .sign(key);
-}
 
 export function createAuth(config: AppConfig, db: Database) {
   const hasApple = Boolean(

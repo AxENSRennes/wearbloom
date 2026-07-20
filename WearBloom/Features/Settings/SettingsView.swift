@@ -10,11 +10,14 @@ struct SettingsView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @Query private var garments: [Garment]
     @Query private var looks: [Look]
     @Query private var references: [ReferencePhoto]
     @State private var isCustomerCenterPresented = false
-    @State private var isDeletingData = false
+    @State private var isDeleteConfirmationPresented = false
+    @State private var isDeletingAccount = false
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
     @State private var appleNonce: String?
 
     var body: some View {
@@ -60,6 +63,10 @@ struct SettingsView: View {
                     Button("Restore purchases", systemImage: "arrow.clockwise") {
                         Task { await subscriptions.restorePurchases() }
                     }
+                    Link(
+                        "Manage App Store subscription",
+                        destination: URL(string: "https://apps.apple.com/account/subscriptions")!
+                    )
                     Button("Subscription and support", systemImage: "person.text.rectangle") {
                         isCustomerCenterPresented = true
                     }
@@ -75,14 +82,36 @@ struct SettingsView: View {
                     NavigationLink("How WearBloom uses photos") {
                         PrivacyView()
                     }
-                    Button("Delete my data", systemImage: "trash", role: .destructive) {
-                        isDeletingData = true
+                    Toggle(
+                        "Allow AI photo processing",
+                        isOn: Binding(
+                            get: { session.hasAIProcessingConsent },
+                            set: { session.setAIProcessingConsent($0) }
+                        )
+                    )
+                    Toggle(
+                        "Share diagnostics and usage",
+                        isOn: Binding(
+                            get: { diagnosticsConsent },
+                            set: {
+                                diagnosticsConsent = $0
+                                Telemetry.setCollectionEnabled($0)
+                            }
+                        )
+                    )
+                    Text("AI processing shares only selected photos with OpenAI for the preview you request. Optional diagnostics and usage go to Sentry and PostHog; they never include your photos.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Delete account and data", systemImage: "trash", role: .destructive) {
+                        isDeleteConfirmationPresented = true
                     }
+                    .disabled(isDeletingAccount)
                 }
                 Section("About") {
-                    LabeledContent("Version", value: "1.0")
-                    Link("Privacy policy", destination: URL(string: "https://wearbloom.app/privacy")!)
-                    Link("Terms", destination: URL(string: "https://wearbloom.app/terms")!)
+                    LabeledContent("Version", value: appVersion)
+                    Link("Help and support", destination: URL(string: "https://wearbloom.app/support.html")!)
+                    Link("Privacy policy", destination: URL(string: "https://wearbloom.app/privacy.html")!)
+                    Link("Terms of use", destination: URL(string: "https://wearbloom.app/terms.html")!)
                 }
             }
             .tint(BloomColor.violet)
@@ -95,23 +124,41 @@ struct SettingsView: View {
                     .onCustomerCenterRestoreFailed { subscriptions.report($0) }
             }
             .confirmationDialog(
-                "Delete all WearBloom data?",
-                isPresented: $isDeletingData,
+                "Delete your WearBloom account?",
+                isPresented: $isDeleteConfirmationPresented,
                 titleVisibility: .visible
             ) {
-                Button("Delete all data", role: .destructive) { Task { await deleteAllData() } }
+                Button("Delete account now", role: .destructive) { Task { await deleteAllData() } }
+                Button("Manage subscription") {
+                    openURL(URL(string: "https://apps.apple.com/account/subscriptions")!)
+                }
             } message: {
-                Text("This permanently deletes your local garments, photos, looks, and variants. It does not cancel an App Store subscription.")
+                Text("This permanently deletes your account, private files, garments, photos, looks, and previews. Any App Store subscription continues until you cancel it with Apple.")
             }
         }
     }
 
+    private var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+        return "\(version) (\(build))"
+    }
+
     private func deleteAllData() async {
+        guard !isDeletingAccount else { return }
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
         do {
             try await WearBloomAPI.shared.deleteAccount()
         } catch {
             Telemetry.error(error, context: ["operation": "account_delete"])
-            session.showToast(String(localized: "Remote deletion could not be confirmed. Please try again."))
+            if case let APIClientError.server(code, _) = error, code == "APPLE_REAUTH_REQUIRED" {
+                session.hasLinkedAppleAccount = false
+                UserDefaults.standard.set(false, forKey: "hasLinkedAppleAccount")
+                session.showToast(String(localized: "Continue with Apple again, then retry deletion."))
+            } else {
+                session.showToast(String(localized: "Remote deletion could not be confirmed. Please try again."))
+            }
             return
         }
         for look in looks { modelContext.delete(look) }
@@ -121,6 +168,7 @@ struct SettingsView: View {
         session.resetDraft()
         session.hasLinkedAppleAccount = false
         UserDefaults.standard.set(false, forKey: "hasLinkedAppleAccount")
+        await subscriptions.logOut()
         Telemetry.event("account_data_deleted")
         dismiss()
     }
@@ -130,6 +178,8 @@ struct SettingsView: View {
               let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
               let tokenData = credential.identityToken,
               let token = String(data: tokenData, encoding: .utf8),
+              let codeData = credential.authorizationCode,
+              let authorizationCode = String(data: codeData, encoding: .utf8),
               let nonce = appleNonce else {
             if case let .failure(error) = result {
                 Telemetry.error(error, context: ["operation": "apple_sign_in"])
@@ -138,7 +188,11 @@ struct SettingsView: View {
         }
         Task {
             do {
-                try await WearBloomAPI.shared.signInWithApple(identityToken: token, nonce: nonce)
+                try await WearBloomAPI.shared.signInWithApple(
+                    identityToken: token,
+                    authorizationCode: authorizationCode,
+                    nonce: nonce
+                )
                 let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
                 await subscriptions.logIn(appUserID: status.userId)
@@ -194,7 +248,16 @@ private struct ManageReferencesView: View {
                 }
             }
             .onDelete { offsets in
-                for index in offsets { modelContext.delete(references[index]) }
+                for index in offsets {
+                    let reference = references[index]
+                    let id = reference.id
+                    modelContext.delete(reference)
+                    Task {
+                        do { try await WearBloomAPI.shared.deleteReference(id) }
+                        catch { Telemetry.error(error, context: ["operation": "reference_delete"]) }
+                    }
+                }
+                try? modelContext.save()
             }
         }
         .navigationTitle("Reference photos")
@@ -210,7 +273,9 @@ private struct PrivacyView: View {
                 Text("Your photos stay private")
                     .font(.system(size: 30, weight: .bold))
                 Text("Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them.")
-                Text("Deleting your account removes its associated records and files. WearBloom does not include photos or prompts in analytics.")
+                Text("With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings.")
+                Text("Optional product analytics and diagnostics are shared with PostHog and Sentry only if you opt in. WearBloom does not include photos or prompts in analytics.")
+                Text("Deleting your account removes its associated records and private files. App Store subscription cancellation is managed separately through Apple.")
                 Text("Previews are style inspiration—not a prediction of exact fit or sizing.")
             }
             .font(.system(size: 16))

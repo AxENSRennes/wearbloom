@@ -6,7 +6,13 @@ import Sentry
 enum Telemetry {
     private static let logger = Logger(subsystem: "app.wearbloom", category: "product")
 
-    static func configure() {
+    static var isCollectionEnabled: Bool {
+        UserDefaults.standard.bool(forKey: PrivacyChoices.diagnosticsConsentKey)
+    }
+
+    static func configureIfAllowed() {
+        guard isCollectionEnabled else { return }
+
         if let dsn = configurationValue("SENTRY_DSN") {
             SentrySDK.start { options in
                 options.dsn = dsn
@@ -28,18 +34,31 @@ enum Telemetry {
             config.captureElementInteractions = false
             config.sessionReplay = false
             PostHogSDK.shared.setup(config)
+            PostHogSDK.shared.optIn()
+        }
+    }
+
+    static func setCollectionEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: PrivacyChoices.diagnosticsConsentKey)
+        if enabled {
+            configureIfAllowed()
+        } else {
+            PostHogSDK.shared.optOut()
+            PostHogSDK.shared.reset()
+            PostHogSDK.shared.close()
+            SentrySDK.close()
         }
     }
 
     static func event(_ name: String, properties: [String: Any] = [:]) {
         logger.info("event=\(name, privacy: .public)")
-        guard configurationValue("POSTHOG_API_KEY") != nil else { return }
+        guard isCollectionEnabled, configurationValue("POSTHOG_API_KEY") != nil else { return }
         PostHogSDK.shared.capture(name, properties: properties)
     }
 
     static func error(_ error: Error, context: [String: String] = [:]) {
         logger.error("error=\(error.localizedDescription, privacy: .public)")
-        guard configurationValue("SENTRY_DSN") != nil else { return }
+        guard isCollectionEnabled, configurationValue("SENTRY_DSN") != nil else { return }
         SentrySDK.configureScope { scope in
             for (key, value) in context { scope.setTag(value: value, key: key) }
         }

@@ -92,7 +92,7 @@ services:
     profiles: [offsite-backup]
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-ec"]
-    command: ["restic snapshots >/dev/null 2>&1 || restic init; while true; do restic backup /sources; restic forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune; sleep 86400; done"]
+    command: ["restic snapshots >/dev/null 2>&1 || restic init; while true; do restic backup /sources; restic forget --keep-within 7d --prune; sleep 86400; done"]
     environment:
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
       RESTIC_PASSWORD: ${RESTIC_PASSWORD:-}

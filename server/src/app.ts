@@ -1,5 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, gt, sql } from "drizzle-orm";
+import { decodeJwt } from "jose";
+import { z } from "zod";
+import { exchangeAppleAuthorizationCode } from "./apple-auth";
 import type { Auth } from "./auth";
 import type { AppConfig } from "./config";
 import type { Database } from "./db/client";
@@ -34,6 +37,46 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
     const [heartbeat] = await deps.db.select().from(schema.workerHeartbeats)
       .where(gt(schema.workerHeartbeats.lastSeenAt, new Date(Date.now() - 60_000))).limit(1);
     return c.json({ status: "ok", api: true, worker: Boolean(heartbeat), version: "1.0.0" });
+  });
+
+  app.post("/v1/auth/sign-in/apple-native", async (c) => {
+    const input = z.object({
+      identityToken: z.string().min(1),
+      authorizationCode: z.string().min(1),
+      nonce: z.string().min(1),
+    }).parse(await c.req.json());
+    const tokens = await exchangeAppleAuthorizationCode(deps.config, input.authorizationCode);
+    const subject = decodeJwt(input.identityToken).sub;
+    if (!subject || decodeJwt(tokens.idToken).sub !== subject) {
+      throw new Error("APPLE_TOKEN_SUBJECT_MISMATCH");
+    }
+    const headers = new Headers(c.req.raw.headers);
+    headers.delete("content-length");
+    headers.set("content-type", "application/json");
+    const authResponse = await deps.auth.handler(new Request(
+      new URL("/v1/auth/sign-in/social", deps.config.BETTER_AUTH_URL).toString(),
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          provider: "apple",
+          idToken: {
+            token: input.identityToken,
+            nonce: input.nonce,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+          },
+        }),
+      },
+    ));
+    if (authResponse.ok) {
+      await deps.db.update(schema.account).set({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        updatedAt: new Date(),
+      }).where(and(eq(schema.account.providerId, "apple"), eq(schema.account.accountId, subject)));
+    }
+    return authResponse;
   });
 
   app.on(["GET", "POST"], "/v1/auth/*", (c) => deps.auth.handler(c.req.raw));

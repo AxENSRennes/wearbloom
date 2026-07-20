@@ -10,6 +10,7 @@ import type { GarmentDetector } from "../ai/detection";
 import { inspectImage } from "../images/metadata";
 import type { PrivateStorage } from "../storage/storage";
 import { AppAttestError, type AppAttestVerifier } from "../security/app-attest";
+import { revokeAppleToken } from "../apple-auth";
 import { apiError } from "./errors";
 import { categorySchema, errorSchema, garmentInputSchema, idSchema, lookSchema, renderSchema, standardErrors } from "./schemas";
 
@@ -89,6 +90,11 @@ const saveReferenceRoute = createRoute({
   },
 });
 
+const deleteReferenceRoute = createRoute({
+  method: "delete", path: "/references/{id}", tags: ["Images"], request: { params: z.object({ id: idSchema }) },
+  responses: { 204: { description: "Reference image deleted idempotently" }, ...standardErrors },
+});
+
 const saveLookRoute = createRoute({
   method: "put",
   path: "/looks/{id}",
@@ -136,7 +142,11 @@ const feedbackRoute = createRoute({
 
 const deleteAccountRoute = createRoute({
   method: "delete", path: "/account", tags: ["Account"],
-  responses: { 202: { content: { "application/json": { schema: z.object({ cleanupQueued: z.number().int() }) } }, description: "Business data deleted and file cleanup queued" }, ...standardErrors },
+  responses: {
+    202: { content: { "application/json": { schema: z.object({ cleanupQueued: z.number().int() }) } }, description: "Business data deleted and file cleanup queued" },
+    409: { content: { "application/json": { schema: errorSchema } }, description: "Sign in with Apple reauthentication required" },
+    ...standardErrors,
+  },
 });
 
 const accountStatusRoute = createRoute({
@@ -236,6 +246,23 @@ export function createV1Routes(deps: Dependencies) {
     return c.json({ id, assetId: asset.id, isDefault: body.isDefault }, 200);
   });
 
+  app.openapi(deleteReferenceRoute, async (c) => {
+    const ownerId = c.get("userId");
+    const id = c.req.valid("param").id;
+    const [reference] = await deps.db.select({ asset: schema.assets }).from(schema.referencePhotos)
+      .innerJoin(schema.assets, eq(schema.referencePhotos.assetId, schema.assets.id))
+      .where(and(eq(schema.referencePhotos.id, id), eq(schema.referencePhotos.ownerId, ownerId))).limit(1);
+    if (!reference || reference.asset.deletedAt) return c.body(null, 204);
+    await deps.db.transaction(async (transaction) => {
+      await transaction.insert(schema.cleanupJobs).values({ storageKey: reference.asset.storageKey }).onConflictDoNothing();
+      await transaction.update(schema.assets).set({ deletedAt: new Date() }).where(and(
+        eq(schema.assets.id, reference.asset.id),
+        eq(schema.assets.ownerId, ownerId),
+      ));
+    });
+    return c.body(null, 204);
+  });
+
   app.openapi(saveLookRoute, async (c) => {
     const ownerId = c.get("userId");
     const { id } = c.req.valid("param");
@@ -277,7 +304,13 @@ export function createV1Routes(deps: Dependencies) {
       const [existing] = await transaction.select().from(schema.idempotencyKeys).where(and(eq(schema.idempotencyKeys.ownerId, ownerId), eq(schema.idempotencyKeys.key, key))).limit(1);
       if (existing?.responseBody) return existing.responseBody as RenderResponse;
       const [look] = await transaction.select().from(schema.looks).where(and(eq(schema.looks.id, body.lookId), eq(schema.looks.ownerId, ownerId), isNull(schema.looks.deletedAt))).limit(1);
-      const [reference] = await transaction.select().from(schema.referencePhotos).where(and(eq(schema.referencePhotos.id, body.referencePhotoId), eq(schema.referencePhotos.ownerId, ownerId))).limit(1);
+      const [reference] = await transaction.select({ id: schema.referencePhotos.id }).from(schema.referencePhotos)
+        .innerJoin(schema.assets, eq(schema.referencePhotos.assetId, schema.assets.id))
+        .where(and(
+          eq(schema.referencePhotos.id, body.referencePhotoId),
+          eq(schema.referencePhotos.ownerId, ownerId),
+          isNull(schema.assets.deletedAt),
+        )).limit(1);
       if (!look || !reference) throw new Error("NOT_FOUND");
       const pieces = await transaction.select({ id: schema.garments.id, category: schema.lookGarments.category, name: schema.garments.name, assetId: schema.garments.originalAssetId })
         .from(schema.lookGarments).innerJoin(schema.garments, eq(schema.lookGarments.garmentId, schema.garments.id)).where(eq(schema.lookGarments.lookId, look.id));
@@ -336,6 +369,19 @@ export function createV1Routes(deps: Dependencies) {
 
   app.openapi(deleteAccountRoute, async (c) => {
     const ownerId = c.get("userId");
+    const [appleAccount] = await deps.db.select().from(schema.account).where(and(
+      eq(schema.account.userId, ownerId),
+      eq(schema.account.providerId, "apple"),
+    )).limit(1);
+    if (appleAccount) {
+      const revocationToken = appleAccount.refreshToken ?? appleAccount.accessToken;
+      if (!revocationToken) return apiError(c, "APPLE_REAUTH_REQUIRED", 409);
+      await revokeAppleToken(
+        deps.config,
+        revocationToken,
+        appleAccount.refreshToken ? "refresh_token" : "access_token",
+      );
+    }
     const ownedAssets = await deps.db.select({ storageKey: schema.assets.storageKey }).from(schema.assets).where(eq(schema.assets.ownerId, ownerId));
     await deps.db.transaction(async (transaction) => {
       if (ownedAssets.length) await transaction.insert(schema.cleanupJobs).values(ownedAssets.map((asset) => ({ storageKey: asset.storageKey }))).onConflictDoNothing();

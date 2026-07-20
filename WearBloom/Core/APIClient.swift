@@ -165,17 +165,22 @@ actor WearBloomAPI {
         try await deleteResource(path: "/v1/garments/\(id.uuidString.lowercased())")
     }
 
+    func deleteReference(_ id: UUID) async throws {
+        try await deleteResource(path: "/v1/references/\(id.uuidString.lowercased())")
+    }
+
     func deleteLook(_ id: UUID) async throws {
         try await deleteResource(path: "/v1/looks/\(id.uuidString.lowercased())")
     }
 
-    func signInWithApple(identityToken: String, nonce: String) async throws {
+    func signInWithApple(identityToken: String, authorizationCode: String, nonce: String) async throws {
         try await ensureAnonymousSession()
         let body = try JSONEncoder().encode(AppleSignInBody(
-            provider: "apple",
-            idToken: .init(token: identityToken, nonce: nonce)
+            identityToken: identityToken,
+            authorizationCode: authorizationCode,
+            nonce: nonce
         ))
-        _ = try await request(path: "/v1/auth/sign-in/social", method: "POST", body: body)
+        _ = try await request(path: "/v1/auth/sign-in/apple-native", method: "POST", body: body)
     }
 
     private func resolveAsset(existing: UUID?, data: Data, purpose: String) async throws -> UUID {
@@ -332,9 +337,9 @@ private struct DetectGarmentBody: Encodable { let assetId: UUID }
 private struct DetectionResponse: Decodable { let category: String; let confidence: Double }
 private struct FeedbackBody: Encodable { let looksLikeMe: Bool; let helpful: Bool }
 private struct AppleSignInBody: Encodable {
-    struct Token: Encodable { let token: String; let nonce: String }
-    let provider: String
-    let idToken: Token
+    let identityToken: String
+    let authorizationCode: String
+    let nonce: String
 }
 private struct RenderResponse: Decodable {
     let id: UUID
