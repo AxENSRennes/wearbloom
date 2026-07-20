@@ -188,6 +188,8 @@ VPS / Dokploy / Traefik
 - Same-VPS backups are acceptable during initial development; encrypted off-VPS backups are required before meaningful public scale.
 - `wearbloom.app` serves the Apple association file required by Universal Links and can later serve private sharing pages.
 
+Use the Dokploy MCP when inspecting or changing the VPS. Throughout implementation, consult the latest official documentation for every technology and API rather than relying on outdated examples or assumptions. Existing WearBloom code or services on the VPS are legacy and may be discarded and rebuilt cleanly when they conflict with this PRD.
+
 ## 9. Configurable decisions
 
 These choices may change without rewriting the architecture and should not block implementation:
