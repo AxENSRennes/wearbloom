@@ -1,8 +1,0 @@
-{
-  "extends": "@acme/tsconfig/compiled-package.json",
-  "compilerOptions": {
-    "types": ["node", "bun"]
-  },
-  "include": ["src"],
-  "exclude": ["node_modules"]
-}

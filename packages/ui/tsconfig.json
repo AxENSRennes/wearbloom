@@ -1,9 +1,0 @@
-{
-  "extends": "@acme/tsconfig/base.json",
-  "compilerOptions": {
-    "jsx": "react-native",
-    "rootDir": "."
-  },
-  "include": ["src", "test", "nativewind-env.d.ts"],
-  "exclude": ["node_modules"]
-}

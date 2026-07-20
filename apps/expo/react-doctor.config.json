@@ -1,5 +1,0 @@
-{
-  "ignore": {
-    "rules": ["react-doctor/rn-no-raw-text"]
-  }
-}
