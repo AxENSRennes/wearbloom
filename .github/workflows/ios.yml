@@ -1,0 +1,104 @@
+name: iOS CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  SCHEME: WearBloom
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_IOS }}
+  SENTRY_DSN_IOS: ${{ vars.SENTRY_DSN_IOS }}
+  POSTHOG_PROJECT_API_KEY: ${{ vars.POSTHOG_PROJECT_API_KEY }}
+  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+  POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+
+jobs:
+  build:
+    name: Build native iOS app
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect Xcode container
+        id: xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workspace="$(find . -maxdepth 3 -name '*.xcworkspace' -not -path '*/xcuserdata/*' -print -quit)"
+          project="$(find . -maxdepth 3 -name '*.xcodeproj' -print -quit)"
+
+          if [[ -n "$workspace" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "kind=workspace" >> "$GITHUB_OUTPUT"
+            echo "path=${workspace#./}" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$project" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "kind=project" >> "$GITHUB_OUTPUT"
+            echo "path=${project#./}" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Native project bootstrap pending
+        if: steps.xcode.outputs.available != 'true'
+        run: echo "No Xcode project exists yet; the repository is ready for the native iOS bootstrap."
+
+      - name: Validate integration configuration
+        if: steps.xcode.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required=(
+            SENTRY_AUTH_TOKEN
+            SENTRY_ORG
+            SENTRY_PROJECT
+            SENTRY_DSN_IOS
+            POSTHOG_PROJECT_API_KEY
+            POSTHOG_HOST
+            POSTHOG_PROJECT_ID
+          )
+
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing GitHub Actions configuration: $name"
+              exit 1
+            fi
+          done
+
+      - name: Build for iOS Simulator
+        if: steps.xcode.outputs.available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          args=()
+          if [[ "${{ steps.xcode.outputs.kind }}" == "workspace" ]]; then
+            args+=("-workspace" "${{ steps.xcode.outputs.path }}")
+          else
+            args+=("-project" "${{ steps.xcode.outputs.path }}")
+          fi
+
+          xcodebuild \
+            "${args[@]}" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
