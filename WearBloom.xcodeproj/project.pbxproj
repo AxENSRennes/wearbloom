@@ -119,7 +119,19 @@
 					A10000000000000000000001 = {
 						CreatedOnToolsVersion = 26.6;
 						SystemCapabilities = {
+							com.apple.AppAttest = {
+								enabled = 1;
+							};
+							com.apple.AssociatedDomains = {
+								enabled = 1;
+							};
 							com.apple.InAppPurchase = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
+							com.apple.SignInWithApple = {
 								enabled = 1;
 							};
 						};

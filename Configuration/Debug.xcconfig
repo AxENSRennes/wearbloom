@@ -2,5 +2,6 @@
 
 // RevenueCat Test Store public SDK key. Never use this configuration for App Store builds.
 REVENUECAT_API_KEY = test_BqDLdsuKuMfYNcCcDKapFvpVwDd
+APS_ENVIRONMENT = development
+APP_ATTEST_ENVIRONMENT = development
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
-
