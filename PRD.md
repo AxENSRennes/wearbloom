@@ -277,7 +277,7 @@ Google also lists approximately $0.0011 per input image for Nano Banana Pro. Wit
 
 GPT Image 2 charges $8 per million input-image tokens and processes references in high fidelity. Exact cost therefore depends on image dimensions and the number of garments. The OpenAI figures in the table represent output cost only.
 
-Google positions Nano Banana 2 as its general-purpose model for multiple references, while Nano Banana Pro targets the most complex visual tasks. The WearBloom benchmark must therefore compare at least GPT Image 2 medium, GPT Image 2 high, Nano Banana 2, and Nano Banana Pro. The winner is selected by **cost per accepted render**, not cost per successful request.
+Google positions Nano Banana 2 as its general-purpose model for multiple references, while Nano Banana Pro targets the most complex visual tasks. The launch provider and model are selected through direct product evaluation on representative consented photos. The selection optimizes **cost per accepted render**, not cost per successful request.
 
 As an illustrative scenario, a $9.99 subscription leaves approximately $8.49 before taxes for a developer eligible for the App Store Small Business Program's 15% commission. Even 20 Nano Banana Pro 1K/2K renders would represent approximately $2.77 in direct AI cost with four input images, leaving an attractive theoretical gross margin. This margin must still be validated against real regeneration and failure rates.
 
@@ -524,7 +524,7 @@ Each implementation receives a reference photo, an ordered garment list, and com
 
 The active provider, model, resolution, and prompt version are configured in Dokploy. Changing providers does not require an App Store release. Per-render metrics include model, estimated cost, latency, input count, acceptance status, and rejection reason.
 
-The initial benchmark selects the default configuration. The other provider remains a disabled fallback, not a second automatic route that would silently double costs.
+The selected launch configuration is the default. The other provider remains a disabled fallback, not a second automatic route that would silently double costs.
 
 ### 8.9 Images and storage
 
@@ -538,8 +538,10 @@ Initial storage uses a persistent VPS Docker volume behind an `ImageStorage` int
 - two-phase deletion: database marking followed by idempotent cleanup;
 - full account deletion includes files, business rows, and the Better Auth identity;
 - limits on file size, dimensions, and image count;
-- daily PostgreSQL backups and an encrypted off-VPS backup of the image volume;
-- documented restoration test before public launch.
+- daily logical PostgreSQL backups and daily archives of the image volume stored in a dedicated backup volume on the same VPS for the MVP;
+- retention of seven daily backups and four weekly backups, with automatic pruning;
+- documented restoration test before public launch;
+- the MVP explicitly accepts that a same-VPS backup does not protect against loss of the server or its disk. Off-VPS encrypted backups are introduced after initial product validation and before infrastructure scale-up.
 
 `ImageStorage` must be replaceable later with S3 or R2 without changing routes or the business model.
 
@@ -669,18 +671,6 @@ VPS / Dokploy / Traefik
 2. **Reference photo:** Preserve the original background, normalize to an editorial setting, or offer multiple modes?
 3. **Paywall:** Blur the third result or block generation before it starts?
 4. **Brand voice:** Editorial stylist, supportive friend, or almost-silent interface?
-5. **Final price:** $9.99, $12.99, or $14.99 per month after the benchmark and interviews?
+5. **Final price:** $9.99, $12.99, or $14.99 per month after initial render evaluation and interviews?
 6. **Quality reimbursement:** Manual goodwill adjustment or controlled regeneration, with no automatically exploitable refund?
-7. **Infrastructure:** Confirm disk capacity, RAM, and the off-VPS backup solution before launch.
-
-## 10. Recommended next step before development
-
-Build a **validation spike**, not the full app yet:
-
-- compare two or three providers and models on a consented photo set;
-- test no more than three categories;
-- score face and body fidelity, garment fidelity, artifacts, latency, and cost;
-- have five to ten target users evaluate the results;
-- select the model and supported category only if the render genuinely helps with a decision.
-
-The final PRD is completed after resolving the open decisions and reviewing the spike results.
+7. **Infrastructure capacity:** The MVP uses same-VPS backups as specified above. Reassess disk capacity and RAM before public scale-up.

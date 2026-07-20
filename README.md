@@ -2,6 +2,10 @@
 
 WearBloom is being rebuilt as a native iOS application using SwiftUI.
 
+Open `WearBloom.xcodeproj` and run the shared `WearBloom` scheme. The initial target uses Xcode 26.6, Swift 6 strict concurrency, and iOS 26 as specified by the PRD.
+
+RevenueCat setup and dashboard instructions are documented in `docs/revenuecat-ios.md`.
+
 The product and technical source of truth is [PRD.md](PRD.md). The repository intentionally contains only the specification and bootstrap configuration until the native application is generated.
 
 The previous Expo/full-stack implementation remains available in Git history and under the `legacy-web-app` tag.

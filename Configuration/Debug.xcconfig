@@ -1,0 +1,6 @@
+#include "Base.xcconfig"
+
+// RevenueCat Test Store public SDK key. Never use this configuration for App Store builds.
+REVENUECAT_API_KEY = test_BqDLdsuKuMfYNcCcDKapFvpVwDd
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+
