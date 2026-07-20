@@ -386,6 +386,21 @@ The UI is Apple-native by default. WearBloom uses SwiftUI and Apple platform fra
 
 WearBloom does not adopt a third-party design system, general-purpose component library, image-loading UI framework, or animation runtime in the initial implementation. Its visual identity is implemented in the internal `DesignSystem` module through semantic tokens, branded SwiftUI components, motion primitives, image treatments, and accessibility behavior. RevenueCat, Sentry, and PostHog are infrastructure SDKs and do not supply the product's interface; in particular, the subscription and paywall screens are custom WearBloom SwiftUI views.
 
+#### Selected visual direction
+
+The primary visual reference for the initial product is the selected mock at `design-directions/06-selected-direction.html`. The mock's former working title is not a product name, feature name, or candidate brand name and must not appear in the shipped interface.
+
+The implementation uses this mock as a source of art direction rather than as a pixel-perfect web specification. The reference establishes:
+
+- an organic, collage-led composition with floating garment cards and a warm, personal feel;
+- an energetic palette led by electric violet and acid lime, with coral, warm neutral, and near-black supporting colors;
+- an expressive editorial serif paired with a clear geometric sans serif, prototyped with Fraunces and Space Grotesk;
+- rounded, tactile surfaces combined with confident outlines, offset shadows, and a small amount of graphic tension;
+- a supportive, creative, and more assertive voice rather than a cold luxury or purely utilitarian tone;
+- image-first create and reveal screens that retain clear native actions, privacy messaging, generation rules, and accessible contrast.
+
+The device frame, browser navigation, proposal labels, and comparison-page chrome are presentation scaffolding and are not part of the app design system. Production recreates the visual principles with semantic SwiftUI tokens and native components. Final typeface selection must confirm licensing, performance, legibility, Dynamic Type behavior, and localization support before release.
+
 The initial image pipeline uses Apple frameworks only. Personal photos and closet images are local-first. Server-hosted renders and required thumbnails are downloaded with URLSession, persisted locally, downsampled with ImageIO to their display size, and served through a bounded memory and disk cache owned by `Core/Images`. The interface does not depend on transient signed URLs remaining valid after the first successful download.
 
 A focused third-party UI-adjacent dependency may be proposed later only after profiling or a concrete product requirement demonstrates that the native implementation is insufficient. Adoption requires an explicit update to this PRD, a documented benefit, Swift Package Manager distribution, support for the deployment target and Swift strict concurrency, an internal abstraction boundary, accessibility verification, and a viable removal path. The implementation agent must not add such a dependency preemptively.
@@ -670,7 +685,6 @@ VPS / Dokploy / Traefik
 1. **Initial segment:** Which English-speaking women's subculture or situation should guide the first organic content?
 2. **Reference photo:** Preserve the original background, normalize to an editorial setting, or offer multiple modes?
 3. **Paywall:** Blur the third result or block generation before it starts?
-4. **Brand voice:** Editorial stylist, supportive friend, or almost-silent interface?
-5. **Final price:** $9.99, $12.99, or $14.99 per month after initial render evaluation and interviews?
-6. **Quality reimbursement:** Manual goodwill adjustment or controlled regeneration, with no automatically exploitable refund?
-7. **Infrastructure capacity:** The MVP uses same-VPS backups as specified above. Reassess disk capacity and RAM before public scale-up.
+4. **Final price:** $9.99, $12.99, or $14.99 per month after initial render evaluation and interviews?
+5. **Quality reimbursement:** Manual goodwill adjustment or controlled regeneration, with no automatically exploitable refund?
+6. **Infrastructure capacity:** The MVP uses same-VPS backups as specified above. Reassess disk capacity and RAM before public scale-up.

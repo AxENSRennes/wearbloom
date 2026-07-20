@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WearBloom — 6 directions artistiques</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&family=Manrope:wght@500;700&family=Space+Grotesk:wght@600;700&display=swap');
+    body { background: #f2f0e9; }
+    .index-head { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; padding: clamp(54px, 9vw, 130px) clamp(24px, 6vw, 92px) 70px; }
+    .index-kicker { margin: 0 0 22px; color: #77736b; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; }
+    .index-head h1 { max-width: 10ch; margin: 0; font: 500 clamp(64px, 10vw, 150px)/.83 "Bodoni Moda", serif; letter-spacing: -.07em; }
+    .index-copy { align-self: end; max-width: 39ch; margin: 0 0 10px; color: #68645d; font-size: 17px; line-height: 1.6; }
+    .index-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #c9c5bc; border-block: 1px solid #c9c5bc; }
+    .proposal-card { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 560px; padding: clamp(28px, 5vw, 70px); overflow: hidden; text-decoration: none; background: var(--card-bg); color: var(--card-ink); }
+    .proposal-card:nth-child(6) { grid-column: 1 / -1; min-height: 510px; }
+    .proposal-card::after { content: "↗"; position: absolute; right: 34px; top: 30px; font-size: 24px; transition: transform .25s ease; }
+    .proposal-card:hover::after { transform: translate(5px,-5px); }
+    .proposal-card__number { font: 500 12px/1 "DM Mono", monospace; letter-spacing: .12em; }
+    .proposal-card h2 { max-width: 7ch; margin: 0 0 20px; font-family: var(--card-font); font-size: clamp(52px, 7vw, 102px); line-height: .86; letter-spacing: var(--card-track, -.06em); text-transform: var(--card-transform, none); }
+    .proposal-card p { max-width: 34ch; margin: 0; color: var(--card-muted); line-height: 1.55; }
+    .proposal-card__motif { position: absolute; inset: 14% -4% auto auto; width: 45%; aspect-ratio: 1; pointer-events: none; }
+    .proposal-card--atelier { --card-bg:#f1e6d7; --card-ink:#3a181e; --card-muted:#795d5f; --card-font:"Bodoni Moda",serif; }
+    .proposal-card--atelier .proposal-card__motif { border: 1px solid #9d3149; border-radius: 50%; box-shadow: -46px 48px 0 #9d3149; transform: rotate(-14deg); }
+    .proposal-card--kinetic { --card-bg:#151515; --card-ink:#d7ff37; --card-muted:#e8e6dc; --card-font:"Space Grotesk",sans-serif; --card-track:-.075em; --card-transform:uppercase; }
+    .proposal-card--kinetic .proposal-card__motif { background:#513cff; clip-path:polygon(50% 0,63% 34%,100% 22%,72% 51%,100% 78%,63% 66%,50% 100%,37% 66%,0 78%,28% 51%,0 22%,37% 34%); transform:rotate(10deg); }
+    .proposal-card--quiet { --card-bg:#e8e6df; --card-ink:#111; --card-muted:#66635d; --card-font:"Helvetica Neue",sans-serif; --card-track:-.075em; --card-transform:uppercase; }
+    .proposal-card--quiet .proposal-card__motif { border-left: 1px solid #111; border-right: 1px solid #111; transform: skew(-19deg); }
+    .proposal-card--muse { --card-bg:#efdcf5; --card-ink:#492756; --card-muted:#765e7c; --card-font:"Fraunces",serif; --card-track:-.045em; }
+    .proposal-card--muse .proposal-card__motif { background:radial-gradient(circle at 38% 38%,#ff795f 0 18%,transparent 19%),radial-gradient(circle at 68% 62%,#7945aa 0 20%,transparent 21%),#f7c7d7; border-radius:48% 52% 63% 37%/42% 35% 65% 58%; }
+    .proposal-card--catalog { --card-bg:#f4da42; --card-ink:#183496; --card-muted:#384b8c; --card-font:"DM Mono",monospace; --card-track:-.06em; --card-transform:uppercase; }
+    .proposal-card--catalog .proposal-card__motif { width:32%; background:repeating-linear-gradient(90deg,#183496 0 3px,transparent 3px 18px); }
+    .proposal-card--selected { --card-bg:#5b3df5; --card-ink:#d8ff3e; --card-muted:#f6eee6; --card-font:"Fraunces",serif; --card-track:-.05em; }
+    .proposal-card--selected .proposal-card__motif { background:radial-gradient(circle at 35% 38%,#ff6a55 0 21%,transparent 22%),radial-gradient(circle at 70% 64%,#d8ff3e 0 23%,transparent 24%);border:2px solid #d8ff3e;border-radius:44% 56% 66% 34%/48% 38% 62% 52%;transform:rotate(12deg); }
+    .index-foot { display:flex; justify-content:space-between; gap:20px; padding:28px clamp(24px,6vw,92px) 50px; color:#77736b; font-size:12px; }
+    @media (max-width: 760px) { .index-head { grid-template-columns:1fr; } .index-grid { grid-template-columns:1fr; } .proposal-card:nth-child(6){grid-column:auto;} .proposal-card{min-height:480px;} }
+  </style>
+</head>
+<body>
+  <header class="index-head">
+    <div><p class="index-kicker">WearBloom / Art direction study</p><h1>Choose a world.</h1></div>
+    <p class="index-copy">Six systèmes visuels complets pour la même promesse produit. Chaque direction possède sa propre composition, typographie, iconographie, densité et manière de mettre les images en scène.</p>
+  </header>
+  <main class="index-grid">
+    <a class="proposal-card proposal-card--atelier" data-proposal-link href="01-atelier-editorial.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">01 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Atelier Editorial</h2><p>Maison de mode indépendante, tactilité du papier, compositions asymétriques et voix de styliste.</p></div>
+    </a>
+    <a class="proposal-card proposal-card--kinetic" data-proposal-link href="02-kinetic-pop.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">02 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Kinetic Pop</h2><p>Une expérience très digitale, énergique et sociale, pensée comme un drop de mode.</p></div>
+    </a>
+    <a class="proposal-card proposal-card--quiet" data-proposal-link href="03-quiet-gallery.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">03 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Quiet Gallery</h2><p>Une galerie silencieuse et radicale où chaque photo devient l’objet principal.</p></div>
+    </a>
+    <a class="proposal-card proposal-card--muse" data-proposal-link href="04-digital-muse.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">04 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Digital Muse</h2><p>Une DA expressive et rassurante, entre magazine beauté et compagnon personnel.</p></div>
+    </a>
+    <a class="proposal-card proposal-card--catalog" data-proposal-link href="05-neo-catalog.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">05 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Neo Catalog</h2><p>Un catalogue moderniste, fonctionnel et très identifiable, construit autour des vêtements et de leurs données.</p></div>
+    </a>
+    <a class="proposal-card proposal-card--selected" data-proposal-link href="06-selected-direction.html" target="_blank" rel="noopener">
+      <span class="proposal-card__number">06 / 06</span><span class="proposal-card__motif"></span>
+      <div><h2>Direction retenue</h2><p>La référence visuelle principale de WearBloom : organique, chaleureuse, électrique et affirmée.</p></div>
+    </a>
+  </main>
+  <footer class="index-foot"><span>PRD source · 20 July 2026</span><span>Chaque carte ouvre une page indépendante ↗</span></footer>
+  <script src="shared.js"></script>
+</body>
+</html>
