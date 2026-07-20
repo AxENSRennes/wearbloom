@@ -201,4 +201,4 @@ These choices may change without rewriting the architecture and should not block
 
 ## 10. Definition of completion
 
-The app is considered complete only after it has been tested end to end in the iOS Simulator.
+The app is considered complete only when it is an ambitious implementation of this PRD, has been tested end to end in the iOS Simulator against these requirements, and is ready and eligible for publication on the App Store.
