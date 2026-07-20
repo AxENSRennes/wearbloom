@@ -598,6 +598,8 @@ WearBloom uses PostHog Cloud in the EU region at launch. Self-hosting is not sel
 
 At launch, WearBloom uses no advertising, advertising identifier, or cross-app tracking. No App Tracking Transparency prompt is displayed while that remains true. App Privacy declarations must reflect Better Auth, RevenueCat, Sentry, PostHog, diagnostics, purchases, and photos sent to the service. Analytics consent and deletion requests follow the requirements of every distributed territory.
 
+The app is considered complete only after it has been tested end to end in the iOS Simulator.
+
 ### 8.12 Internationalization and future translation
 
 The launch release is available only in US English (`en-US`), which remains the source language and ultimate fallback. The architecture is nevertheless localizable from the first commit.
