@@ -29,7 +29,7 @@ Official sources:
 Do not submit until every item below is complete.
 
 - Replace `REVENUECAT_API_KEY` in `Configuration/Release.xcconfig` with the production public Apple SDK key. The Release app intentionally fails fast with the placeholder.
-- Decide whether optional diagnostics will ship. If yes, replace the Sentry and PostHog placeholders and configure both providers for no more than the 12-month retention promised in the privacy policy. If no, leave the keys unset and remove the diagnostics toggle and related policy statements before submission.
+- PostHog is configured for the EU project with its current default analytics retention of up to 84 months, as disclosed in the privacy policy. Finish configuring Sentry and ensure its crash and diagnostic retention does not exceed the separately disclosed 12-month limit. If Sentry will not ship, leave its DSN unset and remove its diagnostics disclosure before submission.
 - Confirm production and offsite backup pruning runs successfully and does not exceed the 8-day maximum disclosed in the privacy policy.
 - Deploy `web/public` and verify that each URL returns `200`, meaningful HTML, and a valid TLS certificate in a logged-out browser:
   - `https://wearbloom.app/privacy.html`

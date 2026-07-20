@@ -170,6 +170,7 @@ struct SettingsView: View {
         UserDefaults.standard.set(false, forKey: "hasLinkedAppleAccount")
         await subscriptions.logOut()
         Telemetry.event("account_data_deleted")
+        Telemetry.resetIdentity()
         dismiss()
     }
 
@@ -195,6 +196,7 @@ struct SettingsView: View {
                 )
                 let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
+                Telemetry.identify(userID: status.userId)
                 await subscriptions.logIn(appUserID: status.userId)
                 session.hasLinkedAppleAccount = true
                 UserDefaults.standard.set(true, forKey: "hasLinkedAppleAccount")

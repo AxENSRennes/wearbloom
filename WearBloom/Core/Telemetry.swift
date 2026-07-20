@@ -30,6 +30,7 @@ enum Telemetry {
            !host.isEmpty {
             let config = PostHogConfig(projectToken: key, host: host)
             // Product events are explicit below. Sensitive image screens are never replayed.
+            config.captureApplicationLifecycleEvents = true
             config.captureScreenViews = false
             config.captureElementInteractions = false
             config.sessionReplay = false
@@ -54,6 +55,26 @@ enum Telemetry {
         logger.info("event=\(name, privacy: .public)")
         guard isCollectionEnabled, configurationValue("POSTHOG_API_KEY") != nil else { return }
         PostHogSDK.shared.capture(name, properties: properties)
+    }
+
+    static func identify(userID: String) {
+        guard isCollectionEnabled else { return }
+        if configurationValue("POSTHOG_API_KEY") != nil {
+            PostHogSDK.shared.identify(userID)
+        }
+        if configurationValue("SENTRY_DSN") != nil {
+            SentrySDK.setUser(User(userId: userID))
+        }
+    }
+
+    static func resetIdentity() {
+        guard isCollectionEnabled else { return }
+        if configurationValue("POSTHOG_API_KEY") != nil {
+            PostHogSDK.shared.reset()
+        }
+        if configurationValue("SENTRY_DSN") != nil {
+            SentrySDK.setUser(nil)
+        }
     }
 
     static func error(_ error: Error, context: [String: String] = [:]) {

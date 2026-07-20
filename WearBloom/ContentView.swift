@@ -33,6 +33,7 @@ struct ContentView: View {
             do {
                 let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
+                Telemetry.identify(userID: status.userId)
                 await subscriptions.logIn(appUserID: status.userId)
             } catch {
                 Telemetry.error(error, context: ["operation": "account_bootstrap"])
