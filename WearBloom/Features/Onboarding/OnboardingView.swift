@@ -60,7 +60,7 @@ struct OnboardingView: View {
                         completion()
                     }
                 } label: {
-                    Text(page == 2 ? "Get started" : "Continue")
+                    Text(page == 2 ? String(localized: "Get started") : String(localized: "Continue"))
                 }
                 .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
                 .padding(.horizontal, 22)

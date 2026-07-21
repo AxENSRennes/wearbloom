@@ -35,7 +35,7 @@ Do not submit until every item below is complete.
   - `https://wearbloom.app/privacy.html`
   - `https://wearbloom.app/terms.html`
   - `https://wearbloom.app/support.html`
-- The live domain returned empty `204` responses during the July 21 audit. Fix and redeploy it before review.
+- The live web domain and association endpoint returned API-style `404` responses during the July 21 audit. Fix its Dokploy/Traefik route and redeploy `web/public` before review.
 - Keep the production API and worker online throughout review. Verify `/health` reports both API and worker healthy and complete the production smoke checks in `docs/operations.md`.
 - Verify the production Apple key, bundle ID, App Attest environment, Sign in with Apple capability, private relay configuration, and token exchange/revocation flow on a physical device.
 - Complete the Paid Applications Agreement, banking, tax, and all required developer contact information.
@@ -45,7 +45,7 @@ Do not submit until every item below is complete.
 - Create one subscription group with `monthly` and `yearly`; attach both to the RevenueCat `pro` entitlement and `default` offering.
 - Complete localization, duration, price, review screenshot, and review notes for both products, then add both products to the app version submission.
 - Confirm the RevenueCat paywall visibly shows each plan's localized price and period before purchase. Do not use hard-coded prices in screenshots or text.
-- Confirm the promised allowance is accurate in production: WearBloom Pro currently says “up to 20 AI outfit previews each month.” If `PAID_MONTHLY_ALLOWANCE` changes, update the paywall copy, metadata, terms, and review notes together.
+- Confirm the promised allowance is accurate in production. The in-app paywall reads `PAID_MONTHLY_ALLOWANCE` from the account-status API; keep App Store metadata, terms, and review notes aligned with that server value.
 - Test purchase, pending Ask to Buy, restore, expiration, billing retry, cancellation, reinstall, account linking, and deletion with an active subscription.
 - Configure App Store Server Notifications through RevenueCat and verify signed/idempotent webhook handling.
 
@@ -76,7 +76,7 @@ Set the Privacy Policy URL to `https://wearbloom.app/privacy.html` and the optio
 
 ## Suggested App Review notes
 
-> WearBloom works without login. On first launch, complete or skip onboarding; the app includes sample garments and a sample reference image. Open Create, choose at least one garment, and tap Create preview. Before the first production AI request, WearBloom explains that selected reference and garment photos are sent to WearBloom's private server and OpenAI, and asks for explicit consent. The user may decline and continue using local closet/look features. Two free generations are available on a fresh reviewer installation. WearBloom Pro is available from Profile & Settings > View plans; restore and direct App Store subscription management are on the same screen. Sign in with Apple is optional and appears in Profile & Settings. Account deletion is Profile & Settings > Privacy > Delete account and data; linked Apple tokens are revoked and server/local data are deleted. Optional analytics and diagnostics are off by default. No demo credentials are required.
+> WearBloom works without login. On first launch, complete or skip onboarding, then add a top and bottom (or a dress) from Photos or Camera and add one clear reference photo. Open Create, review the complete composition, and tap Try this outfit. Before the first production AI request, WearBloom explains that the selected reference and garment photos are sent to WearBloom's private server and OpenAI, and asks for explicit consent. The user may decline and continue using local closet/look features. Two free generations are available on a fresh reviewer installation. WearBloom Pro is available from Profile & Settings > View plans; restore and direct App Store subscription management are on the same screen. Sign in with Apple is optional and appears in Profile & Settings. Account deletion is Profile & Settings > Privacy > Delete account and data; linked Apple tokens are revoked and server/local data are deleted. Optional analytics and diagnostics are off by default. Production builds contain no seeded user data and no demo credentials are required.
 
 Add the following only after verifying it is true for the submitted build:
 

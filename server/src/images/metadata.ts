@@ -1,4 +1,9 @@
-export type ImageMetadata = { contentType: "image/jpeg" | "image/png" | "image/heic"; width?: number; height?: number; extension: string };
+export type ImageMetadata = {
+  contentType: "image/jpeg" | "image/png" | "image/heic";
+  width?: number;
+  height?: number;
+  extension: string;
+};
 
 export function inspectImage(bytes: Uint8Array): ImageMetadata {
   if (bytes.length < 16) throw new Error("UPLOAD_INVALID_IMAGE");
@@ -21,7 +26,10 @@ function jpegDimensions(bytes: Uint8Array): { width?: number; height?: number } 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let offset = 2;
   while (offset + 9 < bytes.length) {
-    if (bytes[offset] !== 0xff) { offset += 1; continue; }
+    if (bytes[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
     const marker = bytes[offset + 1];
     if (marker === undefined) break;
     const length = view.getUint16(offset + 2);

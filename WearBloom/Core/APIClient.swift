@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import WearBloomContract
 
 struct RemoteGarmentInput: Sendable {
     let id: UUID
@@ -14,10 +15,12 @@ struct RemoteReferenceInput: Sendable {
     let imageData: Data
     let remoteAssetID: UUID?
     let isGenerated: Bool
+    let generatedFromVariantID: UUID?
 }
 
 struct RemoteLookInput: Sendable {
     let id: UUID
+    let renderID: UUID
     let name: String
     let garments: [RemoteGarmentInput]
     let reference: RemoteReferenceInput
@@ -30,6 +33,12 @@ struct RemoteRenderResult: Sendable {
     let referenceAsset: UUID
 }
 
+enum RemoteRenderStatus: Sendable {
+    case pending
+    case succeeded(Data)
+    case failed(String)
+}
+
 struct GarmentDetection: Sendable {
     let assetID: UUID
     let category: GarmentCategory
@@ -40,6 +49,7 @@ struct AccountStatus: Decodable, Sendable {
     let userId: String
     let isPro: Bool
     let allowance: Int
+    let paidAllowance: Int
     let used: Int
     let remaining: Int
     let periodKey: String
@@ -54,11 +64,24 @@ enum APIClientError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: "The generation service is not configured."
-        case .invalidResponse: "The generation service returned an invalid response."
-        case let .server(_, message): message
-        case let .renderFailed(code): "The render failed (\(code)). No generation was used."
-        case .timedOut: "The render is still working. Check Looks again shortly."
+        case .notConfigured: String(localized: "The generation service is not configured.")
+        case .invalidResponse: String(localized: "The generation service returned an invalid response.")
+        case let .server(code, _): Self.serverMessage(for: code)
+        case .renderFailed: String(localized: "The render failed. No generation was used.")
+        case .timedOut: String(localized: "The render is still working. Check Looks again shortly.")
+        }
+    }
+
+    private static func serverMessage(for code: String) -> String {
+        switch code {
+        case "QUOTA_EXHAUSTED": String(localized: "You have used this period’s previews.")
+        case "LOOK_INCOMPLETE": String(localized: "Choose a dress or both a top and bottom first.")
+        case "UPLOAD_TOO_LARGE": String(localized: "That image is too large. Choose a smaller photo.")
+        case "UPLOAD_INVALID_IMAGE", "UPLOAD_UNSUPPORTED_TYPE": String(localized: "Choose a valid JPEG, PNG, or HEIC image.")
+        case "UPLOAD_COUNT_EXCEEDED": String(localized: "Delete an older image before uploading another.")
+        case "APP_ATTEST_REQUIRED", "APP_ATTEST_INVALID": String(localized: "WearBloom could not verify this app installation. Please try again.")
+        case "AUTH_REQUIRED": String(localized: "Your session expired. Please try again.")
+        default: String(localized: "Something went wrong. Please try again.")
         }
     }
 }
@@ -92,9 +115,7 @@ actor WearBloomAPI {
             let body = try JSONEncoder().encode(SaveGarmentBody(name: garment.name, category: garment.category.rawValue, assetId: assetID))
             _ = try await request(path: "/v1/garments/\(garment.id.uuidString.lowercased())", method: "PUT", body: body)
         }
-        let referenceAsset = try await resolveAsset(existing: input.reference.remoteAssetID, data: input.reference.imageData, purpose: "reference")
-        let referenceBody = try JSONEncoder().encode(SaveReferenceBody(assetId: referenceAsset, isDefault: true))
-        _ = try await request(path: "/v1/references/\(input.reference.id.uuidString.lowercased())", method: "PUT", body: referenceBody)
+        let referenceAsset = try await saveReference(input.reference, isDefault: true)
 
         let lookBody = try JSONEncoder().encode(SaveLookBody(
             name: input.name,
@@ -102,32 +123,55 @@ actor WearBloomAPI {
             garments: input.garments.map { LookGarmentBody(id: $0.id, category: $0.category.rawValue) }
         ))
         _ = try await request(path: "/v1/looks/\(input.id.uuidString.lowercased())", method: "PUT", body: lookBody)
-        let renderBody = try JSONEncoder().encode(CreateRenderBody(lookId: input.id, referencePhotoId: input.reference.id))
+        let renderBody = try JSONEncoder().encode(CreateRenderBody(
+            renderId: input.renderID,
+            lookId: input.id,
+            referencePhotoId: input.reference.id
+        ))
         let queuedData = try await request(
             path: "/v1/renders",
             method: "POST",
             body: renderBody,
-            headers: ["Idempotency-Key": "ios-\(UUID().uuidString.lowercased())"],
+            headers: ["Idempotency-Key": "ios-render-\(input.renderID.uuidString.lowercased())"],
             protectsIntegrity: true
         )
         let queued = try JSONDecoder().decode(RenderResponse.self, from: queuedData)
 
-        for _ in 0..<80 {
-            try await Task.sleep(for: .seconds(1.5))
-            let statusData = try await request(path: "/v1/renders/\(queued.id.uuidString.lowercased())")
-            let status = try JSONDecoder().decode(RenderResponse.self, from: statusData)
-            switch status.status {
-            case "succeeded":
-                guard let resultURL = status.resultURL else { throw APIClientError.invalidResponse }
-                let data = try await request(path: resultURL)
-                return RemoteRenderResult(data: data, renderID: status.id, garmentAssets: garmentAssets, referenceAsset: referenceAsset)
-            case "failed", "cancelled":
-                throw APIClientError.renderFailed(status.errorCode ?? "RENDER_FAILED")
-            default:
+        let data = try await waitForRender(queued.id)
+        return RemoteRenderResult(data: data, renderID: queued.id, garmentAssets: garmentAssets, referenceAsset: referenceAsset)
+    }
+
+    func waitForRender(_ id: UUID, attempts: Int = 80) async throws -> Data {
+        for attempt in 0..<attempts {
+            if attempt > 0 { try await Task.sleep(for: .seconds(1.5)) }
+            switch try await renderStatus(id) {
+            case .pending:
                 continue
+            case let .succeeded(data):
+                return data
+            case let .failed(code):
+                throw APIClientError.renderFailed(code)
             }
         }
         throw APIClientError.timedOut
+    }
+
+    func renderStatus(_ id: UUID) async throws -> RemoteRenderStatus {
+        try await ensureAnonymousSession()
+        guard let baseURL else { throw APIClientError.notConfigured }
+        let client = WearBloomGeneratedContract.client(serverURL: baseURL, cookie: sessionCookie)
+        let output = try await client.getRender(path: .init(id: id.uuidString.lowercased()))
+        guard case let .ok(response) = output else { throw APIClientError.invalidResponse }
+        let status = try response.body.json
+        switch status.status {
+        case .succeeded:
+            guard let resultURL = status.resultURL else { throw APIClientError.invalidResponse }
+            return .succeeded(try await request(path: resultURL))
+        case .failed, .cancelled:
+            return .failed(status.errorCode ?? "RENDER_FAILED")
+        default:
+            return .pending
+        }
     }
 
     func detectGarment(data: Data) async throws -> GarmentDetection {
@@ -142,35 +186,123 @@ actor WearBloomAPI {
         return GarmentDetection(assetID: assetID, category: category, confidence: detection.confidence)
     }
 
+    @discardableResult
+    func saveReference(_ input: RemoteReferenceInput, isDefault: Bool) async throws -> UUID {
+        try await ensureAnonymousSession()
+        let assetID = try await resolveAsset(existing: input.remoteAssetID, data: input.imageData, purpose: "reference")
+        let body = try JSONEncoder().encode(SaveReferenceBody(
+            assetId: assetID,
+            isDefault: isDefault,
+            generatedFromVariantId: input.isGenerated ? input.generatedFromVariantID : nil
+        ))
+        _ = try await request(
+            path: "/v1/references/\(input.id.uuidString.lowercased())",
+            method: "PUT",
+            body: body
+        )
+        return assetID
+    }
+
     func accountStatus() async throws -> AccountStatus {
         try await ensureAnonymousSession()
-        let data = try await request(path: "/v1/account/status")
-        return try JSONDecoder().decode(AccountStatus.self, from: data)
+        guard let baseURL else { throw APIClientError.notConfigured }
+        let client = WearBloomGeneratedContract.client(serverURL: baseURL, cookie: sessionCookie)
+        let output = try await client.getAccountStatus()
+        guard case let .ok(response) = output else { throw APIClientError.invalidResponse }
+        let status = try response.body.json
+        return AccountStatus(
+            userId: status.userId,
+            isPro: status.isPro,
+            allowance: status.allowance,
+            paidAllowance: status.paidAllowance,
+            used: status.used,
+            remaining: status.remaining,
+            periodKey: status.periodKey
+        )
     }
 
     func sendFeedback(renderID: UUID, looksLikeMe: Bool, helpful: Bool) async throws {
-        let body = try JSONEncoder().encode(FeedbackBody(looksLikeMe: looksLikeMe, helpful: helpful))
-        _ = try await request(path: "/v1/renders/\(renderID.uuidString.lowercased())/feedback", method: "POST", body: body)
+        try await ensureAnonymousSession()
+        let client = try generatedClient()
+        let output = try await client.submitRenderFeedback(
+            path: .init(id: renderID.uuidString.lowercased()),
+            body: .json(.init(looksLikeMe: looksLikeMe, helpful: helpful))
+        )
+        guard case .noContent = output else { throw APIClientError.invalidResponse }
+    }
+
+    func registerPushToken(_ token: String) async throws {
+        guard isConfigured else { return }
+        try await ensureAnonymousSession()
+        #if DEBUG
+        let environment = "sandbox"
+        #else
+        let environment = "production"
+        #endif
+        let client = try generatedClient()
+        let contractEnvironment: Operations.RegisterPushDevice.Input.Body.JsonPayload.EnvironmentPayload = environment == "sandbox"
+            ? .sandbox
+            : .production
+        let output = try await client.registerPushDevice(
+            body: .json(.init(token: token, environment: contractEnvironment))
+        )
+        guard case .noContent = output else { throw APIClientError.invalidResponse }
     }
 
     func deleteAccount() async throws {
         guard isConfigured else { return }
         try await ensureAnonymousSession()
-        _ = try await request(path: "/v1/account", method: "DELETE")
+        let output = try await generatedClient().deleteAccount()
+        switch output {
+        case .accepted:
+            break
+        case let .conflict(response):
+            let envelope = try response.body.json
+            throw APIClientError.server(code: envelope.error.code, message: envelope.error.message)
+        default:
+            throw APIClientError.invalidResponse
+        }
         sessionCookie = nil
         KeychainCredential.delete()
     }
 
     func deleteGarment(_ id: UUID) async throws {
-        try await deleteResource(path: "/v1/garments/\(id.uuidString.lowercased())")
+        guard isConfigured else { return }
+        try await ensureAnonymousSession()
+        guard case .noContent = try await generatedClient().deleteGarment(path: .init(id: id.uuidString.lowercased())) else {
+            throw APIClientError.invalidResponse
+        }
     }
 
     func deleteReference(_ id: UUID) async throws {
-        try await deleteResource(path: "/v1/references/\(id.uuidString.lowercased())")
+        guard isConfigured else { return }
+        try await ensureAnonymousSession()
+        guard case .noContent = try await generatedClient().deleteReference(path: .init(id: id.uuidString.lowercased())) else {
+            throw APIClientError.invalidResponse
+        }
     }
 
     func deleteLook(_ id: UUID) async throws {
-        try await deleteResource(path: "/v1/looks/\(id.uuidString.lowercased())")
+        guard isConfigured else { return }
+        try await ensureAnonymousSession()
+        guard case .noContent = try await generatedClient().deleteLook(path: .init(id: id.uuidString.lowercased())) else {
+            throw APIClientError.invalidResponse
+        }
+    }
+
+    func deleteRender(_ id: UUID) async throws {
+        guard isConfigured else { return }
+        try await ensureAnonymousSession()
+        let output = try await generatedClient().deleteRender(path: .init(id: id.uuidString.lowercased()))
+        switch output {
+        case .noContent:
+            return
+        case let .conflict(response):
+            let envelope = try response.body.json
+            throw APIClientError.server(code: envelope.error.code, message: envelope.error.message)
+        default:
+            throw APIClientError.invalidResponse
+        }
     }
 
     func signInWithApple(identityToken: String, authorizationCode: String, nonce: String) async throws {
@@ -188,10 +320,9 @@ actor WearBloomAPI {
         return try await upload(data: data, purpose: purpose)
     }
 
-    private func deleteResource(path: String) async throws {
-        guard isConfigured else { return }
-        try await ensureAnonymousSession()
-        _ = try await request(path: path, method: "DELETE")
+    private func generatedClient() throws -> Client {
+        guard let baseURL else { throw APIClientError.notConfigured }
+        return WearBloomGeneratedContract.client(serverURL: baseURL, cookie: sessionCookie)
     }
 
     private func upload(data: Data, purpose: String) async throws -> UUID {
@@ -329,13 +460,16 @@ private enum KeychainCredential {
 
 private struct UploadResponse: Decodable { let id: UUID }
 private struct SaveGarmentBody: Encodable { let name: String; let category: String; let assetId: UUID }
-private struct SaveReferenceBody: Encodable { let assetId: UUID; let isDefault: Bool }
+private struct SaveReferenceBody: Encodable {
+    let assetId: UUID
+    let isDefault: Bool
+    let generatedFromVariantId: UUID?
+}
 private struct LookGarmentBody: Encodable { let id: UUID; let category: String }
 private struct SaveLookBody: Encodable { let name: String; let note: String; let garments: [LookGarmentBody] }
-private struct CreateRenderBody: Encodable { let lookId: UUID; let referencePhotoId: UUID }
+private struct CreateRenderBody: Encodable { let renderId: UUID; let lookId: UUID; let referencePhotoId: UUID }
 private struct DetectGarmentBody: Encodable { let assetId: UUID }
 private struct DetectionResponse: Decodable { let category: String; let confidence: Double }
-private struct FeedbackBody: Encodable { let looksLikeMe: Bool; let helpful: Bool }
 private struct AppleSignInBody: Encodable {
     let identityToken: String
     let authorizationCode: String

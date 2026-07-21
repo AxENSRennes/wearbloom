@@ -5,7 +5,12 @@ import type { PrivateStorage, StoredObject } from "./storage";
 export class LocalPrivateStorage implements PrivateStorage {
   constructor(private readonly root: string) {}
 
-  async put(input: { ownerId: string; data: Uint8Array; contentType: string; extension: string }): Promise<StoredObject> {
+  async put(input: {
+    ownerId: string;
+    data: Uint8Array;
+    contentType: string;
+    extension: string;
+  }): Promise<StoredObject> {
     const digest = new Bun.CryptoHasher("sha256").update(input.data).digest("hex");
     const key = join(input.ownerId, `${crypto.randomUUID()}-${digest.slice(0, 12)}.${input.extension}`);
     const path = this.resolve(key);

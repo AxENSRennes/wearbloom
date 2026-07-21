@@ -31,7 +31,9 @@ struct CreateView: View {
     }
 
     private var canRender: Bool {
-        !selectedGarments.isEmpty && selectedReference != nil && session.renderingVariantID == nil
+        LookComposition.isComplete(selectedGarments)
+            && selectedReference != nil
+            && session.renderingVariantID == nil
     }
 
     var body: some View {
@@ -40,8 +42,8 @@ struct CreateView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     BloomHeader(
-                        title: session.activeLookID == nil ? "Style" : "Edit look",
-                        subtitle: "Compose, remix, then try it on"
+                        title: session.activeLookID == nil ? String(localized: "Style") : String(localized: "Edit look"),
+                        subtitle: String(localized: "Compose, remix, then try it on")
                     ) { session.isProfilePresented = true }
 
                     HStack(spacing: 10) {
@@ -199,7 +201,7 @@ struct CreateView: View {
             .buttonStyle(.plain)
             .rotationEffect(.degrees(-4))
             .offset(x: -122, y: -142)
-            .accessibilityLabel(selectedReference == nil ? "Add your photo" : "Change your photo")
+            .accessibilityLabel(selectedReference == nil ? String(localized: "Add your photo") : String(localized: "Change your photo"))
 
             VStack {
                 Spacer()
@@ -283,7 +285,7 @@ struct CreateView: View {
                         }
                     }
                     Spacer()
-                    Label(selectedReference == nil ? "Add photo" : "Change", systemImage: "photo")
+                    Label(selectedReference == nil ? String(localized: "Add photo") : String(localized: "Change"), systemImage: "photo")
                         .font(.system(size: 13, weight: .semibold))
                         .padding(.horizontal, 13)
                         .frame(height: 38)
@@ -299,7 +301,7 @@ struct CreateView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(selectedReference == nil ? "Add your photo" : "Change your photo")
+        .accessibilityLabel(selectedReference == nil ? String(localized: "Add your photo") : String(localized: "Change your photo"))
     }
 
     private var outfitSection: some View {
@@ -438,21 +440,18 @@ struct CreateView: View {
 
     private func suggestOutfit() {
         let available = garments.filter { !$0.isArchived }
-        let byRediscovery = available.sorted {
-            if $0.wearCount == $1.wearCount { return $0.createdAt < $1.createdAt }
-            return $0.wearCount < $1.wearCount
-        }
+        let byRediscovery = available.sorted { $0.createdAt < $1.createdAt }
         session.resetDraft()
         if let top = byRediscovery.first(where: { $0.category == .top }) { session.select(top) }
         if let bottom = byRediscovery.first(where: { $0.category == .bottom }) { session.select(bottom) }
-        if let layer = byRediscovery.first(where: { $0.category == .outerwear && $0.wearCount == 0 }) {
+        if let layer = byRediscovery.first(where: { $0.category == .outerwear }) {
             session.select(layer)
         }
         Telemetry.event("wardrobe_remix_suggested", properties: [
             "piece_count": session.selectedGarmentIDs.count,
-            "reason": "least_worn"
+            "reason": "oldest_saved"
         ])
-        session.showToast(String(localized: "A fresh mix built from your least-worn pieces."))
+        session.showToast(String(localized: "A fresh mix built from your closet."))
     }
 }
 
@@ -517,7 +516,7 @@ private struct TryOnPrepView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 30))
                             .overlay(RoundedRectangle(cornerRadius: 30).stroke(BloomColor.blue, lineWidth: 4))
                             .overlay(alignment: .bottomTrailing) {
-                                Label(currentReference == nil ? "Add photo" : "Change photo", systemImage: "photo")
+                                Label(currentReference == nil ? String(localized: "Add photo") : String(localized: "Change photo"), systemImage: "photo")
                                     .font(.system(size: 13, weight: .black))
                                     .foregroundStyle(BloomColor.ink)
                                     .padding(.horizontal, 14)
@@ -713,7 +712,7 @@ private struct ReferencePickerView: View {
                                     }
                                     .overlay(alignment: .bottomLeading) {
                                         if photo.isDefault || photo.isGeneratedReference {
-                                            Text(photo.isGeneratedReference ? "Generated" : "Default")
+                                            Text(photo.isGeneratedReference ? String(localized: "Generated") : String(localized: "Default"))
                                                 .font(.caption2.weight(.semibold))
                                                 .padding(.horizontal, 9)
                                                 .frame(height: 27)

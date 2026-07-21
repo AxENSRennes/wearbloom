@@ -4,6 +4,8 @@
 
 Required server settings are documented in `server/.env.example`. Production additionally requires Apple, RevenueCat, OpenAI, PostHog/Sentry, and App Attest values. `APP_ATTEST_REQUIRED=true` is forced in the production compose file.
 
+Dokploy may store Apple and APNs `.p8` values either as escaped PEM text (`APPLE_PRIVATE_KEY` / `APNS_PRIVATE_KEY`) or base64 (`APPLE_PRIVATE_KEY_BASE64` / `APNS_PRIVATE_KEY_BASE64`). For APNs, map the sandbox or production key ID and value into the generic `APNS_KEY_ID` and `APNS_PRIVATE_KEY_BASE64` variables for that environment.
+
 ## Release order
 
 1. Build the server image once after CI passes, then publish an immutable tag.

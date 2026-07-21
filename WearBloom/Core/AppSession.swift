@@ -7,7 +7,7 @@ import UIKit
 @MainActor
 @Observable
 final class AppSession {
-    var selectedTab = 0
+    var selectedTab = 1
     var selectedGarmentIDs: [GarmentCategory: UUID] = [:]
     var selectedReferenceID: UUID?
     var activeLookID: UUID?
@@ -21,6 +21,8 @@ final class AppSession {
     var hasLinkedAppleAccount = UserDefaults.standard.bool(forKey: "hasLinkedAppleAccount")
     var hasAIProcessingConsent = PrivacyChoices.hasAIProcessingConsent
     var serverRendersRemaining: Int?
+    var paidRenderAllowance = 20
+    private var reconcilingVariantIDs: Set<UUID> = []
 
     private(set) var freeRendersUsed: Int {
         get { UserDefaults.standard.integer(forKey: "freeRendersUsed") }
@@ -31,6 +33,7 @@ final class AppSession {
 
     func apply(_ status: AccountStatus) {
         serverRendersRemaining = status.remaining
+        paidRenderAllowance = status.paidAllowance
     }
 
     func garment(for category: GarmentCategory, in garments: [Garment]) -> Garment? {
@@ -58,6 +61,17 @@ final class AppSession {
         activeLookID = nil
         resultVariantID = nil
         renderingVariantID = nil
+    }
+
+    func resetAfterAccountDeletion() {
+        resetDraft()
+        selectedReferenceID = nil
+        serverRendersRemaining = nil
+        paidRenderAllowance = 20
+        freeRendersUsed = 0
+        setAIProcessingConsent(false)
+        hasLinkedAppleAccount = false
+        UserDefaults.standard.removeObject(forKey: "hasLinkedAppleAccount")
     }
 
     func setAIProcessingConsent(_ allowed: Bool) {
@@ -115,18 +129,6 @@ final class AppSession {
                 look.variants.append(variant)
                 context.insert(look)
                 context.insert(variant)
-
-                for offset in [0, -3, -8] {
-                    let date = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
-                    let event = WearEvent(date: date, look: look, garments: [top, bottom])
-                    context.insert(event)
-                    top.wearCount += 1
-                    bottom.wearCount += 1
-                    top.lastWornAt = date
-                    bottom.lastWornAt = date
-                    look.wearCount += 1
-                    look.lastWornAt = date
-                }
             }
         }
 
@@ -167,13 +169,13 @@ final class AppSession {
     ) async {
         guard renderingVariantID == nil else { return }
         let remoteConfigured = await WearBloomAPI.shared.isConfigured
-        guard !remoteConfigured || isPro || (serverRendersRemaining ?? 1) > 0 else {
+        guard !remoteConfigured || (serverRendersRemaining ?? 1) > 0 else {
             isPaywallPresented = true
             return
         }
         let selected = garments.filter { selectedGarmentIDs.values.contains($0.id) }
-        guard !selected.isEmpty else {
-            showToast(String(localized: "Add at least one piece first."))
+        guard LookComposition.isComplete(selected) else {
+            showToast(String(localized: "Choose a dress or both a top and bottom first."))
             return
         }
         let reference = references.first { $0.id == selectedReferenceID }
@@ -201,6 +203,10 @@ final class AppSession {
             garmentSnapshot: selected.map { "\($0.category.title): \($0.name)" }.joined(separator: " • "),
             look: look
         )
+        if remoteConfigured {
+            variant.remoteRenderID = variant.id
+            variant.isPreviewSimulation = false
+        }
         context.insert(variant)
         look.variants.append(variant)
         try? context.save()
@@ -224,6 +230,7 @@ final class AppSession {
             }
             let remoteInput = RemoteLookInput(
                 id: look.id,
+                renderID: variant.id,
                 name: look.name,
                 garments: selected.compactMap { garment in
                     guard let imageData = garment.imageData else { return nil }
@@ -239,7 +246,8 @@ final class AppSession {
                     id: reference.id,
                     imageData: referenceData,
                     remoteAssetID: reference.remoteAssetID,
-                    isGenerated: reference.isGeneratedReference
+                    isGenerated: reference.isGeneratedReference,
+                    generatedFromVariantID: reference.generatedFromVariantID
                 )
             )
             remoteTask = Task { try await WearBloomAPI.shared.render(remoteInput) }
@@ -275,6 +283,15 @@ final class AppSession {
                 if !isPro { freeRendersUsed += 1 }
                 if let serverRendersRemaining { self.serverRendersRemaining = max(0, serverRendersRemaining - 1) }
             } catch {
+                if case APIClientError.timedOut = error {
+                    variant.state = .rendering
+                    renderingVariantID = nil
+                    renderProgress = 0
+                    try? context.save()
+                    Telemetry.event("render_continuing_in_background")
+                    showToast(error.localizedDescription)
+                    return
+                }
                 variant.state = .failed
                 variant.completedAt = .now
                 renderingVariantID = nil
@@ -305,6 +322,38 @@ final class AppSession {
             "mode": variant.isPreviewSimulation ? "on_device_preview" : "remote"
         ])
         await RenderNotificationCenter.shared.notifyCompletion(lookName: look.name)
+    }
+
+    func reconcilePendingRenders(_ variants: [RenderVariant], context: ModelContext) {
+        for variant in variants where variant.state == .queued || variant.state == .rendering {
+            guard let remoteID = variant.remoteRenderID,
+                  !reconcilingVariantIDs.contains(variant.id) else { continue }
+            reconcilingVariantIDs.insert(variant.id)
+            Task { @MainActor in
+                defer { reconcilingVariantIDs.remove(variant.id) }
+                do {
+                    let data = try await WearBloomAPI.shared.waitForRender(remoteID)
+                    variant.resultData = data
+                    variant.state = .ready
+                    variant.isPreviewSimulation = false
+                    variant.completedAt = .now
+                    try? context.save()
+                    resultVariantID = variant.id
+                    if let name = variant.look?.name {
+                        await RenderNotificationCenter.shared.notifyCompletion(lookName: name)
+                    }
+                    Telemetry.event("render_recovered_after_resume")
+                    if let status = try? await WearBloomAPI.shared.accountStatus() { apply(status) }
+                } catch APIClientError.timedOut {
+                    // The server still owns the job. It will be checked again on the next app activation.
+                } catch {
+                    variant.state = .failed
+                    variant.completedAt = .now
+                    try? context.save()
+                    Telemetry.error(error, context: ["operation": "render_reconcile"])
+                }
+            }
+        }
     }
 
     func showToast(_ message: String) {

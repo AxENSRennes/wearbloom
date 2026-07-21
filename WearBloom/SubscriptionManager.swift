@@ -162,15 +162,15 @@ final class SubscriptionManager {
 
         switch revenueCatCode {
         case .networkError, .offlineConnectionError:
-            return "Check your internet connection and try again."
+            return String(localized: "Check your internet connection and try again.")
         case .purchaseNotAllowedError:
-            return "Purchases are not allowed on this device."
+            return String(localized: "Purchases are not allowed on this device.")
         case .paymentPendingError:
-            return "This purchase is pending approval. Access will unlock after approval."
+            return String(localized: "This purchase is pending approval. Access will unlock after approval.")
         case .productNotAvailableForPurchaseError:
-            return "This plan is temporarily unavailable."
+            return String(localized: "This plan is temporarily unavailable.")
         case .purchaseCancelledError:
-            return "The purchase was cancelled."
+            return String(localized: "The purchase was cancelled.")
         default:
             return nsError.localizedDescription
         }
@@ -186,13 +186,13 @@ private enum SubscriptionConfigurationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingCurrentOffering:
-            return "RevenueCat has no current offering configured."
+            return String(localized: "Subscriptions are temporarily unavailable.")
         case let .missingProducts(productIDs):
-            return "The current offering is missing: \(productIDs.joined(separator: ", "))."
+            return String(localized: "Subscription products are temporarily unavailable: \(productIDs.joined(separator: ", ")).")
         case .entitlementNotUnlocked:
-            return "The purchase completed, but the pro entitlement was not unlocked. Check the RevenueCat product attachment."
+            return String(localized: "Your purchase completed, but access is still syncing. Restore purchases or try again shortly.")
         case .nothingToRestore:
-            return "No WearBloom Pro purchase was found for this App Store account."
+            return String(localized: "No WearBloom Pro purchase was found for this App Store account.")
         }
     }
 }

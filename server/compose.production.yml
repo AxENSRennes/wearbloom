@@ -35,6 +35,7 @@ services:
       ROLE: api
       NODE_ENV: production
       APP_ATTEST_REQUIRED: "true"
+      APNS_ENVIRONMENT: production
       DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
     volumes: [private-images:/app/data/private]
     networks: [private, dokploy-network]
@@ -56,6 +57,7 @@ services:
     environment:
       ROLE: worker
       NODE_ENV: production
+      APNS_ENVIRONMENT: production
       DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
     volumes: [private-images:/app/data/private]
     networks: [private]

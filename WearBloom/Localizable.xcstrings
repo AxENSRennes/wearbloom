@@ -1,31 +1,358 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@%%" : {
+    "%@ is waiting in Looks." : {
+
+    },
+    "%lld free renders remaining" : {
+
+    },
+    "%lld pieces · style what you own" : {
+
+    },
+    "%lld previews" : {
+
+    },
+    "%lld selected" : {
+
+    },
+    "%lld%%" : {
+
+    },
+    "A clear, full-length photo gives the best preview." : {
+
+    },
+    "A fresh mix built from your closet." : {
+
+    },
+    "About" : {
+
+    },
+    "Account" : {
+
+    },
+    "Add a bottom" : {
 
     },
     "Add a garment to start your closet." : {
 
     },
+    "Add a layer" : {
+
+    },
+    "Add a piece" : {
+
+    },
+    "Add a piece before saving." : {
+
+    },
+    "Add a reference photo first." : {
+
+    },
+    "Add a top" : {
+
+    },
     "Add one in Closet first." : {
+
+    },
+    "Add photo" : {
 
     },
     "Add your photo" : {
 
     },
+    "Added as a generated reference." : {
+
+    },
+    "AI processing" : {
+
+    },
+    "AI processing shares only selected photos with OpenAI for the preview you request. Optional diagnostics and usage go to Sentry and PostHog; they never include your photos." : {
+
+    },
+    "All" : {
+
+    },
+    "Allow AI photo processing" : {
+
+    },
+    "Allow AI photo processing?" : {
+
+    },
+    "Allow and create preview" : {
+
+    },
+    "Archive" : {
+
+    },
+    "Bottom" : {
+
+    },
+    "Bringing the look together…" : {
+
+    },
+    "Build an outfit, then see it on you." : {
+
+    },
+    "Build outfit" : {
+
+    },
+    "Camera" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Category" : {
+
+    },
+    "Change" : {
+
+    },
+    "Change photo" : {
+
+    },
+    "Change your photo" : {
+
+    },
+    "Check your internet connection and try again." : {
+
+    },
+    "Choose a dress or both a top and bottom first." : {
+
+    },
+    "Choose a valid JPEG, PNG, or HEIC image." : {
+
+    },
+    "Choose photo" : {
+
+    },
+    "Choose pieces from your closet" : {
+
+    },
+    "Cleaning the background on this device…" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Close" : {
+
+    },
+    "Closet" : {
+
+    },
+    "Compose, remix, then try it on" : {
+
+    },
+    "Composing color and shape…" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue with Apple again, then retry deletion." : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a look" : {
+
+    },
+    "Default" : {
+
+    },
     "DEFAULT" : {
 
     },
-    "Deleting your account removes its associated records and files. WearBloom does not include photos or prompts in analytics." : {
+    "Delete" : {
+
+    },
+    "Delete account and data" : {
+
+    },
+    "Delete account now" : {
+
+    },
+    "Delete an older image before uploading another." : {
+
+    },
+    "Delete preview" : {
+
+    },
+    "Delete this preview?" : {
+
+    },
+    "Delete variant" : {
+
+    },
+    "Delete your WearBloom account?" : {
+
+    },
+    "Deleting your account removes its associated records and private files. App Store subscription cancellation is managed separately through Apple." : {
+
+    },
+    "Details" : {
+
+    },
+    "Done" : {
+
+    },
+    "Dress" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit look" : {
+
+    },
+    "Edit piece" : {
+
+    },
+    "Edit this look to create its first personal preview." : {
+
+    },
+    "Every preview is kept as its own variant." : {
+
+    },
+    "Failed" : {
+
+    },
+    "Favorite" : {
+
+    },
+    "Favorites" : {
+
+    },
+    "Finding the category…" : {
+
+    },
+    "Finishing the details…" : {
+
+    },
+    "Garments" : {
+
+    },
+    "Generated" : {
+
+    },
+    "Generated look %lld" : {
+
+    },
+    "Generated reference" : {
+
+    },
+    "Get started" : {
+
+    },
+    "Help and support" : {
 
     },
     "Helpful?" : {
 
     },
+    "How WearBloom uses photos" : {
+
+    },
+    "Keep browsing" : {
+
+    },
+    "Look %lld" : {
+
+    },
+    "Look saved." : {
+
+    },
+    "Looks" : {
+
+    },
     "Looks like you?" : {
 
     },
-    "Outfit" : {
+    "Manage App Store subscription" : {
+
+    },
+    "Manage reference photos" : {
+
+    },
+    "Manage subscription" : {
+
+    },
+    "Membership" : {
+
+    },
+    "My look" : {
+
+    },
+    "My WearBloom look" : {
+
+    },
+    "Name" : {
+
+    },
+    "New %@" : {
+
+    },
+    "No" : {
+
+    },
+    "No %@ yet" : {
+
+    },
+    "No looks yet" : {
+
+    },
+    "No pieces yet" : {
+
+    },
+    "No previews yet" : {
+
+    },
+    "No WearBloom Pro purchase was found for this App Store account." : {
+
+    },
+    "Not now" : {
+
+    },
+    "OK" : {
+
+    },
+    "One clear photo and the pieces you chose. You stay in control of what is processed." : {
+
+    },
+    "One photo is enough." : {
+
+    },
+    "Open closet" : {
+
+    },
+    "Optional product analytics and diagnostics are shared with PostHog and Sentry only if you opt in. WearBloom does not include photos or prompts in analytics." : {
+
+    },
+    "Or choose a dress" : {
+
+    },
+    "Outerwear" : {
+
+    },
+    "Personal photo" : {
+
+    },
+    "Photo privacy" : {
+
+    },
+    "Photos" : {
+
+    },
+    "Photos are private by default" : {
+
+    },
+    "Piece name" : {
+
+    },
+    "Preparing your pieces…" : {
 
     },
     "Preview" : {
@@ -34,13 +361,211 @@
     "Previews are style inspiration—not a prediction of exact fit or sizing." : {
 
     },
+    "Privacy" : {
+
+    },
+    "Privacy policy" : {
+
+    },
+    "Private by default." : {
+
+    },
+    "Pro generation is active" : {
+
+    },
+    "Profile and settings" : {
+
+    },
+    "Purchases are not allowed on this device." : {
+
+    },
+    "Read the privacy policy" : {
+
+    },
+    "Reading the silhouette…" : {
+
+    },
+    "Ready to see it on you?" : {
+
+    },
+    "Reference %lld" : {
+
+    },
+    "Reference photos" : {
+
+    },
+    "Remote deletion could not be confirmed. Please try again." : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %@ from outfit" : {
+
+    },
+    "Remove favorite" : {
+
+    },
+    "Rendering" : {
+
+    },
+    "Rendering your personal preview…" : {
+
+    },
+    "Replace" : {
+
+    },
+    "Replace a piece" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore purchases" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save look" : {
+
+    },
+    "Save photo" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Saved outfit" : {
+
+    },
+    "Search your closet" : {
+
+    },
+    "Secured with Apple" : {
+
+    },
+    "See it on me" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Share diagnostics and usage" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Something went wrong. Please try again." : {
+
+    },
+    "Style" : {
+
+    },
+    "Style what you own." : {
+
+    },
+    "Subscription and support" : {
+
+    },
+    "Subscription error" : {
+
+    },
+    "Subscription products are temporarily unavailable: %@." : {
+
+    },
+    "Subscriptions are temporarily unavailable." : {
+
+    },
     "Suggested with %@ confidence" : {
 
     },
-    "This permanently deletes your local garments, photos, looks, and variants. It does not cancel an App Store subscription." : {
+    "Tap a piece to replace or remove it" : {
+
+    },
+    "Terms" : {
+
+    },
+    "Terms of use" : {
+
+    },
+    "That image is too large. Choose a smaller photo." : {
+
+    },
+    "The generation service is not configured." : {
+
+    },
+    "The generation service returned an invalid response." : {
+
+    },
+    "The integrity service returned an invalid response." : {
+
+    },
+    "The photos are used to classify garments and create your requested preview. They are not used for advertising or cross-app tracking. You can withdraw permission in Settings and delete stored photos and account data at any time." : {
+
+    },
+    "The purchase was cancelled." : {
+
+    },
+    "The reference photo could not be read." : {
+
+    },
+    "The render failed. No generation was used." : {
+
+    },
+    "The render is still working. Check Looks again shortly." : {
+
+    },
+    "This permanently deletes your account, private files, garments, photos, looks, and previews. Any App Store subscription continues until you cancel it with Apple." : {
+
+    },
+    "This plan is temporarily unavailable." : {
+
+    },
+    "This purchase is pending approval. Access will unlock after approval." : {
+
+    },
+    "This removes this generated variant and its private server file. Your editable look remains." : {
+
+    },
+    "To create a preview, WearBloom uploads the reference photo and garment photos you selected to our private servers and shares them with OpenAI, our AI image provider." : {
+
+    },
+    "Top" : {
+
+    },
+    "Try on" : {
+
+    },
+    "Try this outfit" : {
+
+    },
+    "Unknown error" : {
 
     },
     "Use a clear, full-length photo in even light." : {
+
+    },
+    "Use a dress" : {
+
+    },
+    "Use as a reference photo" : {
+
+    },
+    "Use separates" : {
+
+    },
+    "Variant %lld" : {
+
+    },
+    "Version" : {
+
+    },
+    "View details" : {
+
+    },
+    "View plans" : {
 
     },
     "We’ll let you know when it’s ready." : {
@@ -49,10 +574,58 @@
     "WearBloom" : {
 
     },
+    "WearBloom could not verify this app installation. Please try again." : {
+
+    },
+    "WearBloom Pro" : {
+
+    },
+    "WearBloom Pro includes up to %lld AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings." : {
+
+    },
+    "With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings." : {
+
+    },
+    "Yes" : {
+
+    },
+    "You have used this period’s previews." : {
+
+    },
+    "Your library" : {
+
+    },
+    "Your library is secured with Apple." : {
+
+    },
+    "Your look is ready" : {
+
+    },
+    "YOUR OUTFIT" : {
+
+    },
+    "Your photos" : {
+
+    },
+    "Your photos are only shared when you choose." : {
+
+    },
     "Your photos stay private" : {
 
     },
+    "Your purchase completed, but access is still syncing. Restore purchases or try again shortly." : {
+
+    },
+    "Your result stays private. It is saved or shared only when you choose one of these actions." : {
+
+    },
     "Your saved outfits and previews will appear here." : {
+
+    },
+    "Your session expired. Please try again." : {
+
+    },
+    "Your WearBloom" : {
 
     },
     "Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them." : {

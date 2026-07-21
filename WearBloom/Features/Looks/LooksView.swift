@@ -7,6 +7,7 @@ struct LooksView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Look.updatedAt, order: .reverse) private var looks: [Look]
     @State private var selectedVariant: RenderVariant?
+    @State private var selectedLook: Look?
 
     var body: some View {
         ScrollView {
@@ -23,8 +24,8 @@ struct LooksView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 24) {
                     ForEach(looks) { look in
-                        LookCard(look: look) { variant in
-                            selectedVariant = variant
+                        LookCard(look: look) {
+                            selectedLook = look
                         } edit: {
                             session.load(look)
                         }
@@ -55,13 +56,19 @@ struct LooksView: View {
                 ResultView(variant: variant).environment(session)
             }
         }
+        .sheet(item: $selectedLook) { look in
+            NavigationStack {
+                LookVariantsView(look: look)
+                    .environment(session)
+            }
+        }
         .onAppear { Telemetry.event("screen_viewed", properties: ["screen": "saved_looks"]) }
     }
 }
 
 private struct LookCard: View {
     let look: Look
-    let open: (RenderVariant) -> Void
+    let open: () -> Void
     let edit: () -> Void
 
     private var latest: RenderVariant? {
@@ -71,9 +78,7 @@ private struct LookCard: View {
     }
 
     var body: some View {
-        Button {
-            if let latest { open(latest) } else { edit() }
-        } label: {
+        Button(action: open) {
             VStack(alignment: .leading, spacing: 9) {
                 ZStack {
                     if let latest {
@@ -102,12 +107,115 @@ private struct LookCard: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(BloomColor.ink)
                     .lineLimit(1)
-                Text(look.variants.isEmpty ? "Saved outfit" : "\(look.variants.count) preview\(look.variants.count == 1 ? "" : "s")")
+                Text(look.variants.isEmpty
+                    ? String(localized: "Saved outfit")
+                    : String(localized: "\(look.variants.count) previews"))
                     .font(.caption)
                     .foregroundStyle(BloomColor.muted)
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct LookVariantsView: View {
+    @Environment(AppSession.self) private var session
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var look: Look
+    @State private var selectedVariant: RenderVariant?
+
+    private var variants: [RenderVariant] {
+        look.variants.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if variants.isEmpty {
+                    ContentUnavailableView(
+                        "No previews yet",
+                        systemImage: "sparkles",
+                        description: Text("Edit this look to create its first personal preview.")
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 70)
+                } else {
+                    Text("Every preview is kept as its own variant.")
+                        .font(.subheadline)
+                        .foregroundStyle(BloomColor.muted)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                        ForEach(variants) { variant in
+                            Button {
+                                if variant.state == .ready { selectedVariant = variant }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ZStack {
+                                        ImageDataView(data: variant.resultData, fallback: "sparkles")
+                                        if variant.state != .ready {
+                                            BloomColor.ink.opacity(0.58)
+                                            VStack(spacing: 8) {
+                                                if variant.state == .queued || variant.state == .rendering {
+                                                    ProgressView().tint(.white)
+                                                }
+                                                Text(variant.state == .failed ? String(localized: "Failed") : String(localized: "Rendering"))
+                                                    .font(.caption.weight(.bold))
+                                                    .foregroundStyle(.white)
+                                            }
+                                        }
+                                    }
+                                    .frame(height: 225)
+                                    .clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                                    Text("Variant \(variant.sequence)")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(BloomColor.ink)
+                                    Text(variant.createdAt, format: .dateTime.month(.abbreviated).day().year())
+                                        .font(.caption)
+                                        .foregroundStyle(BloomColor.muted)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                if variant.state == .ready || variant.state == .failed {
+                                    Button("Delete variant", systemImage: "trash", role: .destructive) {
+                                        delete(variant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(18)
+        }
+        .background(BloomColor.cream)
+        .navigationTitle(look.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+            ToolbarItem(placement: .primaryAction) {
+                Button("Edit") {
+                    session.load(look)
+                    dismiss()
+                }
+            }
+        }
+        .fullScreenCover(item: $selectedVariant) { variant in
+            NavigationStack { ResultView(variant: variant).environment(session) }
+        }
+    }
+
+    private func delete(_ variant: RenderVariant) {
+        let remoteID = variant.remoteRenderID
+        modelContext.delete(variant)
+        try? modelContext.save()
+        guard let remoteID else { return }
+        Task {
+            do { try await WearBloomAPI.shared.deleteRender(remoteID) }
+            catch { Telemetry.error(error, context: ["operation": "render_delete"]) }
+        }
     }
 }
 
@@ -117,7 +225,7 @@ struct ResultView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var variant: RenderVariant
     @State private var savedToPhotos = false
-    @State private var isPlannerPresented = false
+    @State private var isDeleteConfirmationPresented = false
 
     var body: some View {
         ZStack {
@@ -139,8 +247,14 @@ struct ResultView: View {
         }
         .onChange(of: variant.feedbackLooksLikeMe) { _, _ in submitFeedbackIfComplete() }
         .onChange(of: variant.feedbackHelpful) { _, _ in submitFeedbackIfComplete() }
-        .sheet(isPresented: $isPlannerPresented) {
-            if let look = variant.look { ResultPlannerSheet(look: look) }
+        .confirmationDialog(
+            "Delete this preview?",
+            isPresented: $isDeleteConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Delete preview", role: .destructive) { deleteVariant() }
+        } message: {
+            Text("This removes this generated variant and its private server file. Your editable look remains.")
         }
     }
 
@@ -158,7 +272,17 @@ struct ResultView: View {
                         .background(.ultraThinMaterial, in: Circle())
                 }
                 Spacer()
-                if let data = variant.resultData, let image = UIImage(data: data) {
+                Button { isDeleteConfirmationPresented = true } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                if let data = variant.resultData,
+                   let image = ShareImageRenderer.makeVerticalStory(
+                    resultData: data,
+                    lookName: variant.look?.name ?? String(localized: "My look")
+                   ) {
                     ShareLink(
                         item: Image(uiImage: image),
                         preview: SharePreview("My WearBloom look", image: Image(uiImage: image))
@@ -222,17 +346,18 @@ struct ResultView: View {
                     dismiss()
                 }
                 .buttonStyle(BloomOutlineButtonStyle())
-                Button(savedToPhotos ? "Saved" : "Save photo", systemImage: savedToPhotos ? "checkmark" : "arrow.down") {
+                Button(savedToPhotos ? String(localized: "Saved") : String(localized: "Save photo"), systemImage: savedToPhotos ? "checkmark" : "arrow.down") {
                     saveToPhotos()
                 }
                 .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
             }
 
-            Button("Plan this look", systemImage: "calendar.badge.plus") {
-                isPlannerPresented = true
-            }
-            .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
-            .disabled(variant.look == nil)
+            Label(
+                "Your result stays private. It is saved or shared only when you choose one of these actions.",
+                systemImage: "lock.fill"
+            )
+            .font(.caption)
+            .foregroundStyle(BloomColor.muted)
 
             Button("Use as a reference photo", systemImage: "person.crop.rectangle.stack") {
                 reuseAsReference()
@@ -261,12 +386,25 @@ struct ResultView: View {
             name: String(localized: "Generated look \(variant.sequence)"),
             imageData: variant.resultData,
             isDefault: false,
-            isGeneratedReference: true
+            isGeneratedReference: true,
+            generatedFromVariantID: variant.remoteRenderID
         )
         modelContext.insert(photo)
         try? modelContext.save()
         Telemetry.event("generated_reference_created")
         session.showToast(String(localized: "Added as a generated reference."))
+    }
+
+    private func deleteVariant() {
+        let remoteID = variant.remoteRenderID
+        modelContext.delete(variant)
+        try? modelContext.save()
+        dismiss()
+        guard let remoteID else { return }
+        Task {
+            do { try await WearBloomAPI.shared.deleteRender(remoteID) }
+            catch { Telemetry.error(error, context: ["operation": "render_delete"]) }
+        }
     }
 
     private func submitFeedbackIfComplete() {
@@ -290,59 +428,6 @@ struct ResultView: View {
                 Telemetry.error(error, context: ["operation": "render_feedback"])
             }
         }
-    }
-}
-
-private struct ResultPlannerSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    let look: Look
-    @State private var date = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 24) {
-                ZStack {
-                    BloomColor.softBlue
-                    HStack(spacing: -14) {
-                        ForEach(look.garments.prefix(4)) { garment in
-                            ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
-                                .frame(width: 115, height: 170)
-                                .rotationEffect(.degrees(garment.id.hashValue.isMultiple(of: 2) ? -3 : 3))
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 260)
-                .clipShape(RoundedRectangle(cornerRadius: 30))
-                .overlay(RoundedRectangle(cornerRadius: 30).stroke(BloomColor.ink, lineWidth: 1.5))
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("When will you wear it?")
-                        .font(.system(size: 25, weight: .black, design: .rounded))
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-                        .datePickerStyle(.graphical)
-                        .tint(BloomColor.blue)
-                }
-
-                Spacer()
-                Button("Add to Today", systemImage: "calendar.badge.checkmark") { plan() }
-                    .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
-            }
-            .padding(18)
-            .background(BloomColor.cream)
-            .navigationTitle("Plan this look")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
-        }
-    }
-
-    private func plan() {
-        modelContext.insert(WearEvent(date: date, isPlanned: true, look: look, garments: look.garments))
-        look.plannedDate = date
-        try? modelContext.save()
-        Telemetry.event("result_look_planned", properties: ["piece_count": look.garments.count])
-        dismiss()
     }
 }
 

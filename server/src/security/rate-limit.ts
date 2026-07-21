@@ -9,15 +9,19 @@ export class RateLimiter {
 
   async check(ownerId: string, action: string, limit: number, windowSeconds = 600): Promise<number> {
     const start = rateLimitWindow(new Date(), windowSeconds);
-    const [row] = await this.db.insert(schema.rateLimitWindows).values({
-      ownerId,
-      action,
-      windowStart: start,
-      count: 1,
-    }).onConflictDoUpdate({
-      target: [schema.rateLimitWindows.ownerId, schema.rateLimitWindows.action, schema.rateLimitWindows.windowStart],
-      set: { count: sql`${schema.rateLimitWindows.count} + 1` },
-    }).returning({ count: schema.rateLimitWindows.count });
+    const [row] = await this.db
+      .insert(schema.rateLimitWindows)
+      .values({
+        ownerId,
+        action,
+        windowStart: start,
+        count: 1,
+      })
+      .onConflictDoUpdate({
+        target: [schema.rateLimitWindows.ownerId, schema.rateLimitWindows.action, schema.rateLimitWindows.windowStart],
+        set: { count: sql`${schema.rateLimitWindows.count} + 1` },
+      })
+      .returning({ count: schema.rateLimitWindows.count });
     const count = row?.count ?? limit + 1;
     if (count > limit) throw new RateLimitError("RATE_LIMITED");
     return Math.max(0, limit - count);

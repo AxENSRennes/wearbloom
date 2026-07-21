@@ -7,6 +7,8 @@
     "start": "bun src/index.ts",
     "worker": "ROLE=worker bun src/worker.ts",
     "openapi": "bun scripts/export-openapi.ts",
+    "format:check": "biome format src tests scripts",
+    "lint": "biome lint src tests scripts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
@@ -15,6 +17,7 @@
   "dependencies": {
     "@better-auth/drizzle-adapter": "latest",
     "@hono/zod-openapi": "latest",
+    "@sentry/bun": "^10.67.0",
     "better-auth": "latest",
     "drizzle-orm": "latest",
     "hono": "latest",
@@ -22,9 +25,11 @@
     "node-app-attest": "1.0.1",
     "openai": "latest",
     "postgres": "latest",
+    "posthog-node": "^5.46.0",
     "zod": "latest"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
     "@types/bun": "latest",
     "drizzle-kit": "latest",
     "typescript": "latest"

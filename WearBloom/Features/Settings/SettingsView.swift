@@ -32,9 +32,11 @@ struct SettingsView: View {
                         }
                         .frame(width: 52, height: 52)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(subscriptions.isPro ? "WearBloom Pro" : "Your WearBloom")
+                            Text(subscriptions.isPro ? String(localized: "WearBloom Pro") : String(localized: "Your WearBloom"))
                                 .font(.system(size: 19, weight: .semibold))
-                            Text(subscriptions.isPro ? "Pro generation is active" : "\(session.freeRendersRemaining) free renders remaining")
+                            Text(subscriptions.isPro
+                                ? String(localized: "Pro generation is active")
+                                : String(localized: "\(session.freeRendersRemaining) free renders remaining"))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -165,12 +167,11 @@ struct SettingsView: View {
         for garment in garments { modelContext.delete(garment) }
         for reference in references { modelContext.delete(reference) }
         try? modelContext.save()
-        session.resetDraft()
-        session.hasLinkedAppleAccount = false
-        UserDefaults.standard.set(false, forKey: "hasLinkedAppleAccount")
+        session.resetAfterAccountDeletion()
         await subscriptions.logOut()
         Telemetry.event("account_data_deleted")
         Telemetry.resetIdentity()
+        Telemetry.setCollectionEnabled(false)
         dismiss()
     }
 
@@ -237,7 +238,7 @@ private struct ManageReferencesView: View {
                         .frame(width: 58, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(reference.name).fontWeight(.semibold)
-                        Text(reference.isGeneratedReference ? "Generated reference" : "Personal photo")
+                        Text(reference.isGeneratedReference ? String(localized: "Generated reference") : String(localized: "Personal photo"))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -246,6 +247,8 @@ private struct ManageReferencesView: View {
                 .swipeActions(edge: .leading) {
                     Button("Default") {
                         for item in references { item.isDefault = item.id == reference.id }
+                        try? modelContext.save()
+                        syncDefault(reference)
                     }.tint(BloomColor.violet)
                 }
             }
@@ -263,6 +266,28 @@ private struct ManageReferencesView: View {
             }
         }
         .navigationTitle("Reference photos")
+    }
+
+    private func syncDefault(_ reference: ReferencePhoto) {
+        guard let imageData = reference.imageData else { return }
+        Task { @MainActor in
+            guard await WearBloomAPI.shared.isConfigured else { return }
+            do {
+                reference.remoteAssetID = try await WearBloomAPI.shared.saveReference(
+                    RemoteReferenceInput(
+                        id: reference.id,
+                        imageData: imageData,
+                        remoteAssetID: reference.remoteAssetID,
+                        isGenerated: reference.isGeneratedReference,
+                        generatedFromVariantID: reference.generatedFromVariantID
+                    ),
+                    isDefault: true
+                )
+                try? modelContext.save()
+            } catch {
+                Telemetry.error(error, context: ["operation": "reference_default_sync"])
+            }
+        }
     }
 }
 

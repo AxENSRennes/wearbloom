@@ -5,6 +5,8 @@ import SwiftUI
 struct ContentView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
+    @Query(sort: \RenderVariant.createdAt, order: .reverse) private var variants: [RenderVariant]
     @State private var session = AppSession()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var didSeed = false
@@ -52,9 +54,14 @@ struct ContentView: View {
                 session.apply(status)
                 Telemetry.identify(userID: status.userId)
                 await subscriptions.logIn(appUserID: status.userId)
+                session.reconcilePendingRenders(variants, context: modelContext)
             } catch {
                 Telemetry.error(error, context: ["operation": "account_bootstrap"])
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            session.reconcilePendingRenders(variants, context: modelContext)
         }
         .sheet(isPresented: $session.isPaywallPresented) {
             PaywallView(displayCloseButton: true)
@@ -70,7 +77,7 @@ struct ContentView: View {
                 .onRestoreFailure { subscriptions.report($0) }
                 .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 7) {
-                        Text("WearBloom Pro includes up to 20 AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings.")
+                        Text("WearBloom Pro includes up to \(session.paidRenderAllowance) AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -114,14 +121,11 @@ private struct RootTabView: View {
             Tab("Closet", systemImage: "tshirt", value: 0) {
                 NavigationStack { ClosetView() }
             }
-            Tab("Style", systemImage: "wand.and.stars", value: 1) {
+            Tab("Create", systemImage: "wand.and.stars", value: 1) {
                 NavigationStack { CreateView() }
             }
-            Tab("Today", systemImage: "calendar", value: 2) {
-                NavigationStack { TodayView() }
-            }
-            Tab("Insights", systemImage: "chart.bar", value: 3) {
-                NavigationStack { InsightsView() }
+            Tab("Looks", systemImage: "square.grid.2x2", value: 2) {
+                NavigationStack { LooksView() }
             }
         }
         .tint(BloomColor.blue)

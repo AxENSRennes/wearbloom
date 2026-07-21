@@ -1,16 +1,20 @@
-import OpenAI, { toFile } from "openai";
+import { toFile } from "openai";
+import type OpenAI from "openai";
 import type { GenerationInput, GenerationOutput, ImageGenerationProvider } from "./provider";
 
 export class OpenAIImageProvider implements ImageGenerationProvider {
   readonly name = "openai";
 
-  constructor(readonly model: string, private readonly client: OpenAI) {}
+  constructor(
+    readonly model: string,
+    private readonly client: OpenAI,
+  ) {}
 
   async generate(input: GenerationInput): Promise<GenerationOutput> {
     const images = [
       await toFile(input.reference.bytes, "person.jpg", { type: input.reference.contentType }),
-      ...await Promise.all(input.garments.map((item, index) =>
-        toFile(item.bytes, `garment-${index}.jpg`, { type: item.contentType })
+      ...(await Promise.all(
+        input.garments.map((item, index) => toFile(item.bytes, `garment-${index}.jpg`, { type: item.contentType })),
       )),
     ];
     const garmentList = input.garments.map((item) => `${item.category}: ${item.name}`).join(", ");

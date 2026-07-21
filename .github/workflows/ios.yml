@@ -42,9 +42,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Type check and test
-        run: bun run typecheck && bun test
+        run: bun run format:check && bun run lint && bun run typecheck && bun test
       - name: Verify generated OpenAPI contract
-        run: bun run openapi && git diff --exit-code ../openapi/wearbloom-v1.json
+        run: |
+          bun run openapi
+          git diff --exit-code ../openapi/wearbloom-v1.json
+          cmp ../openapi/wearbloom-v1.json ../WearBloomContract/Sources/WearBloomContract/openapi.json
       - name: Build production image
         run: docker build -t wearbloom-server:ci .
 
@@ -100,5 +103,6 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Debug \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             test

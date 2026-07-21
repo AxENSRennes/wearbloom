@@ -9,8 +9,8 @@ enum AppAttestClientError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .enrollmentFailed: "WearBloom could not verify this app installation. Please try again."
-        case .invalidServerResponse: "The integrity service returned an invalid response."
+        case .enrollmentFailed: String(localized: "WearBloom could not verify this app installation. Please try again.")
+        case .invalidServerResponse: String(localized: "The integrity service returned an invalid response.")
         }
     }
 }

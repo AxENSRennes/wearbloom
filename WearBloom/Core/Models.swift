@@ -44,6 +44,19 @@ enum RenderState: String, Codable {
     case failed
 }
 
+enum LookComposition {
+    static func isComplete(_ garments: [Garment]) -> Bool {
+        isComplete(categories: Set(garments.map(\.category)))
+    }
+
+    static func isComplete(categories: Set<GarmentCategory>) -> Bool {
+        if categories.contains(.dress) {
+            return !categories.contains(.top) && !categories.contains(.bottom)
+        }
+        return categories.contains(.top) && categories.contains(.bottom)
+    }
+}
+
 @Model
 final class Garment {
     @Attribute(.unique) var id: UUID
@@ -56,8 +69,6 @@ final class Garment {
     var isFavorite: Bool
     var createdAt: Date
     var isArchived: Bool = false
-    var wearCount: Int = 0
-    var lastWornAt: Date?
     var careNote: String = ""
 
     var category: GarmentCategory {
@@ -96,6 +107,7 @@ final class ReferencePhoto {
     var remoteAssetID: UUID?
     var isDefault: Bool
     var isGeneratedReference: Bool
+    var generatedFromVariantID: UUID?
     var createdAt: Date
 
     init(
@@ -105,6 +117,7 @@ final class ReferencePhoto {
         remoteAssetID: UUID? = nil,
         isDefault: Bool = false,
         isGeneratedReference: Bool = false,
+        generatedFromVariantID: UUID? = nil,
         createdAt: Date = .now
     ) {
         self.id = id
@@ -113,6 +126,7 @@ final class ReferencePhoto {
         self.remoteAssetID = remoteAssetID
         self.isDefault = isDefault
         self.isGeneratedReference = isGeneratedReference
+        self.generatedFromVariantID = generatedFromVariantID
         self.createdAt = createdAt
     }
 }
@@ -125,11 +139,6 @@ final class Look {
     var createdAt: Date
     var updatedAt: Date
     var isFavorite: Bool
-    var wearCount: Int = 0
-    var lastWornAt: Date?
-    var plannedDate: Date?
-    var collectionName: String = "Everyday"
-    var sourceRawValue: String = "manual"
     @Relationship(deleteRule: .nullify) var garments: [Garment]
     @Relationship(deleteRule: .cascade, inverse: \RenderVariant.look) var variants: [RenderVariant]
 
@@ -151,35 +160,6 @@ final class Look {
         self.isFavorite = isFavorite
         self.garments = garments
         self.variants = variants
-    }
-}
-
-@Model
-final class WearEvent {
-    @Attribute(.unique) var id: UUID
-    var date: Date
-    var note: String
-    var isPlanned: Bool
-    var createdAt: Date
-    @Relationship(deleteRule: .nullify) var look: Look?
-    @Relationship(deleteRule: .nullify) var garments: [Garment]
-
-    init(
-        id: UUID = UUID(),
-        date: Date = .now,
-        note: String = "",
-        isPlanned: Bool = false,
-        createdAt: Date = .now,
-        look: Look? = nil,
-        garments: [Garment] = []
-    ) {
-        self.id = id
-        self.date = date
-        self.note = note
-        self.isPlanned = isPlanned
-        self.createdAt = createdAt
-        self.look = look
-        self.garments = garments
     }
 }
 

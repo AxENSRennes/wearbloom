@@ -31,8 +31,8 @@ struct ClosetView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
                     BloomHeader(
-                        title: "Closet",
-                        subtitle: "\(garments.filter { !$0.isArchived }.count) pieces · style what you own"
+                        title: String(localized: "Closet"),
+                        subtitle: String(localized: "\(garments.filter { !$0.isArchived }.count) pieces · style what you own")
                     ) { session.isProfilePresented = true }
 
                     HStack(spacing: 14) {
@@ -75,7 +75,10 @@ struct ClosetView: View {
                                     Button {
                                         garment.isFavorite.toggle()
                                     } label: {
-                                        Label(garment.isFavorite ? "Remove favorite" : "Favorite", systemImage: "heart")
+                                        Label(
+                                            garment.isFavorite ? String(localized: "Remove favorite") : String(localized: "Favorite"),
+                                            systemImage: "heart"
+                                        )
                                     }
                                     Button("Archive", systemImage: "archivebox") { garment.isArchived = true }
                                     Button("Delete", systemImage: "trash", role: .destructive) {

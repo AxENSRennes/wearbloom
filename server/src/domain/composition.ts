@@ -12,4 +12,7 @@ export function validateComposition(pieces: CompositionPiece[]): void {
   if (categories.includes("dress") && (categories.includes("top") || categories.includes("bottom"))) {
     throw new Error("LOOK_DRESS_CONFLICT");
   }
+  const hasDress = categories.includes("dress");
+  const hasSeparates = categories.includes("top") && categories.includes("bottom");
+  if (!hasDress && !hasSeparates) throw new Error("LOOK_INCOMPLETE");
 }

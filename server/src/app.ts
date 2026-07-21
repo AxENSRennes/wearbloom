@@ -16,7 +16,15 @@ import { createV1Routes, type ApiVariables } from "./http/routes";
 
 type Env = { Variables: ApiVariables };
 
-export function createApp(deps: { config: AppConfig; db: Database; storage: PrivateStorage; detector: GarmentDetector; auth: Auth; appAttest: AppAttestVerifier; rateLimiter: RateLimiter }) {
+export function createApp(deps: {
+  config: AppConfig;
+  db: Database;
+  storage: PrivateStorage;
+  detector: GarmentDetector;
+  auth: Auth;
+  appAttest: AppAttestVerifier;
+  rateLimiter: RateLimiter;
+}) {
   const app = new OpenAPIHono<Env>();
 
   app.use("*", async (c, next) => {
@@ -26,25 +34,36 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
     c.header("X-Content-Type-Options", "nosniff");
     const started = performance.now();
     await next();
-    console.log(JSON.stringify({
-      level: "info", requestId, method: c.req.method, path: c.req.path,
-      status: c.res.status, durationMs: Math.round(performance.now() - started),
-    }));
+    console.log(
+      JSON.stringify({
+        level: "info",
+        requestId,
+        method: c.req.method,
+        path: c.req.path,
+        status: c.res.status,
+        durationMs: Math.round(performance.now() - started),
+      }),
+    );
   });
 
   app.get("/health", async (c) => {
     await deps.db.execute(sql`select 1`);
-    const [heartbeat] = await deps.db.select().from(schema.workerHeartbeats)
-      .where(gt(schema.workerHeartbeats.lastSeenAt, new Date(Date.now() - 60_000))).limit(1);
+    const [heartbeat] = await deps.db
+      .select()
+      .from(schema.workerHeartbeats)
+      .where(gt(schema.workerHeartbeats.lastSeenAt, new Date(Date.now() - 60_000)))
+      .limit(1);
     return c.json({ status: "ok", api: true, worker: Boolean(heartbeat), version: "1.0.0" });
   });
 
   app.post("/v1/auth/sign-in/apple-native", async (c) => {
-    const input = z.object({
-      identityToken: z.string().min(1),
-      authorizationCode: z.string().min(1),
-      nonce: z.string().min(1),
-    }).parse(await c.req.json());
+    const input = z
+      .object({
+        identityToken: z.string().min(1),
+        authorizationCode: z.string().min(1),
+        nonce: z.string().min(1),
+      })
+      .parse(await c.req.json());
     const tokens = await exchangeAppleAuthorizationCode(deps.config, input.authorizationCode);
     const subject = decodeJwt(input.identityToken).sub;
     if (!subject || decodeJwt(tokens.idToken).sub !== subject) {
@@ -53,9 +72,8 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
     const headers = new Headers(c.req.raw.headers);
     headers.delete("content-length");
     headers.set("content-type", "application/json");
-    const authResponse = await deps.auth.handler(new Request(
-      new URL("/v1/auth/sign-in/social", deps.config.BETTER_AUTH_URL).toString(),
-      {
+    const authResponse = await deps.auth.handler(
+      new Request(new URL("/v1/auth/sign-in/social", deps.config.BETTER_AUTH_URL).toString(), {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -67,14 +85,17 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
             refreshToken: tokens.refreshToken,
           },
         }),
-      },
-    ));
+      }),
+    );
     if (authResponse.ok) {
-      await deps.db.update(schema.account).set({
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        updatedAt: new Date(),
-      }).where(and(eq(schema.account.providerId, "apple"), eq(schema.account.accountId, subject)));
+      await deps.db
+        .update(schema.account)
+        .set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(schema.account.providerId, "apple"), eq(schema.account.accountId, subject)));
     }
     return authResponse;
   });
@@ -83,9 +104,16 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
 
   app.post("/v1/webhooks/revenuecat", async (c) => {
     if (!deps.config.REVENUECAT_WEBHOOK_SECRET) return apiError(c, "NOT_FOUND", 404);
-    if (c.req.header("authorization") !== `Bearer ${deps.config.REVENUECAT_WEBHOOK_SECRET}`) return apiError(c, "AUTH_REQUIRED", 401);
+    if (c.req.header("authorization") !== `Bearer ${deps.config.REVENUECAT_WEBHOOK_SECRET}`)
+      return apiError(c, "AUTH_REQUIRED", 401);
     const body = await c.req.json<{
-      event?: { app_user_id?: string; product_id?: string; expiration_at_ms?: number | null; type?: string; entitlement_ids?: string[] };
+      event?: {
+        app_user_id?: string;
+        product_id?: string;
+        expiration_at_ms?: number | null;
+        type?: string;
+        entitlement_ids?: string[];
+      };
     }>();
     const event = body.event;
     const ownerId = event?.app_user_id;
@@ -94,11 +122,26 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
     const deactivation = new Set(["EXPIRATION"]);
     const isPro = event.entitlement_ids?.includes("pro") === true && !deactivation.has(event.type ?? "");
     const expiresAt = event.expiration_at_ms ? new Date(event.expiration_at_ms) : new Date("9999-12-31T00:00:00Z");
-    await deps.db.insert(schema.entitlements).values({
-      ownerId, revenueCatAppUserId: ownerId, productId: event.product_id, isPro, expiresAt, updatedAt: new Date(),
-    }).onConflictDoUpdate({ target: schema.entitlements.ownerId, set: {
-      revenueCatAppUserId: ownerId, productId: event.product_id, isPro, expiresAt, updatedAt: new Date(),
-    } });
+    await deps.db
+      .insert(schema.entitlements)
+      .values({
+        ownerId,
+        revenueCatAppUserId: ownerId,
+        productId: event.product_id,
+        isPro,
+        expiresAt,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: schema.entitlements.ownerId,
+        set: {
+          revenueCatAppUserId: ownerId,
+          productId: event.product_id,
+          isPro,
+          expiresAt,
+          updatedAt: new Date(),
+        },
+      });
     return c.json({ accepted: true }, 202);
   });
 
@@ -117,28 +160,40 @@ export function createApp(deps: { config: AppConfig; db: Database; storage: Priv
         throw error;
       }
     }
-    if ((c.req.method === "POST" || c.req.method === "PUT") &&
-        (c.req.path === "/v1/uploads" || c.req.path === "/v1/renders")) {
+    if (
+      (c.req.method === "POST" || c.req.method === "PUT") &&
+      (c.req.path === "/v1/uploads" || c.req.path === "/v1/renders")
+    ) {
       c.set("rawBody", new Uint8Array(await c.req.raw.clone().arrayBuffer()));
     }
     return next();
   });
 
   app.get("/v1/assets/:id/content", async (c) => {
-    const [asset] = await deps.db.select().from(schema.assets).where(and(
-      eq(schema.assets.id, c.req.param("id")), eq(schema.assets.ownerId, c.get("userId")),
-    )).limit(1);
+    const [asset] = await deps.db
+      .select()
+      .from(schema.assets)
+      .where(and(eq(schema.assets.id, c.req.param("id")), eq(schema.assets.ownerId, c.get("userId"))))
+      .limit(1);
     if (!asset || asset.deletedAt) return apiError(c, "NOT_FOUND", 404);
     const bytes = await deps.storage.get(asset.storageKey);
     return new Response(bytes, {
-      headers: { "Content-Type": asset.contentType, "Cache-Control": "private, max-age=300", "Content-Disposition": "inline" },
+      headers: {
+        "Content-Type": asset.contentType,
+        "Cache-Control": "private, max-age=300",
+        "Content-Disposition": "inline",
+      },
     });
   });
 
   app.route("/v1", createV1Routes(deps));
   app.doc("/openapi.json", {
-    openapi: "3.1.0",
-    info: { title: "WearBloom API", version: "1.0.0", description: "Private, authenticated API for the WearBloom iOS app." },
+    openapi: "3.0.3",
+    info: {
+      title: "WearBloom API",
+      version: "1.0.0",
+      description: "Private, authenticated API for the WearBloom iOS app.",
+    },
     servers: [{ url: deps.config.BETTER_AUTH_URL }],
   });
   app.notFound((c) => apiError(c, "NOT_FOUND", 404));

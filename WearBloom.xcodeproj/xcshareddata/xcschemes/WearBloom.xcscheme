@@ -28,6 +28,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D10000000000000000000001"
+               BuildableName = "WearBloomUITests.xctest"
+               BlueprintName = "WearBloomUITests"
+               ReferencedContainer = "container:WearBloom.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "C10000000000000000000001"
                BuildableName = "WearBloomTests.xctest"
                BlueprintName = "WearBloomTests"
@@ -50,6 +64,17 @@
                BlueprintIdentifier = "C10000000000000000000001"
                BuildableName = "WearBloomTests.xctest"
                BlueprintName = "WearBloomTests"
+               ReferencedContainer = "container:WearBloom.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D10000000000000000000001"
+               BuildableName = "WearBloomUITests.xctest"
+               BlueprintName = "WearBloomUITests"
                ReferencedContainer = "container:WearBloom.xcodeproj">
             </BuildableReference>
          </TestableReference>

@@ -5,7 +5,11 @@ export type GenerationInput = {
   promptVersion: string;
   size: string;
 };
-export type GenerationOutput = { bytes: Uint8Array; contentType: "image/png" | "image/jpeg"; providerRequestId?: string };
+export type GenerationOutput = {
+  bytes: Uint8Array;
+  contentType: "image/png" | "image/jpeg";
+  providerRequestId?: string;
+};
 
 export interface ImageGenerationProvider {
   readonly name: string;

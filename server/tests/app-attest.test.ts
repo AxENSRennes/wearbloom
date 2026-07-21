@@ -12,9 +12,7 @@ describe("App Attest request binding", () => {
   test("binds the assertion to challenge, method, path, and exact body", () => {
     const body = new TextEncoder().encode('{"lookId":"one"}');
     const digest = createHash("sha256").update(body).digest("base64");
-    expect(canonicalRequest("challenge", "post", "/v1/renders", body)).toBe(
-      `challenge\nPOST\n/v1/renders\n${digest}`,
-    );
+    expect(canonicalRequest("challenge", "post", "/v1/renders", body)).toBe(`challenge\nPOST\n/v1/renders\n${digest}`);
   });
 
   test("requires App Attest by default in production", () => {

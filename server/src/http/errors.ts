@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { captureException } from "../telemetry";
 
 export type ErrorBody = { error: { code: string; message: string; requestId: string } };
 
@@ -9,11 +10,14 @@ const messages: Record<string, string> = {
   LOOK_EMPTY: "Add at least one garment to the look.",
   LOOK_DUPLICATE_CATEGORY: "Choose only one garment per category.",
   LOOK_DRESS_CONFLICT: "A dress replaces the top and bottom.",
+  LOOK_INCOMPLETE: "Choose a dress or both a top and bottom.",
   QUOTA_EXHAUSTED: "Your generation allowance is used for this period.",
+  RENDER_IN_PROGRESS: "This preview is still rendering.",
   IDEMPOTENCY_REQUIRED: "An Idempotency-Key header is required.",
   UPLOAD_TOO_LARGE: "The image is too large.",
   UPLOAD_INVALID_IMAGE: "The file is not a valid image.",
   UPLOAD_UNSUPPORTED_TYPE: "Use a JPEG, PNG, or HEIC image.",
+  UPLOAD_COUNT_EXCEEDED: "Delete an older image before uploading another.",
   APP_ATTEST_REQUIRED: "This request needs a valid app integrity assertion.",
   APP_ATTEST_KEY_UNKNOWN: "The app integrity key must be enrolled again.",
   APP_ATTEST_CHALLENGE_INVALID: "The app integrity challenge is invalid or expired.",
@@ -31,7 +35,11 @@ type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 500;
 
 export function apiError<S extends ErrorStatus>(c: Context, code: string, status: S) {
   const body: ErrorBody = {
-    error: { code, message: messages[code] ?? "The request could not be completed.", requestId: c.get("requestId") as string },
+    error: {
+      code,
+      message: messages[code] ?? "The request could not be completed.",
+      requestId: c.get("requestId") as string,
+    },
   };
   return c.json(body, status);
 }
@@ -39,6 +47,7 @@ export function apiError<S extends ErrorStatus>(c: Context, code: string, status
 export function errorHandler(error: Error, c: Context) {
   if (error instanceof HTTPException) return error.getResponse();
   const code = messages[error.message] ? error.message : "INTERNAL_ERROR";
+  captureException(error, { request_id: String(c.get("requestId") ?? "unknown"), error_code: code });
   console.error(JSON.stringify({ level: "error", requestId: c.get("requestId"), code, error: error.message }));
   return code === "INTERNAL_ERROR" ? apiError(c, code, 500) : apiError(c, code, 422);
 }
