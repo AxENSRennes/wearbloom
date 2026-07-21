@@ -55,6 +55,7 @@ struct LooksView: View {
                 ResultView(variant: variant).environment(session)
             }
         }
+        .onAppear { Telemetry.event("screen_viewed", properties: ["screen": "saved_looks"]) }
     }
 }
 
@@ -116,6 +117,7 @@ struct ResultView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var variant: RenderVariant
     @State private var savedToPhotos = false
+    @State private var isPlannerPresented = false
 
     var body: some View {
         ZStack {
@@ -137,6 +139,9 @@ struct ResultView: View {
         }
         .onChange(of: variant.feedbackLooksLikeMe) { _, _ in submitFeedbackIfComplete() }
         .onChange(of: variant.feedbackHelpful) { _, _ in submitFeedbackIfComplete() }
+        .sheet(isPresented: $isPlannerPresented) {
+            if let look = variant.look { ResultPlannerSheet(look: look) }
+        }
     }
 
     private var resultImage: some View {
@@ -223,6 +228,12 @@ struct ResultView: View {
                 .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
             }
 
+            Button("Plan this look", systemImage: "calendar.badge.plus") {
+                isPlannerPresented = true
+            }
+            .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
+            .disabled(variant.look == nil)
+
             Button("Use as a reference photo", systemImage: "person.crop.rectangle.stack") {
                 reuseAsReference()
             }
@@ -279,6 +290,59 @@ struct ResultView: View {
                 Telemetry.error(error, context: ["operation": "render_feedback"])
             }
         }
+    }
+}
+
+private struct ResultPlannerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    let look: Look
+    @State private var date = Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 24) {
+                ZStack {
+                    BloomColor.softBlue
+                    HStack(spacing: -14) {
+                        ForEach(look.garments.prefix(4)) { garment in
+                            ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                                .frame(width: 115, height: 170)
+                                .rotationEffect(.degrees(garment.id.hashValue.isMultiple(of: 2) ? -3 : 3))
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 30))
+                .overlay(RoundedRectangle(cornerRadius: 30).stroke(BloomColor.ink, lineWidth: 1.5))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("When will you wear it?")
+                        .font(.system(size: 25, weight: .black, design: .rounded))
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .tint(BloomColor.blue)
+                }
+
+                Spacer()
+                Button("Add to Today", systemImage: "calendar.badge.checkmark") { plan() }
+                    .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
+            }
+            .padding(18)
+            .background(BloomColor.cream)
+            .navigationTitle("Plan this look")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+
+    private func plan() {
+        modelContext.insert(WearEvent(date: date, isPlanned: true, look: look, garments: look.garments))
+        look.plannedDate = date
+        try? modelContext.save()
+        Telemetry.event("result_look_planned", properties: ["piece_count": look.garments.count])
+        dismiss()
     }
 }
 

@@ -7,7 +7,7 @@ import UIKit
 @MainActor
 @Observable
 final class AppSession {
-    var selectedTab = 1
+    var selectedTab = 0
     var selectedGarmentIDs: [GarmentCategory: UUID] = [:]
     var selectedReferenceID: UUID?
     var activeLookID: UUID?
@@ -73,23 +73,60 @@ final class AppSession {
     }
 
     func seedIfNeeded(context: ModelContext) throws {
+#if !DEBUG
+        // Production libraries always start from the user's own wardrobe.
+        return
+#else
         var garmentDescriptor = FetchDescriptor<Garment>()
         garmentDescriptor.fetchLimit = 1
         if try context.fetch(garmentDescriptor).isEmpty {
-            let samples: [(String, GarmentCategory, String, String)] = [
-                ("Violet silk top", .top, "#5B3DF5", "tshirt.fill"),
-                ("Coral ribbed knit", .top, "#FF6A55", "tshirt.fill"),
-                ("Ink wide-leg trousers", .bottom, "#252525", "figure.stand.dress.line.vertical.figure"),
-                ("Lime car coat", .outerwear, "#D8FF3E", "jacket.fill"),
-                ("Sienna column dress", .dress, "#BD7152", "figure.dress.line.vertical.figure")
+            let samples: [(String, GarmentCategory, String, String, String?)] = [
+                ("Plum gathered top", .top, "#7C3558", "tshirt.fill", "plum-blouse.png"),
+                ("Orchid knit top", .top, "#BEB2D8", "tshirt.fill", "orchid-knit.png"),
+                ("Black wide-leg trousers", .bottom, "#252525", "figure.stand.dress.line.vertical.figure", "black-trousers.jpg"),
+                ("Cobalt overshirt", .outerwear, "#3038F2", "jacket.fill", "cobalt-overshirt.png"),
+                ("Coral column dress", .dress, "#FF6D5B", "figure.dress.line.vertical.figure", "coral-dress.png"),
+                ("Lime car coat", .outerwear, "#D9FF43", "jacket.fill", "lime-coat.png")
             ]
-            for (name, category, hex, symbol) in samples {
-                context.insert(Garment(
+            var seededGarments: [Garment] = []
+            for (name, category, hex, symbol, assetName) in samples {
+                let photoData = assetName.flatMap(Self.bundledData(named:))
+                let garment = Garment(
                     name: name,
                     category: category,
-                    imageData: Self.posterData(color: UIColor(Color(hex: hex)), symbol: symbol),
+                    imageData: photoData ?? Self.posterData(color: UIColor(Color(hex: hex)), symbol: symbol),
                     colorHex: hex
-                ))
+                )
+                context.insert(garment)
+                seededGarments.append(garment)
+            }
+
+            if let top = seededGarments.first(where: { $0.category == .top }),
+               let bottom = seededGarments.first(where: { $0.category == .bottom }) {
+                let look = Look(name: String(localized: "Easy contrast"), isFavorite: true, garments: [top, bottom])
+                let variant = RenderVariant(
+                    sequence: 1,
+                    state: .ready,
+                    resultData: Self.bundledData(named: "model-result.jpg"),
+                    garmentSnapshot: "Top: \(top.name) • Bottom: \(bottom.name)",
+                    completedAt: .now,
+                    look: look
+                )
+                look.variants.append(variant)
+                context.insert(look)
+                context.insert(variant)
+
+                for offset in [0, -3, -8] {
+                    let date = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
+                    let event = WearEvent(date: date, look: look, garments: [top, bottom])
+                    context.insert(event)
+                    top.wearCount += 1
+                    bottom.wearCount += 1
+                    top.lastWornAt = date
+                    bottom.lastWornAt = date
+                    look.wearCount += 1
+                    look.lastWornAt = date
+                }
             }
         }
 
@@ -98,11 +135,27 @@ final class AppSession {
         if try context.fetch(photoDescriptor).isEmpty {
             context.insert(ReferencePhoto(
                 name: String(localized: "Editorial sample"),
-                imageData: Self.referencePosterData(),
+                imageData: Self.bundledData(named: "model-create.jpg") ?? Self.referencePosterData(),
                 isDefault: true
             ))
         }
         try context.save()
+
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-reviewSelection") {
+            let allGarments = try context.fetch(FetchDescriptor<Garment>())
+            if let top = allGarments.first(where: { $0.category == .top }) { select(top) }
+            if let bottom = allGarments.first(where: { $0.category == .bottom }) { select(bottom) }
+        }
+#endif
+#endif
+    }
+
+    private static func bundledData(named name: String) -> Data? {
+        let parts = name.split(separator: ".", maxSplits: 1).map(String.init)
+        guard parts.count == 2,
+              let url = Bundle.main.url(forResource: parts[0], withExtension: parts[1]) else { return nil }
+        return try? Data(contentsOf: url)
     }
 
     func beginRender(
@@ -311,7 +364,7 @@ final class AppSession {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.jpegData(withCompressionQuality: 0.92) { context in
             reference.draw(in: CGRect(origin: .zero, size: size))
-            UIColor(Color(hex: "5B3DF5")).withAlphaComponent(0.28).setFill()
+            UIColor(Color(hex: "3038F2")).withAlphaComponent(0.20).setFill()
             context.fill(CGRect(origin: .zero, size: size))
             let panel = CGRect(x: 90, y: 900, width: 844, height: 340)
             let panelPath = UIBezierPath(roundedRect: panel, cornerRadius: 52)

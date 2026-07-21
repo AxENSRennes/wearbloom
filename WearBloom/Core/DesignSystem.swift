@@ -1,15 +1,18 @@
 import SwiftUI
 
 enum BloomColor {
-    static let ink = Color(hex: "191919")
-    static let cream = Color(hex: "F6F5F1")
+    static let ink = Color(hex: "171717")
+    static let cream = Color(hex: "F7F1E8")
     static let paper = Color.white
-    static let violet = Color(hex: "6547F5")
-    static let lime = Color(hex: "DDF66A")
-    static let coral = Color(hex: "FF7A68")
-    static let muted = Color(hex: "77746E")
-    static let line = Color.black.opacity(0.08)
-    static let softViolet = Color(hex: "EEEAFE")
+    static let blue = Color(hex: "3038F2")
+    /// Compatibility alias while older feature code is progressively migrated.
+    static let violet = blue
+    static let lime = Color(hex: "D9FF43")
+    static let coral = Color(hex: "FF6D5B")
+    static let muted = Color(hex: "6F6A62")
+    static let line = Color.black.opacity(0.12)
+    static let softBlue = Color(hex: "E9EBFF")
+    static let softViolet = softBlue
 }
 
 extension Color {
@@ -37,6 +40,25 @@ struct BloomShadow: ViewModifier {
     }
 }
 
+struct BloomPageBackground: View {
+    var body: some View {
+        ZStack {
+            BloomColor.cream
+            OrganicBlob()
+                .fill(BloomColor.blue)
+                .frame(width: 220, height: 190)
+                .rotationEffect(.degrees(18))
+                .offset(x: 165, y: -350)
+            Circle()
+                .fill(BloomColor.lime)
+                .frame(width: 150)
+                .offset(x: -210, y: 350)
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
 extension View {
     func bloomCard(radius: CGFloat = 24, offset: CGFloat = 0) -> some View {
         modifier(BloomShadow(radius: radius, offset: offset))
@@ -44,17 +66,26 @@ extension View {
 }
 
 struct BloomButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     var fill: Color = BloomColor.ink
     var compact = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: compact ? 14 : 16, weight: .semibold))
-            .foregroundStyle(fill == BloomColor.ink || fill == BloomColor.violet ? .white : BloomColor.ink)
+            .foregroundStyle(isEnabled ? (fill == BloomColor.ink || fill == BloomColor.blue ? .white : BloomColor.ink) : BloomColor.muted)
             .frame(maxWidth: compact ? nil : .infinity)
             .padding(.horizontal, compact ? 16 : 20)
             .frame(height: compact ? 42 : 54)
-            .background(fill, in: RoundedRectangle(cornerRadius: compact ? 14 : 18, style: .continuous))
+            .background {
+                ZStack {
+                    if isEnabled && fill == BloomColor.lime {
+                        Capsule().fill(BloomColor.coral).offset(y: 4)
+                    }
+                    Capsule().fill(isEnabled ? fill : Color(hex: "E5E1D9"))
+                }
+            }
+            .overlay(Capsule().stroke(isEnabled ? BloomColor.ink : BloomColor.line, lineWidth: fill == BloomColor.lime ? 2 : 0))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .opacity(configuration.isPressed ? 0.86 : 1)
             .animation(.snappy(duration: 0.16), value: configuration.isPressed)
@@ -92,7 +123,7 @@ struct BloomWordmark: View {
         HStack(spacing: 7) {
             Image(systemName: "sparkle")
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(BloomColor.violet)
+                .foregroundStyle(BloomColor.blue)
                 .frame(width: 24, height: 24)
                 .background(BloomColor.lime, in: Circle())
             Text("WearBloom")
@@ -117,7 +148,76 @@ struct ImageDataView: View {
                 BloomColor.softViolet
                 Image(systemName: fallback)
                     .font(.system(size: 27, weight: .regular))
-                    .foregroundStyle(BloomColor.violet)
+                    .foregroundStyle(BloomColor.blue)
+            }
+        }
+    }
+}
+
+struct BloomHeader: View {
+    let title: String
+    var subtitle: String?
+    var actionSystemImage: String = "person.crop.circle"
+    var action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 33, weight: .black, design: .rounded))
+                    .tracking(-1.1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(BloomColor.muted)
+                }
+            }
+            Spacer()
+            Button(action: action) {
+                Image(systemName: actionSystemImage)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(BloomColor.ink)
+                    .frame(width: 44, height: 44)
+                    .background(BloomColor.paper, in: Circle())
+                    .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
+            }
+            .accessibilityLabel("Profile and settings")
+        }
+    }
+}
+
+struct BloomPill: View {
+    let title: String
+    var systemImage: String?
+    var selected = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let systemImage { Image(systemName: systemImage) }
+            Text(title)
+        }
+        .font(.system(size: 13, weight: .bold))
+        .foregroundStyle(selected ? .white : BloomColor.ink)
+        .padding(.horizontal, 14)
+        .frame(height: 38)
+        .background(selected ? BloomColor.blue : BloomColor.paper, in: Capsule())
+        .overlay(Capsule().stroke(BloomColor.ink, lineWidth: selected ? 0 : 1.4))
+    }
+}
+
+struct BloomSectionTitle: View {
+    let title: String
+    var detail: String?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.system(size: 20, weight: .bold))
+            Spacer()
+            if let detail {
+                Text(detail)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(BloomColor.blue)
             }
         }
     }

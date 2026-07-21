@@ -13,9 +13,12 @@ struct CreateView: View {
     @State private var pickingCategory: GarmentCategory?
     @State private var isReferencePickerPresented = false
     @State private var isRenderingPresented = false
+    @State private var isTryOnPrepPresented = false
     @State private var isAIConsentPresented = false
     @State private var shouldRenderAfterConsent = false
     @State private var resultVariant: RenderVariant?
+    @State private var isLooksPresented = false
+    @State private var activeBoardCategory: GarmentCategory?
 
     private var selectedReference: ReferencePhoto? {
         references.first { $0.id == session.selectedReferenceID }
@@ -32,33 +35,52 @@ struct CreateView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                referenceCard
-                outfitSection
+        ZStack {
+            BloomPageBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    BloomHeader(
+                        title: session.activeLookID == nil ? "Style" : "Edit look",
+                        subtitle: "Compose, remix, then try it on"
+                    ) { session.isProfilePresented = true }
+
+                    HStack(spacing: 10) {
+                        Button { suggestOutfit() } label: {
+                            BloomPill(title: "Fresh remix", systemImage: "sparkles", selected: true)
+                        }
+                        .buttonStyle(.plain)
+                        Button { isLooksPresented = true } label: {
+                            BloomPill(title: "Saved looks", systemImage: "square.grid.2x2")
+                        }
+                        .buttonStyle(.plain)
+                        if session.activeLookID != nil {
+                            Button { session.resetDraft() } label: {
+                                BloomPill(title: "New", systemImage: "plus")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    outfitBoard
+                    outfitSection
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 12)
+                .padding(.bottom, 130)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 30)
         }
-        .background(BloomColor.cream)
-        .navigationTitle(session.activeLookID == nil ? "Create" : "Edit look")
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
             actionBar
-        }
-        .toolbar {
-            if session.activeLookID != nil {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("New") { session.resetDraft() }
-                }
-            }
-            WearBloomToolbar()
         }
         .sheet(item: $pickingCategory) { category in
             GarmentPickerView(category: category)
         }
         .sheet(isPresented: $isReferencePickerPresented) {
             ReferencePickerView()
+        }
+        .sheet(isPresented: $isLooksPresented) {
+            NavigationStack { LooksView() }
         }
         .sheet(isPresented: $isAIConsentPresented, onDismiss: {
             guard shouldRenderAfterConsent else { return }
@@ -73,6 +95,19 @@ struct CreateView: View {
         .fullScreenCover(isPresented: $isRenderingPresented) {
             RenderProgressView().environment(session)
         }
+        .fullScreenCover(isPresented: $isTryOnPrepPresented) {
+            TryOnPrepView(reference: selectedReference, garments: selectedGarments) {
+                isTryOnPrepPresented = false
+                Task {
+                    try? await Task.sleep(for: .milliseconds(250))
+                    if await WearBloomAPI.shared.isConfigured && !session.hasAIProcessingConsent {
+                        isAIConsentPresented = true
+                    } else {
+                        startRender()
+                    }
+                }
+            }
+        }
         .fullScreenCover(item: $resultVariant) { variant in
             NavigationStack {
                 ResultView(variant: variant).environment(session)
@@ -80,12 +115,132 @@ struct CreateView: View {
         }
         .onAppear {
             if session.selectedReferenceID == nil { session.selectedReferenceID = selectedReference?.id }
+            Telemetry.event("screen_viewed", properties: ["screen": "style"])
+        }
+        .task {
+#if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-reviewBoardEdit") {
+                try? await Task.sleep(for: .milliseconds(700))
+                activeBoardCategory = .top
+            }
+            if ProcessInfo.processInfo.arguments.contains("-reviewPrep") {
+                try? await Task.sleep(for: .milliseconds(700))
+                isTryOnPrepPresented = true
+            }
+#endif
         }
         .onChange(of: session.resultVariantID) { _, newID in
             guard let newID, let variant = variants.first(where: { $0.id == newID }) else { return }
             isRenderingPresented = false
             resultVariant = variant
         }
+    }
+
+    private var outfitBoard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .fill(BloomColor.paper.opacity(0.9))
+            OrganicBlob()
+                .fill(BloomColor.blue)
+                .frame(width: 190, height: 180)
+                .offset(x: 130, y: -165)
+            Circle()
+                .fill(BloomColor.lime)
+                .frame(width: 130)
+                .offset(x: -145, y: 175)
+
+            if selectedGarments.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "hanger")
+                        .font(.system(size: 44, weight: .medium))
+                    Text("Choose pieces from your closet")
+                        .font(.system(size: 17, weight: .bold))
+                    Button("Open closet") { session.selectedTab = 0 }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(BloomColor.blue)
+                }
+            } else {
+                HStack(alignment: .center, spacing: -18) {
+                    ForEach(Array(selectedGarments.enumerated()), id: \.element.id) { index, garment in
+                        Button { withAnimation(.snappy) { activeBoardCategory = garment.category } } label: {
+                            ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                                .frame(
+                                    width: selectedGarments.count == 2 ? 165 : (index == 1 ? 155 : 135),
+                                    height: selectedGarments.count == 2 ? 275 : (index == 1 ? 245 : 210)
+                                )
+                                .background(.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 25))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .stroke(activeBoardCategory == garment.category ? BloomColor.blue : .clear, lineWidth: 4)
+                                }
+                                .rotationEffect(.degrees(index.isMultiple(of: 2) ? -5 : 5))
+                                .shadow(color: .black.opacity(0.09), radius: 14, y: 7)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            Button { isReferencePickerPresented = true } label: {
+                ZStack(alignment: .bottomTrailing) {
+                    ImageDataView(data: selectedReference?.imageData)
+                        .frame(width: 90, height: 126)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(BloomColor.ink, lineWidth: 3))
+                    Image(systemName: "photo")
+                        .font(.system(size: 12, weight: .black))
+                        .frame(width: 28, height: 28)
+                        .background(BloomColor.lime, in: Circle())
+                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
+                        .offset(x: 7, y: 7)
+                }
+            }
+            .buttonStyle(.plain)
+            .rotationEffect(.degrees(-4))
+            .offset(x: -122, y: -142)
+            .accessibilityLabel(selectedReference == nil ? "Add your photo" : "Change your photo")
+
+            VStack {
+                Spacer()
+                if let activeBoardCategory,
+                   let garment = session.garment(for: activeBoardCategory, in: garments) {
+                    HStack(spacing: 10) {
+                        Text(garment.name)
+                            .font(.system(size: 13, weight: .black))
+                            .lineLimit(1)
+                        Spacer()
+                        Button("Replace", systemImage: "arrow.triangle.2.circlepath") {
+                            pickingCategory = activeBoardCategory
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(BloomColor.blue)
+                        Button("Remove", systemImage: "trash") {
+                            session.remove(category: activeBoardCategory)
+                            self.activeBoardCategory = nil
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(BloomColor.coral)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 48)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.4))
+                    .padding(14)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if !selectedGarments.isEmpty {
+                    Text("Tap a piece to replace or remove it")
+                        .font(.system(size: 12, weight: .bold))
+                        .padding(.horizontal, 14)
+                        .frame(height: 34)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(.bottom, 14)
+                }
+            }
+        }
+        .frame(height: 470)
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 34).stroke(BloomColor.ink, lineWidth: 2))
     }
 
     private var referenceCard: some View {
@@ -150,18 +305,20 @@ struct CreateView: View {
     private var outfitSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Outfit")
-                    .font(.title2.weight(.semibold))
+                Text("Replace a piece")
+                    .font(.system(size: 20, weight: .black, design: .rounded))
                 Spacer()
                 if session.selectedGarmentIDs[.dress] == nil {
                     Button("Use a dress") { pickingCategory = .dress }
-                        .font(.subheadline.weight(.medium))
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(BloomColor.blue)
                 } else {
                     Button("Use separates") {
                         session.remove(category: .dress)
                         pickingCategory = .top
                     }
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(BloomColor.blue)
                 }
             }
 
@@ -186,20 +343,20 @@ struct CreateView: View {
             VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(garment == nil ? BloomColor.paper : BloomColor.softViolet.opacity(0.45))
+                        .fill(garment == nil ? BloomColor.paper : BloomColor.softBlue.opacity(0.52))
                     if let garment {
                         ImageDataView(data: garment.imageData, contentMode: .fit, fallback: category.symbol)
                             .padding(4)
                     } else {
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(BloomColor.violet)
+                            .foregroundStyle(BloomColor.blue)
                     }
                 }
                 .frame(height: 112)
                 .overlay {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(BloomColor.line, lineWidth: 1)
+                        .stroke(BloomColor.ink, lineWidth: 1.3)
                 }
 
                 Text(garment?.name ?? category.title)
@@ -223,29 +380,26 @@ struct CreateView: View {
                 Image(systemName: "bookmark")
                     .font(.system(size: 17, weight: .semibold))
                     .frame(width: 54, height: 54)
-                    .background(BloomColor.paper, in: RoundedRectangle(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(BloomColor.line, lineWidth: 1))
+                    .background(BloomColor.paper, in: Circle())
+                    .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
             }
             .foregroundStyle(BloomColor.ink)
             .accessibilityLabel("Save look")
 
             Button {
-                Task {
-                    if await WearBloomAPI.shared.isConfigured && !session.hasAIProcessingConsent {
-                        isAIConsentPresented = true
-                    } else {
-                        startRender()
-                    }
-                }
+                isTryOnPrepPresented = true
             } label: {
-                Label("Create preview", systemImage: "sparkles")
+                HStack {
+                    Label("Try this outfit", systemImage: "sparkles")
+                    Spacer()
+                    Image(systemName: "arrow.right")
+                }
             }
-            .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
+            .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
             .disabled(!canRender)
-            .opacity(canRender ? 1 : 0.4)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
         .background(.ultraThinMaterial)
     }
 
@@ -280,6 +434,141 @@ struct CreateView: View {
         try? modelContext.save()
         Telemetry.event("look_saved", properties: ["piece_count": selected.count])
         session.showToast(String(localized: "Look saved."))
+    }
+
+    private func suggestOutfit() {
+        let available = garments.filter { !$0.isArchived }
+        let byRediscovery = available.sorted {
+            if $0.wearCount == $1.wearCount { return $0.createdAt < $1.createdAt }
+            return $0.wearCount < $1.wearCount
+        }
+        session.resetDraft()
+        if let top = byRediscovery.first(where: { $0.category == .top }) { session.select(top) }
+        if let bottom = byRediscovery.first(where: { $0.category == .bottom }) { session.select(bottom) }
+        if let layer = byRediscovery.first(where: { $0.category == .outerwear && $0.wearCount == 0 }) {
+            session.select(layer)
+        }
+        Telemetry.event("wardrobe_remix_suggested", properties: [
+            "piece_count": session.selectedGarmentIDs.count,
+            "reason": "least_worn"
+        ])
+        session.showToast(String(localized: "A fresh mix built from your least-worn pieces."))
+    }
+}
+
+private struct TryOnPrepView: View {
+    @Environment(AppSession.self) private var session
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \ReferencePhoto.createdAt, order: .reverse) private var references: [ReferencePhoto]
+    let reference: ReferencePhoto?
+    let garments: [Garment]
+    let continueAction: () -> Void
+    @State private var isReferencePickerPresented = false
+
+    private var currentReference: ReferencePhoto? {
+        references.first { $0.id == session.selectedReferenceID } ?? reference
+    }
+
+    var body: some View {
+        ZStack {
+            BloomColor.cream.ignoresSafeArea()
+            OrganicBlob()
+                .fill(BloomColor.blue)
+                .frame(width: 210, height: 180)
+                .rotationEffect(.degrees(20))
+                .offset(x: 225, y: -410)
+            Circle()
+                .fill(BloomColor.lime)
+                .frame(width: 170)
+                .offset(x: -210, y: 380)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Button { dismiss() } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .black))
+                                .frame(width: 44, height: 44)
+                                .background(.white, in: Circle())
+                                .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
+                        }
+                        .foregroundStyle(BloomColor.ink)
+                        Spacer()
+                        Text("Try on")
+                            .font(.system(size: 19, weight: .black, design: .rounded))
+                        Spacer()
+                        Color.clear.frame(width: 44, height: 44)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Ready to see it on you?")
+                            .font(.system(size: 29, weight: .black, design: .rounded))
+                        Text("One clear photo and the pieces you chose. You stay in control of what is processed.")
+                            .font(.system(size: 15))
+                            .foregroundStyle(BloomColor.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button { isReferencePickerPresented = true } label: {
+                        ImageDataView(data: currentReference?.imageData)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 420)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 30))
+                            .overlay(RoundedRectangle(cornerRadius: 30).stroke(BloomColor.blue, lineWidth: 4))
+                            .overlay(alignment: .bottomTrailing) {
+                                Label(currentReference == nil ? "Add photo" : "Change photo", systemImage: "photo")
+                                    .font(.system(size: 13, weight: .black))
+                                    .foregroundStyle(BloomColor.ink)
+                                    .padding(.horizontal, 14)
+                                    .frame(height: 40)
+                                    .background(BloomColor.lime, in: Capsule())
+                                    .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.4))
+                                    .padding(14)
+                            }
+                    }
+                    .buttonStyle(.plain)
+
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("YOUR OUTFIT")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundStyle(BloomColor.muted)
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 10) {
+                                ForEach(garments) { garment in
+                                    ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                                        .frame(width: 74, height: 82)
+                                        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+                                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(BloomColor.ink, lineWidth: 1.2))
+                                }
+                            }
+                            .padding(.vertical, 1)
+                        }
+                        .scrollIndicators(.hidden)
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+                .padding(.bottom, 96)
+            }
+            .scrollIndicators(.hidden)
+            .safeAreaInset(edge: .bottom) {
+                Button(action: continueAction) {
+                    HStack {
+                        Label("See it on me", systemImage: "sparkles")
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                    }
+                }
+                .buttonStyle(BloomButtonStyle(fill: BloomColor.lime))
+                .disabled(currentReference == nil || garments.isEmpty)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+            }
+        }
+        .preferredColorScheme(.light)
+        .sheet(isPresented: $isReferencePickerPresented) { ReferencePickerView() }
     }
 }
 

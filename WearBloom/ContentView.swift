@@ -9,9 +9,17 @@ struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var didSeed = false
 
+    private var isReviewLaunch: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-reviewTab")
+#else
+        false
+#endif
+    }
+
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
+            if hasCompletedOnboarding || isReviewLaunch {
                 RootTabView()
                     .environment(session)
             } else {
@@ -23,6 +31,15 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.light)
+        .onAppear {
+#if DEBUG
+            let arguments = ProcessInfo.processInfo.arguments
+            if let flag = arguments.firstIndex(of: "-reviewTab"), arguments.indices.contains(flag + 1),
+               let tab = Int(arguments[flag + 1]) {
+                session.selectedTab = tab
+            }
+#endif
+        }
         .task {
             guard !didSeed else { return }
             didSeed = true
@@ -97,14 +114,17 @@ private struct RootTabView: View {
             Tab("Closet", systemImage: "tshirt", value: 0) {
                 NavigationStack { ClosetView() }
             }
-            Tab("Create", systemImage: "wand.and.stars", value: 1) {
+            Tab("Style", systemImage: "wand.and.stars", value: 1) {
                 NavigationStack { CreateView() }
             }
-            Tab("Looks", systemImage: "square.grid.2x2", value: 2) {
-                NavigationStack { LooksView() }
+            Tab("Today", systemImage: "calendar", value: 2) {
+                NavigationStack { TodayView() }
+            }
+            Tab("Insights", systemImage: "chart.bar", value: 3) {
+                NavigationStack { InsightsView() }
             }
         }
-        .tint(BloomColor.violet)
+        .tint(BloomColor.blue)
         .overlay(alignment: .top) {
             if let toast = session.toast {
                 Text(toast)

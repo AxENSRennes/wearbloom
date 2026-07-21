@@ -16,7 +16,8 @@ struct WearBloomApp: App {
                 for: Garment.self,
                 ReferencePhoto.self,
                 Look.self,
-                RenderVariant.self
+                RenderVariant.self,
+                WearEvent.self
             )
         } catch {
             fatalError("Unable to open the WearBloom library: \(error.localizedDescription)")
