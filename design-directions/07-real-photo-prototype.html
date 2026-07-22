@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WearBloom — Real-photo prototype</title>
+</head>
+<body style="margin:0">
+<section id="wearbloom-real" aria-label="WearBloom real-photo mobile prototype">
+  <style>
+    #wearbloom-real {
+      --wb-violet: #5b3df5;
+      --wb-lime: #d8ff3e;
+      --wb-coral: #ff6a55;
+      --wb-cream: #f6f0e7;
+      --wb-ink: #171717;
+      --wb-muted: #716c64;
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 760px;
+      overflow: hidden;
+      color: var(--wb-ink);
+      background:
+        radial-gradient(circle at 88% 12%, var(--wb-coral) 0 8%, transparent 8.2%),
+        radial-gradient(circle at 11% 83%, rgba(216,255,62,.55) 0 13%, transparent 13.2%),
+        var(--wb-violet);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #wearbloom-real * { box-sizing: border-box; }
+    #wearbloom-real button { font: inherit; cursor: pointer; }
+    #wearbloom-real .wb-stage {
+      display: grid;
+      grid-template-columns: minmax(250px, 360px) 390px;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(36px, 7vw, 92px);
+      min-height: 760px;
+      padding: 42px 32px;
+    }
+    #wearbloom-real .wb-copy { color: white; }
+    #wearbloom-real .wb-kicker {
+      margin: 0 0 18px;
+      color: var(--wb-lime);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+    }
+    #wearbloom-real h1 {
+      max-width: 8ch;
+      margin: 0;
+      font: 600 clamp(53px, 6vw, 84px)/.88 Georgia, "Times New Roman", serif;
+      letter-spacing: -.065em;
+    }
+    #wearbloom-real .wb-subtitle {
+      max-width: 30ch;
+      margin: 24px 0 34px;
+      color: rgba(255,255,255,.78);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    #wearbloom-real .wb-proof { display: grid; gap: 10px; }
+    #wearbloom-real .wb-proof span {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 999px;
+      background: rgba(23,23,23,.12);
+      color: white;
+      font-size: 11px;
+      backdrop-filter: blur(8px);
+    }
+    #wearbloom-real .wb-proof i { width: 7px; height: 7px; border-radius: 50%; background: var(--wb-lime); }
+    #wearbloom-real .wb-phone {
+      position: relative;
+      width: 390px;
+      height: 760px;
+      padding: 9px;
+      border: 1px solid rgba(255,255,255,.32);
+      border-radius: 49px;
+      background: #111;
+      box-shadow: 0 38px 80px rgba(23,12,78,.42), inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+    #wearbloom-real .wb-phone::before {
+      content: "";
+      position: absolute;
+      z-index: 20;
+      top: 18px;
+      left: 50%;
+      width: 104px;
+      height: 29px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #111;
+    }
+    #wearbloom-real .wb-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 40px;
+      background: var(--wb-cream);
+    }
+    #wearbloom-real .wb-status {
+      position: absolute;
+      z-index: 15;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 15px 23px 0;
+      font-size: 11px;
+      font-weight: 800;
+      pointer-events: none;
+    }
+    #wearbloom-real .wb-panel { display: none; height: 100%; padding-bottom: 76px; overflow-y: auto; scrollbar-width: none; }
+    #wearbloom-real .wb-panel::-webkit-scrollbar { display: none; }
+    #wearbloom-real .wb-panel.is-active { display: block; }
+    #wearbloom-real .wb-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 58px 19px 14px;
+    }
+    #wearbloom-real .wb-head h2 { margin: 0; font: 600 31px/.96 Georgia, "Times New Roman", serif; letter-spacing: -.04em; }
+    #wearbloom-real .wb-round {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid var(--wb-ink);
+      border-radius: 50%;
+      background: white;
+      color: var(--wb-ink);
+      font-weight: 800;
+    }
+    #wearbloom-real .wb-photo {
+      position: relative;
+      height: 338px;
+      margin: 0 13px;
+      overflow: hidden;
+      border-radius: 27px;
+      background: #ddd;
+    }
+    #wearbloom-real .wb-photo > img { width: 100%; height: 100%; object-fit: cover; object-position: center 39%; }
+    #wearbloom-real .wb-photo-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      font-size: 10px;
+      font-weight: 750;
+      backdrop-filter: blur(8px);
+    }
+    #wearbloom-real .wb-pieces {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: flex;
+      gap: 7px;
+    }
+    #wearbloom-real .wb-piece {
+      position: relative;
+      width: 64px;
+      height: 78px;
+      overflow: hidden;
+      border: 2px solid white;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 5px 18px rgba(0,0,0,.2);
+    }
+    #wearbloom-real .wb-piece img { width: 100%; height: 100%; object-fit: cover; }
+    #wearbloom-real .wb-piece.is-cutout img { mix-blend-mode: multiply; filter: contrast(1.05); }
+    #wearbloom-real .wb-piece::after {
+      content: "✓";
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      display: grid;
+      place-items: center;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--wb-lime);
+      font-size: 9px;
+      font-weight: 900;
+    }
+    #wearbloom-real .wb-closet-row { padding: 17px 16px 0; }
+    #wearbloom-real .wb-row-title { display: flex; align-items: end; justify-content: space-between; margin-bottom: 10px; }
+    #wearbloom-real .wb-row-title strong { font-size: 13px; }
+    #wearbloom-real .wb-row-title span { color: var(--wb-muted); font-size: 10px; }
+    #wearbloom-real .wb-thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #wearbloom-real .wb-thumb {
+      position: relative;
+      height: 103px;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid transparent;
+      border-radius: 18px;
+      background: white;
+    }
+    #wearbloom-real .wb-thumb.is-selected { border-color: var(--wb-violet); }
+    #wearbloom-real .wb-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    #wearbloom-real .wb-thumb.is-selected::after {
+      content: "✓";
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      display: grid;
+      place-items: center;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--wb-violet);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    #wearbloom-real .wb-primary {
+      width: calc(100% - 32px);
+      min-height: 49px;
+      margin: 16px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--wb-lime);
+      color: var(--wb-ink);
+      font-size: 13px;
+      font-weight: 850;
+      box-shadow: 4px 4px 0 var(--wb-ink);
+    }
+    #wearbloom-real .wb-primary:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--wb-ink); }
+    #wearbloom-real .wb-nav {
+      position: absolute;
+      z-index: 16;
+      left: 10px;
+      right: 10px;
+      bottom: 9px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      height: 62px;
+      padding: 6px;
+      border: 1px solid rgba(23,23,23,.09);
+      border-radius: 21px;
+      background: rgba(255,255,255,.93);
+      box-shadow: 0 9px 25px rgba(23,23,23,.12);
+      backdrop-filter: blur(16px);
+    }
+    #wearbloom-real .wb-nav button {
+      border: 0;
+      border-radius: 15px;
+      background: transparent;
+      color: var(--wb-muted);
+      font-size: 10px;
+      font-weight: 750;
+    }
+    #wearbloom-real .wb-nav button.is-active { background: var(--wb-violet); color: white; }
+    #wearbloom-real .wb-import {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0 16px 15px;
+    }
+    #wearbloom-real .wb-import label,
+    #wearbloom-real .wb-cutout-toggle {
+      min-height: 46px;
+      border: 1.5px solid var(--wb-ink);
+      border-radius: 15px;
+      background: white;
+      font-size: 11px;
+      font-weight: 780;
+    }
+    #wearbloom-real .wb-import label { display: grid; place-items: center; cursor: pointer; }
+    #wearbloom-real .wb-import input { display: none; }
+    #wearbloom-real .wb-cutout-toggle { color: var(--wb-ink); }
+    #wearbloom-real .wb-cutout-toggle.is-on { background: var(--wb-lime); }
+    #wearbloom-real .wb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; }
+    #wearbloom-real .wb-item { overflow: hidden; border-radius: 19px; background: white; }
+    #wearbloom-real .wb-item img { display: block; width: 100%; height: 175px; object-fit: cover; }
+    #wearbloom-real .wb-item.is-cutout img { mix-blend-mode: multiply; filter: contrast(1.05); }
+    #wearbloom-real .wb-item figcaption { display: flex; justify-content: space-between; padding: 10px; font-size: 10px; }
+    #wearbloom-real .wb-item figcaption span { color: var(--wb-muted); }
+    #wearbloom-real .wb-result { position: relative; height: 100%; overflow: hidden; background: var(--wb-ink); }
+    #wearbloom-real .wb-result > img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+    #wearbloom-real .wb-result::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(23,23,23,.78), transparent 56%);
+      pointer-events: none;
+    }
+    #wearbloom-real .wb-result-top {
+      position: absolute;
+      z-index: 4;
+      top: 55px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #wearbloom-real .wb-result-top .wb-round { background: rgba(255,255,255,.92); }
+    #wearbloom-real .wb-look-number { padding: 7px 10px; border-radius: 999px; background: var(--wb-coral); font-size: 9px; font-weight: 850; }
+    #wearbloom-real .wb-verdict {
+      position: absolute;
+      z-index: 5;
+      left: 16px;
+      right: 16px;
+      bottom: 88px;
+      color: white;
+    }
+    #wearbloom-real .wb-verdict h2 { max-width: 8ch; margin: 0 0 12px; font: 600 39px/.94 Georgia, "Times New Roman", serif; letter-spacing: -.05em; }
+    #wearbloom-real .wb-verdict p { max-width: 32ch; margin: 0 0 17px; color: rgba(255,255,255,.76); font-size: 11px; line-height: 1.45; }
+    #wearbloom-real .wb-result-actions { display: grid; grid-template-columns: .82fr 1.18fr; gap: 9px; }
+    #wearbloom-real .wb-result-actions button { min-height: 46px; border: 0; border-radius: 15px; background: white; font-size: 11px; font-weight: 800; }
+    #wearbloom-real .wb-result-actions button:last-child { background: var(--wb-lime); }
+    @media (max-width: 680px) {
+      #wearbloom-real .wb-stage { grid-template-columns: 1fr; padding: 28px 16px; }
+      #wearbloom-real .wb-copy { text-align: center; }
+      #wearbloom-real h1, #wearbloom-real .wb-subtitle { margin-left: auto; margin-right: auto; }
+      #wearbloom-real .wb-proof { justify-items: center; }
+      #wearbloom-real .wb-phone { width: min(100%, 390px); }
+    }
+  </style>
+  <div class="wb-stage">
+    <div class="wb-copy">
+      <p class="wb-kicker">Real-photo direction / 01</p>
+      <h1>Your closet, in motion.</h1>
+      <p class="wb-subtitle">Less explaining. More seeing. Add pieces you actually own, then try the full look on your photo.</p>
+      <div class="wb-proof" aria-label="Prototype principles">
+        <span><i></i> Real fashion photography</span>
+        <span><i></i> Background removed on iPhone</span>
+        <span><i></i> Original WearBloom colour</span>
+      </div>
+    </div>
+
+    <div class="wb-phone">
+      <div class="wb-screen">
+        <div class="wb-status"><span>9:41</span><span>● ●</span></div>
+
+        <section class="wb-panel" data-panel="closet">
+          <header class="wb-head"><h2>Your closet</h2><button class="wb-round" aria-label="Add garment">＋</button></header>
+          <div class="wb-import">
+            <label for="wb-file">Add a photo<input id="wb-file" type="file" accept="image/*"></label>
+            <button class="wb-cutout-toggle is-on" type="button">Cutout on</button>
+          </div>
+          <div class="wb-grid">
+            <figure class="wb-item"><img src="assets/real-photo/purple-top.jpg" alt="Lilac pintucked blouse"><figcaption><b>Lilac blouse</b><span>Top</span></figcaption></figure>
+            <figure class="wb-item is-cutout"><img src="assets/real-photo/black-trousers.jpg" alt="Black wide-leg trousers"><figcaption><b>Wide leg</b><span>Bottom</span></figcaption></figure>
+            <figure class="wb-item"><img src="assets/real-photo/plum-top.jpg" alt="Plum off-shoulder blouse"><figcaption><b>Plum top</b><span>Top</span></figcaption></figure>
+            <figure class="wb-item"><img src="assets/real-photo/model-editorial.jpg" alt="Navy and gold styling reference"><figcaption><b>Night out</b><span>Inspo</span></figcaption></figure>
+          </div>
+        </section>
+
+        <section class="wb-panel is-active" data-panel="create">
+          <header class="wb-head"><h2>Create a look</h2><button class="wb-round" aria-label="Favourite">♡</button></header>
+          <div class="wb-photo">
+            <img class="wb-person-photo" src="assets/real-photo/model-create.jpg" alt="Full-length personal reference photo">
+            <span class="wb-photo-badge">Your photo</span>
+            <div class="wb-pieces" aria-label="Selected garments">
+              <span class="wb-piece"><img src="assets/real-photo/purple-top.jpg" alt="Selected lilac blouse"></span>
+              <span class="wb-piece is-cutout"><img src="assets/real-photo/black-trousers.jpg" alt="Selected black trousers"></span>
+            </div>
+          </div>
+          <div class="wb-closet-row">
+            <div class="wb-row-title"><strong>Pick your pieces</strong><span>2 selected</span></div>
+            <div class="wb-thumbs">
+              <button class="wb-thumb is-selected" type="button"><img src="assets/real-photo/purple-top.jpg" alt="Lilac blouse"></button>
+              <button class="wb-thumb is-selected" type="button"><img src="assets/real-photo/black-trousers.jpg" alt="Black trousers"></button>
+              <button class="wb-thumb" type="button"><img src="assets/real-photo/plum-top.jpg" alt="Plum blouse"></button>
+            </div>
+          </div>
+          <button class="wb-primary wb-generate" type="button">Try this look</button>
+        </section>
+
+        <section class="wb-panel" data-panel="looks">
+          <div class="wb-result">
+            <img src="assets/real-photo/model-result.jpg" alt="Completed fashion look">
+            <div class="wb-result-top"><button class="wb-round wb-back" aria-label="Back to create">←</button><span class="wb-look-number">LOOK 12</span></div>
+            <div class="wb-verdict">
+              <h2>This one works.</h2>
+              <p>Clean shape, strong contrast. The wide leg gives the blouse room to feel intentional.</p>
+              <div class="wb-result-actions"><button class="wb-edit" type="button">Edit pieces</button><button type="button">Keep this look</button></div>
+            </div>
+          </div>
+        </section>
+
+        <nav class="wb-nav" aria-label="WearBloom sections">
+          <button type="button" data-target="closet">Closet</button>
+          <button class="is-active" type="button" data-target="create">Create</button>
+          <button type="button" data-target="looks">Looks</button>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('wearbloom-real');
+      const panels = [...root.querySelectorAll('[data-panel]')];
+      const navButtons = [...root.querySelectorAll('.wb-nav [data-target]')];
+      const show = (name) => {
+        panels.forEach((panel) => panel.classList.toggle('is-active', panel.dataset.panel === name));
+        navButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.target === name));
+      };
+      navButtons.forEach((button) => button.addEventListener('click', () => show(button.dataset.target)));
+      root.querySelector('.wb-generate').addEventListener('click', () => show('looks'));
+      root.querySelector('.wb-back').addEventListener('click', () => show('create'));
+      root.querySelector('.wb-edit').addEventListener('click', () => show('create'));
+      root.querySelectorAll('.wb-thumb').forEach((button) => button.addEventListener('click', () => button.classList.toggle('is-selected')));
+      root.querySelector('.wb-cutout-toggle').addEventListener('click', (event) => {
+        const on = event.currentTarget.classList.toggle('is-on');
+        event.currentTarget.textContent = on ? 'Cutout on' : 'Original photo';
+        root.querySelectorAll('.wb-item').forEach((item) => item.classList.toggle('is-cutout', on));
+      });
+      root.querySelector('#wb-file').addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+          root.querySelector('.wb-person-photo').src = reader.result;
+          show('create');
+        });
+        reader.readAsDataURL(file);
+      });
+    })();
+  </script>
+</section>
+
+</body>
+</html>
