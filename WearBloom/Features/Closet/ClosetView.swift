@@ -26,75 +26,72 @@ struct ClosetView: View {
     }
 
     var body: some View {
-        ZStack {
-            BloomPageBackground()
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 18) {
-                    BloomHeader(
-                        title: String(localized: "Closet"),
-                        subtitle: String(localized: "\(garments.filter { !$0.isArchived }.count) pieces · style what you own")
-                    ) { session.isProfilePresented = true }
+        BloomPageScaffold(
+            title: String(localized: "Closet"),
+            subtitle: String(localized: "\(garments.filter { !$0.isArchived }.count) pieces · style what you own"),
+            contentSpacing: 16,
+            bottomPadding: selected.isEmpty ? 132 : 224
+        ) {
+            session.isProfilePresented = true
+        } content: {
+            HStack(spacing: 14) {
+                Label {
+                    TextField("Search your closet", text: $query)
+                } icon: {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(BloomColor.muted)
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 48)
+                .background(BloomColor.paper, in: Capsule())
+                .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.25))
 
-                    HStack(spacing: 14) {
-                        Label {
-                            TextField("Search your closet", text: $query)
-                        } icon: {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(BloomColor.muted)
+                Button { isAddingGarment = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .black))
+                        .foregroundStyle(.white)
+                        .frame(width: 46, height: 46)
+                        .background(BloomColor.blue, in: Circle())
+                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
+                }
+                .accessibilityLabel("Add a piece")
+            }
+
+            categoryPicker
+
+            if filtered.isEmpty {
+                emptyState
+            } else {
+                Text("Tap a piece to add it to your outfit. Choose one per category.")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(BloomColor.muted)
+
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 16) {
+                    ForEach(filtered) { garment in
+                        let isSelected = session.selectedGarmentIDs.values.contains(garment.id)
+                        Button { toggle(garment) } label: {
+                            GarmentCard(garment: garment, isSelected: isSelected)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(height: 48)
-                        .background(BloomColor.paper, in: Capsule())
-                        .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.4))
-
-                        Button { isAddingGarment = true } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundStyle(.white)
-                                .frame(width: 46, height: 46)
-                                .background(BloomColor.blue, in: Circle())
-                                .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
-                        }
-                        .accessibilityLabel("Add a piece")
-                    }
-
-                    categoryPicker
-
-                    if filtered.isEmpty {
-                        emptyState
-                    } else {
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 18) {
-                            ForEach(filtered) { garment in
-                                let isSelected = session.selectedGarmentIDs.values.contains(garment.id)
-                                Button { toggle(garment) } label: {
-                                    GarmentCard(garment: garment, isSelected: isSelected)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button("View details", systemImage: "info.circle") { editingGarment = garment }
-                                    Button {
-                                        garment.isFavorite.toggle()
-                                    } label: {
-                                        Label(
-                                            garment.isFavorite ? String(localized: "Remove favorite") : String(localized: "Favorite"),
-                                            systemImage: "heart"
-                                        )
-                                    }
-                                    Button("Archive", systemImage: "archivebox") { garment.isArchived = true }
-                                    Button("Delete", systemImage: "trash", role: .destructive) {
-                                        delete(garment)
-                                    }
-                                }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("View details", systemImage: "info.circle") { editingGarment = garment }
+                            Button {
+                                garment.isFavorite.toggle()
+                            } label: {
+                                Label(
+                                    garment.isFavorite ? String(localized: "Remove favorite") : String(localized: "Favorite"),
+                                    systemImage: "heart"
+                                )
+                            }
+                            Button("Archive", systemImage: "archivebox") { garment.isArchived = true }
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                delete(garment)
                             }
                         }
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .padding(.bottom, selected.isEmpty ? 150 : 220)
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !selected.isEmpty {
                 selectionTray
@@ -111,18 +108,16 @@ struct ClosetView: View {
     }
 
     private var categoryPicker: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                FilterPill(title: String(localized: "All"), selected: category == nil) { category = nil }
-                ForEach(GarmentCategory.allCases) { item in
-                    FilterPill(title: item.title, selected: category == item) { category = item }
-                }
-                FilterPill(title: String(localized: "Favorites"), selected: showFavoritesOnly) {
-                    showFavoritesOnly.toggle()
-                }
+        BloomFlowLayout(spacing: 8) {
+            FilterPill(title: String(localized: "All"), selected: category == nil) { category = nil }
+            ForEach(GarmentCategory.allCases) { item in
+                FilterPill(title: item.title, selected: category == item) { category = item }
+            }
+            FilterPill(title: String(localized: "Favorites"), selected: showFavoritesOnly) {
+                showFavoritesOnly.toggle()
             }
         }
-        .scrollIndicators(.hidden)
+        .padding(.vertical, 2)
     }
 
     private var selectionTray: some View {
@@ -212,33 +207,46 @@ struct GarmentCard: View {
     var isSelected = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            ImageDataView(data: garment.imageData, fallback: garment.category.symbol)
-                .frame(height: 192)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 26)
-                        .stroke(isSelected ? BloomColor.blue : BloomColor.ink.opacity(0.14), lineWidth: isSelected ? 4 : 1)
-                }
-                .overlay(alignment: .topTrailing) {
-                    Image(systemName: isSelected ? "checkmark" : (garment.isFavorite ? "heart.fill" : "heart"))
-                        .font(.system(size: 13, weight: .black))
-                        .frame(width: 29, height: 29)
-                        .background(isSelected ? BloomColor.lime : BloomColor.paper.opacity(0.94), in: Circle())
-                        .foregroundStyle(isSelected ? BloomColor.ink : (garment.isFavorite ? BloomColor.coral : BloomColor.ink))
-                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: isSelected ? 1.5 : 0))
-                        .padding(9)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            ZStack {
+                BloomColor.paper
+                ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                    .padding(6)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 190)
+            .clipped()
+            .overlay(alignment: .topTrailing) {
+                Image(systemName: isSelected ? "checkmark" : (garment.isFavorite ? "heart.fill" : "heart"))
+                    .font(.system(size: 13, weight: .black))
+                    .frame(width: 30, height: 30)
+                    .background(isSelected ? BloomColor.lime : BloomColor.paper.opacity(0.96), in: Circle())
+                    .foregroundStyle(isSelected ? BloomColor.ink : (garment.isFavorite ? BloomColor.coral : BloomColor.ink))
+                    .overlay(Circle().stroke(BloomColor.ink, lineWidth: isSelected ? 1.5 : 0))
+                    .padding(9)
+            }
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(garment.name)
                     .font(.system(size: 15, weight: .semibold))
                     .lineLimit(2)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
                 Text(garment.category.title)
                     .font(.caption)
                     .foregroundStyle(BloomColor.muted)
             }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 9)
+            .frame(height: 68, alignment: .top)
         }
+        .frame(height: 258)
+        .background(BloomColor.paper)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(isSelected ? BloomColor.blue : BloomColor.ink.opacity(0.14), lineWidth: isSelected ? 3 : 1)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
     }
 }
 

@@ -74,6 +74,38 @@ struct LookCompositionTests {
 
 @Suite("Privacy and sharing")
 struct PrivacyAndSharingTests {
+    @Test("AI processing stays disabled until explicitly allowed")
+    func aiProcessingRequiresConsent() {
+        let defaults = UserDefaults.standard
+        let key = PrivacyChoices.aiProcessingConsentKey
+        let original = defaults.object(forKey: key)
+        defer {
+            if let original { defaults.set(original, forKey: key) }
+            else { defaults.removeObject(forKey: key) }
+        }
+
+        PrivacyChoices.setAIProcessingConsent(false)
+        #expect(!PrivacyChoices.hasAIProcessingConsent)
+        PrivacyChoices.setAIProcessingConsent(true)
+        #expect(PrivacyChoices.hasAIProcessingConsent)
+    }
+
+    @Test("Optional diagnostics require an explicit opt-in")
+    func diagnosticsRequireOptIn() {
+        let defaults = UserDefaults.standard
+        let key = PrivacyChoices.diagnosticsConsentKey
+        let original = defaults.object(forKey: key)
+        defer {
+            if let original { defaults.set(original, forKey: key) }
+            else { defaults.removeObject(forKey: key) }
+        }
+
+        defaults.removeObject(forKey: key)
+        #expect(!Telemetry.isCollectionEnabled)
+        defaults.set(true, forKey: key)
+        #expect(Telemetry.isCollectionEnabled)
+    }
+
     @Test("Share artwork uses a vertical story canvas")
     func verticalShareArtwork() throws {
         let source = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 400)).jpegData(withCompressionQuality: 0.9) {

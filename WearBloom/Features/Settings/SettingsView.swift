@@ -15,6 +15,7 @@ struct SettingsView: View {
     @Query private var looks: [Look]
     @Query private var references: [ReferencePhoto]
     @State private var isCustomerCenterPresented = false
+    @State private var isAIConsentPresented = false
     @State private var isDeleteConfirmationPresented = false
     @State private var isDeletingAccount = false
     @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
@@ -84,13 +85,30 @@ struct SettingsView: View {
                     NavigationLink("How WearBloom uses photos") {
                         PrivacyView()
                     }
-                    Toggle(
-                        "Allow AI photo processing",
-                        isOn: Binding(
-                            get: { session.hasAIProcessingConsent },
-                            set: { session.setAIProcessingConsent($0) }
-                        )
-                    )
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Label("AI photo processing", systemImage: "wand.and.stars")
+                            Spacer()
+                            Text(session.hasAIProcessingConsent ? String(localized: "Allowed") : String(localized: "Not allowed yet"))
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(session.hasAIProcessingConsent ? BloomColor.blue : BloomColor.muted)
+                        }
+                        Text(session.hasAIProcessingConsent
+                            ? String(localized: "WearBloom may process only the photos you select when you request a preview.")
+                            : String(localized: "WearBloom will ask before uploading photos for your first AI preview."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if session.hasAIProcessingConsent {
+                            Button("Withdraw AI processing permission", role: .destructive) {
+                                session.setAIProcessingConsent(false)
+                            }
+                        } else {
+                            Button("Review and allow") { isAIConsentPresented = true }
+                                .fontWeight(.semibold)
+                        }
+                    }
+
                     Toggle(
                         "Share diagnostics and usage",
                         isOn: Binding(
@@ -101,7 +119,7 @@ struct SettingsView: View {
                             }
                         )
                     )
-                    Text("AI processing shares only selected photos with OpenAI for the preview you request. Optional diagnostics and usage go to Sentry and PostHog; they never include your photos.")
+                    Text("Diagnostics stay off until you choose to share them. When enabled, product usage goes to PostHog and technical errors go to Sentry; neither includes your photos.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Button("Delete account and data", systemImage: "trash", role: .destructive) {
@@ -124,6 +142,11 @@ struct SettingsView: View {
                 CustomerCenterView()
                     .onCustomerCenterRestoreCompleted { subscriptions.update($0) }
                     .onCustomerCenterRestoreFailed { subscriptions.report($0) }
+            }
+            .sheet(isPresented: $isAIConsentPresented) {
+                AIProcessingConsentView(primaryActionTitle: String(localized: "Allow AI photo processing")) {
+                    session.setAIProcessingConsent(true)
+                }
             }
             .confirmationDialog(
                 "Delete your WearBloom account?",
@@ -288,29 +311,5 @@ private struct ManageReferencesView: View {
                 Telemetry.error(error, context: ["operation": "reference_default_sync"])
             }
         }
-    }
-}
-
-private struct PrivacyView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 54)).foregroundStyle(BloomColor.violet)
-                Text("Your photos stay private")
-                    .font(.system(size: 30, weight: .bold))
-                Text("Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them.")
-                Text("With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings.")
-                Text("Optional product analytics and diagnostics are shared with PostHog and Sentry only if you opt in. WearBloom does not include photos or prompts in analytics.")
-                Text("Deleting your account removes its associated records and private files. App Store subscription cancellation is managed separately through Apple.")
-                Text("Previews are style inspiration—not a prediction of exact fit or sizing.")
-            }
-            .font(.system(size: 16))
-            .lineSpacing(4)
-            .padding(22)
-        }
-        .background(BloomColor.cream)
-        .navigationTitle("Photo privacy")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }

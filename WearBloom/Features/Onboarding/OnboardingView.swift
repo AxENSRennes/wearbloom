@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     let completion: () -> Void
     @State private var page = 0
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
 
     var body: some View {
         ZStack {
@@ -49,7 +50,23 @@ struct OnboardingView: View {
                             .frame(width: 7, height: 7)
                     }
                 }
-                .padding(.bottom, 18)
+
+                if page == 2 {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Toggle("Help improve WearBloom", isOn: $diagnosticsConsent)
+                            .font(.system(size: 15, weight: .semibold))
+                            .onChange(of: diagnosticsConsent) { _, enabled in
+                                Telemetry.setCollectionEnabled(enabled)
+                            }
+                        Text("Share optional, photo-free diagnostics and usage. You can change this anytime in Settings.")
+                            .font(.caption)
+                            .foregroundStyle(BloomColor.muted)
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 12)
+                }
+
+                Spacer().frame(height: 18)
 
                 Button {
                     if page < 2 {

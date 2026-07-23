@@ -6,11 +6,16 @@ struct LooksView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Look.updatedAt, order: .reverse) private var looks: [Look]
-    @State private var selectedVariant: RenderVariant?
     @State private var selectedLook: Look?
 
     var body: some View {
-        ScrollView {
+        BloomPageScaffold(
+            title: String(localized: "Looks"),
+            subtitle: String(localized: "Saved outfits and personal previews"),
+            bottomPadding: 126
+        ) {
+            session.isProfilePresented = true
+        } content: {
             if looks.isEmpty {
                 ContentUnavailableView {
                     Label("No looks yet", systemImage: "square.grid.2x2")
@@ -20,14 +25,13 @@ struct LooksView: View {
                     Button("Create a look") { session.selectedTab = 1 }
                         .buttonStyle(BloomButtonStyle(fill: BloomColor.violet, compact: true))
                 }
-                .padding(.top, 90)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 72)
             } else {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 24) {
                     ForEach(looks) { look in
                         LookCard(look: look) {
                             selectedLook = look
-                        } edit: {
-                            session.load(look)
                         }
                         .contextMenu {
                             Button("Edit look", systemImage: "slider.horizontal.3") { session.load(look) }
@@ -42,18 +46,6 @@ struct LooksView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 6)
-                .padding(.bottom, 32)
-            }
-        }
-        .background(BloomColor.cream)
-        .navigationTitle("Looks")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar { WearBloomToolbar() }
-        .fullScreenCover(item: $selectedVariant) { variant in
-            NavigationStack {
-                ResultView(variant: variant).environment(session)
             }
         }
         .sheet(item: $selectedLook) { look in
@@ -69,7 +61,6 @@ struct LooksView: View {
 private struct LookCard: View {
     let look: Look
     let open: () -> Void
-    let edit: () -> Void
 
     private var latest: RenderVariant? {
         look.variants
@@ -79,7 +70,7 @@ private struct LookCard: View {
 
     var body: some View {
         Button(action: open) {
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: 0) {
                 ZStack {
                     if let latest {
                         ImageDataView(data: latest.resultData)
@@ -96,23 +87,30 @@ private struct LookCard: View {
                         }
                     }
                 }
-                .frame(height: 230)
+                .frame(height: 214)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20).stroke(BloomColor.line, lineWidth: 1)
-                }
 
-                Text(look.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(BloomColor.ink)
-                    .lineLimit(1)
-                Text(look.variants.isEmpty
-                    ? String(localized: "Saved outfit")
-                    : String(localized: "\(look.variants.count) previews"))
-                    .font(.caption)
-                    .foregroundStyle(BloomColor.muted)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(look.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(BloomColor.ink)
+                        .lineLimit(1)
+                    Text(look.variants.isEmpty
+                        ? String(localized: "Saved outfit")
+                        : String(localized: "\(look.variants.count) previews"))
+                        .font(.caption)
+                        .foregroundStyle(BloomColor.muted)
+                }
+                .padding(.horizontal, 11)
+                .frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
             }
+            .background(BloomColor.paper)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(BloomColor.ink.opacity(0.14), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
     }

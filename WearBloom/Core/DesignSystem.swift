@@ -26,20 +26,6 @@ extension Color {
     }
 }
 
-struct BloomShadow: ViewModifier {
-    var radius: CGFloat = 24
-    var offset: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        content
-            .overlay {
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(BloomColor.line, lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.06), radius: 16, y: 6)
-    }
-}
-
 struct BloomPageBackground: View {
     var body: some View {
         ZStack {
@@ -59,9 +45,49 @@ struct BloomPageBackground: View {
     }
 }
 
-extension View {
-    func bloomCard(radius: CGFloat = 24, offset: CGFloat = 0) -> some View {
-        modifier(BloomShadow(radius: radius, offset: offset))
+struct BloomPageScaffold<Content: View>: View {
+    let title: String
+    let subtitle: String
+    var contentSpacing: CGFloat = 20
+    var bottomPadding: CGFloat = 108
+    var viewportBottomPadding: CGFloat = 0
+    let action: () -> Void
+    let content: Content
+
+    init(
+        title: String,
+        subtitle: String,
+        contentSpacing: CGFloat = 20,
+        bottomPadding: CGFloat = 108,
+        viewportBottomPadding: CGFloat = 0,
+        action: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.contentSpacing = contentSpacing
+        self.bottomPadding = bottomPadding
+        self.viewportBottomPadding = viewportBottomPadding
+        self.action = action
+        self.content = content()
+    }
+
+    var body: some View {
+        ZStack {
+            BloomPageBackground()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: contentSpacing) {
+                    BloomHeader(title: title, subtitle: subtitle, action: action)
+                    content
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 12)
+                .padding(.bottom, bottomPadding)
+            }
+            .scrollIndicators(.hidden)
+            .padding(.bottom, viewportBottomPadding)
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
@@ -105,16 +131,6 @@ struct BloomOutlineButtonStyle: ButtonStyle {
                     .stroke(BloomColor.line, lineWidth: 1)
             }
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-    }
-}
-
-struct SectionEyebrow: View {
-    let text: LocalizedStringKey
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(BloomColor.muted)
     }
 }
 
@@ -199,26 +215,65 @@ struct BloomPill: View {
         .font(.system(size: 13, weight: .bold))
         .foregroundStyle(selected ? .white : BloomColor.ink)
         .padding(.horizontal, 14)
-        .frame(height: 38)
+        .frame(height: 36)
         .background(selected ? BloomColor.blue : BloomColor.paper, in: Capsule())
-        .overlay(Capsule().stroke(BloomColor.ink, lineWidth: selected ? 0 : 1.4))
+        .overlay(Capsule().stroke(BloomColor.ink, lineWidth: 1.25))
+        .contentShape(Capsule())
     }
 }
 
-struct BloomSectionTitle: View {
-    let title: String
-    var detail: String?
+struct BloomFlowLayout: Layout {
+    var spacing: CGFloat = 8
 
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(.system(size: 20, weight: .bold))
-            Spacer()
-            if let detail {
-                Text(detail)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(BloomColor.blue)
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let availableWidth = proposal.width ?? .greatestFiniteMagnitude
+        var rowWidth: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var measuredWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if rowWidth > 0, rowWidth + spacing + size.width > availableWidth {
+                measuredWidth = max(measuredWidth, rowWidth)
+                totalHeight += rowHeight + spacing
+                rowWidth = size.width
+                rowHeight = size.height
+            } else {
+                rowWidth += (rowWidth == 0 ? 0 : spacing) + size.width
+                rowHeight = max(rowHeight, size.height)
             }
+        }
+
+        measuredWidth = max(measuredWidth, rowWidth)
+        totalHeight += rowHeight
+        return CGSize(width: proposal.width ?? measuredWidth, height: totalHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
 }

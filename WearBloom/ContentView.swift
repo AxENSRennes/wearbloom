@@ -129,6 +129,8 @@ private struct RootTabView: View {
             }
         }
         .tint(BloomColor.blue)
+        .toolbarBackground(BloomColor.cream, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
         .overlay(alignment: .top) {
             if let toast = session.toast {
                 Text(toast)
@@ -140,23 +142,6 @@ private struct RootTabView: View {
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
-        }
-    }
-}
-
-struct WearBloomToolbar: ToolbarContent {
-    @Environment(AppSession.self) private var session
-
-    var body: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                session.isProfilePresented = true
-            } label: {
-                Image(systemName: "person.crop.circle")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(BloomColor.ink)
-            }
-            .accessibilityLabel("Profile and settings")
         }
     }
 }
