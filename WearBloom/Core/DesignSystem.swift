@@ -297,27 +297,35 @@ struct BloomHeader: View {
     var action: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(BloomTypography.pageTitle)
-                    .tracking(-1.25)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(BloomTypography.secondaryMedium)
-                        .foregroundStyle(BloomColor.muted)
+        ZStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(BloomTypography.pageTitle)
+                        .tracking(-1.25)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(BloomTypography.secondaryMedium)
+                            .foregroundStyle(BloomColor.muted)
+                    }
                 }
+                Spacer()
+                Button(action: action) {
+                    Image(systemName: actionSystemImage)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(BloomColor.ink)
+                        .frame(width: 44, height: 44)
+                        .background(BloomColor.paper, in: Circle())
+                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
+                }
+                .accessibilityLabel("Profile and settings")
             }
-            Spacer()
-            Button(action: action) {
-                Image(systemName: actionSystemImage)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(BloomColor.ink)
-                    .frame(width: 44, height: 44)
-                    .background(BloomColor.paper, in: Circle())
-                    .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.5))
-            }
-            .accessibilityLabel("Profile and settings")
+
+            Image("WearBloomLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 55, height: 55)
+                .accessibilityHidden(true)
         }
     }
 }
