@@ -63,7 +63,7 @@ struct ClosetView: View {
                 emptyState
             } else {
                 Text("Tap a piece to add it to your outfit. Choose one per category.")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(BloomTypography.footnoteMedium)
                     .foregroundStyle(BloomColor.muted)
 
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 16) {
@@ -151,10 +151,10 @@ struct ClosetView: View {
                     }
                 }
                 Text("\(selected.count) selected")
-                    .font(.system(size: 14, weight: .black))
+                    .font(BloomTypography.technicalEmphasis)
                 Spacer()
                 Button("Clear") { withAnimation(.snappy) { session.resetDraft() } }
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BloomTypography.footnoteMedium)
                     .foregroundStyle(BloomColor.muted)
             }
             Button {
@@ -238,11 +238,11 @@ struct GarmentCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(garment.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(BloomTypography.subheadlineMedium)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
                 Text(garment.category.title)
-                    .font(.caption)
+                    .font(BloomTypography.technical)
                     .foregroundStyle(BloomColor.muted)
             }
             .padding(.horizontal, 11)
@@ -307,7 +307,7 @@ struct AddGarmentView: View {
                     }
                     if isCleaningBackground {
                         Label("Cleaning the background on this device…", systemImage: "wand.and.stars")
-                            .font(.caption)
+                            .font(BloomTypography.caption)
                             .foregroundStyle(BloomColor.violet)
                     }
                 }
@@ -318,11 +318,11 @@ struct AddGarmentView: View {
                     }
                     if isDetectingCategory {
                         Label("Finding the category…", systemImage: "sparkles")
-                            .font(.caption)
+                            .font(BloomTypography.caption)
                             .foregroundStyle(BloomColor.violet)
                     } else if let detectionConfidence {
                         Text("Suggested with \(detectionConfidence.formatted(.percent.precision(.fractionLength(0)))) confidence")
-                            .font(.caption)
+                            .font(BloomTypography.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -334,7 +334,7 @@ struct AddGarmentView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
-                        .fontWeight(.bold)
+                        .font(BloomTypography.subheadlineMedium)
                         .disabled(imageData == nil)
                 }
             }

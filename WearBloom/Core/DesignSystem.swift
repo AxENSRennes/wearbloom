@@ -46,6 +46,7 @@ enum BloomTypography {
 
     // MARK: Technical metadata — DM Mono
 
+    static let technicalEmphasis = mono(size: 14, weight: .medium, relativeTo: .subheadline)
     static let technical = mono(size: 12, weight: .medium, relativeTo: .caption)
     static let technicalSmall = mono(size: 11, weight: .medium, relativeTo: .caption2)
     static let technicalTiny = mono(size: 8, weight: .medium, relativeTo: .caption2)
@@ -83,6 +84,7 @@ enum BloomTypography {
         return UIFont(name: name, size: size) ?? .monospacedSystemFont(ofSize: size, weight: uiWeight(for: weight))
     }
 
+    @MainActor
     static func configureUIKitAppearance() {
         let navigation = UINavigationBarAppearance()
         navigation.configureWithDefaultBackground()

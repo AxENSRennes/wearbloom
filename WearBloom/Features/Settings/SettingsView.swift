@@ -33,7 +33,7 @@ struct SettingsView: View {
                         .frame(width: 52, height: 52)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(subscriptions.isPro ? String(localized: "WearBloom Pro") : String(localized: "Your WearBloom"))
-                                .font(.system(size: 19, weight: .semibold))
+                                .font(BloomTypography.heading)
                             Text(subscriptions.isPro
                                 ? String(localized: "Pro generation is active")
                                 : String(localized: "\(session.freeRendersRemaining) free renders remaining"))
@@ -241,12 +241,12 @@ private struct ManageReferencesView: View {
                     ImageDataView(data: reference.imageData)
                         .frame(width: 58, height: 72).clipped().clipShape(RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(reference.name).fontWeight(.semibold)
+                        Text(reference.name).font(BloomTypography.bodyMedium)
                         Text(reference.isGeneratedReference ? String(localized: "Generated reference") : String(localized: "Personal photo"))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(BloomTypography.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if reference.isDefault { Text("DEFAULT").font(.caption2.bold()).foregroundStyle(BloomColor.violet) }
+                    if reference.isDefault { Text("DEFAULT").font(BloomTypography.technicalSmall).foregroundStyle(BloomColor.violet) }
                 }
                 .swipeActions(edge: .leading) {
                     Button("Default") { makeDefault(reference) }

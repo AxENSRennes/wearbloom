@@ -158,9 +158,9 @@ struct CreateView: View {
                     Image(systemName: "hanger")
                         .font(.system(size: 38, weight: .medium))
                     Text("Your outfit will come together here")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(BloomTypography.bodyMedium)
                     Text("Use the category buttons above to begin.")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(BloomTypography.footnoteMedium)
                         .foregroundStyle(BloomColor.muted)
                 }
                 .multilineTextAlignment(.center)
@@ -214,19 +214,19 @@ struct CreateView: View {
                    let garment = session.garment(for: activeBoardCategory, in: garments) {
                     HStack(spacing: 10) {
                         Text(garment.name)
-                            .font(.system(size: 13, weight: .black))
+                            .font(BloomTypography.footnoteMedium)
                             .lineLimit(1)
                         Spacer()
                         Button("Replace", systemImage: "arrow.triangle.2.circlepath") {
                             pickingCategory = activeBoardCategory
                         }
-                        .font(.system(size: 13, weight: .bold))
+                        .font(BloomTypography.footnoteMedium)
                         .foregroundStyle(BloomColor.blue)
                         Button("Remove", systemImage: "trash") {
                             session.remove(category: activeBoardCategory)
                             self.activeBoardCategory = nil
                         }
-                        .font(.system(size: 13, weight: .bold))
+                        .font(BloomTypography.footnoteMedium)
                         .foregroundStyle(BloomColor.coral)
                     }
                     .padding(.horizontal, 14)
@@ -237,7 +237,7 @@ struct CreateView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if !selectedGarments.isEmpty {
                     Text("Tap a piece to replace or remove it")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(BloomTypography.captionMedium)
                         .padding(.horizontal, 14)
                         .frame(height: 34)
                         .background(.ultraThinMaterial, in: Capsule())
@@ -255,23 +255,23 @@ struct CreateView: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Build your outfit")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .font(BloomTypography.sectionTitle)
                     Text("Choose a dress, or pair a top and bottom. Outerwear is optional.")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(BloomTypography.footnoteMedium)
                         .foregroundStyle(BloomColor.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 if session.selectedGarmentIDs[.dress] == nil {
                     Button("Use a dress") { pickingCategory = .dress }
-                        .font(.subheadline.weight(.bold))
+                        .font(BloomTypography.subheadlineMedium)
                         .foregroundStyle(BloomColor.blue)
                 } else {
                     Button("Use separates") {
                         session.remove(category: .dress)
                         pickingCategory = .top
                     }
-                    .font(.subheadline.weight(.bold))
+                    .font(BloomTypography.subheadlineMedium)
                     .foregroundStyle(BloomColor.blue)
                 }
             }
@@ -314,7 +314,7 @@ struct CreateView: View {
                 }
 
                 Text(garment?.name ?? category.title)
-                    .font(.caption.weight(.medium))
+                    .font(BloomTypography.captionMedium)
                     .foregroundStyle(garment == nil ? BloomColor.muted : BloomColor.ink)
                     .lineLimit(1)
             }

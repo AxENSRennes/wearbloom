@@ -39,7 +39,7 @@ enum ShareImageRenderer {
             (lookName as NSString).draw(
                 in: CGRect(x: 72, y: 1702, width: 700, height: 62),
                 withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 42, weight: .bold),
+                    .font: BloomTypography.uiEditorial(size: 42),
                     .foregroundColor: UIColor(red: 0.09, green: 0.09, blue: 0.09, alpha: 1),
                     .paragraphStyle: paragraph,
                 ]
@@ -47,7 +47,7 @@ enum ShareImageRenderer {
             ("COMPOSED WITH WEARBLOOM" as NSString).draw(
                 in: CGRect(x: 72, y: 1790, width: 720, height: 44),
                 withAttributes: [
-                    .font: UIFont.monospacedSystemFont(ofSize: 25, weight: .semibold),
+                    .font: BloomTypography.uiMono(size: 25, weight: .medium),
                     .foregroundColor: UIColor(red: 0.33, green: 0.33, blue: 0.33, alpha: 1),
                     .paragraphStyle: paragraph,
                 ]
@@ -60,7 +60,7 @@ enum ShareImageRenderer {
             ("WB" as NSString).draw(
                 in: CGRect(x: 892, y: 1754, width: 116, height: 48),
                 withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 31, weight: .black),
+                    .font: BloomTypography.uiEditorial(size: 31),
                     .foregroundColor: UIColor.black,
                     .paragraphStyle: mark,
                 ]

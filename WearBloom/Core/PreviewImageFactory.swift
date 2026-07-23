@@ -45,7 +45,7 @@ enum PreviewImageFactory {
             ("YOUR PHOTO" as NSString).draw(
                 in: CGRect(x: 180, y: 995, width: 460, height: 60),
                 withAttributes: [
-                    .font: UIFont.monospacedSystemFont(ofSize: 28, weight: .bold),
+                    .font: BloomTypography.uiMono(size: 28, weight: .medium),
                     .foregroundColor: UIColor(Color(hex: "171717")),
                     .paragraphStyle: paragraph
                 ]

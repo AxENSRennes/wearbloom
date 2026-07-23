@@ -96,13 +96,13 @@ private struct LookCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(look.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(BloomTypography.subheadlineMedium)
                         .foregroundStyle(BloomColor.ink)
                         .lineLimit(1)
                     Text(look.variants.isEmpty
                         ? String(localized: "Saved outfit")
                         : String(localized: "\(look.variants.count) previews"))
-                        .font(.caption)
+                        .font(BloomTypography.technical)
                         .foregroundStyle(BloomColor.muted)
                 }
                 .padding(.horizontal, 11)
@@ -144,7 +144,7 @@ private struct LookVariantsView: View {
                     .padding(.top, 70)
                 } else {
                     Text("Every preview is kept as its own variant.")
-                        .font(.subheadline)
+                        .font(BloomTypography.subheadline)
                         .foregroundStyle(BloomColor.muted)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
@@ -162,7 +162,7 @@ private struct LookVariantsView: View {
                                                     ProgressView().tint(.white)
                                                 }
                                                 Text(variant.state == .failed ? String(localized: "Failed") : String(localized: "Rendering"))
-                                                    .font(.caption.weight(.bold))
+                                                    .font(BloomTypography.technical)
                                                     .foregroundStyle(.white)
                                             }
                                         }
@@ -171,10 +171,10 @@ private struct LookVariantsView: View {
                                     .clipped()
                                     .clipShape(RoundedRectangle(cornerRadius: 20))
                                     Text("Variant \(variant.sequence)")
-                                        .font(.subheadline.weight(.semibold))
+                                        .font(BloomTypography.technicalEmphasis)
                                         .foregroundStyle(BloomColor.ink)
                                     Text(variant.createdAt, format: .dateTime.month(.abbreviated).day().year())
-                                        .font(.caption)
+                                        .font(BloomTypography.technical)
                                         .foregroundStyle(BloomColor.muted)
                                 }
                             }
@@ -308,11 +308,11 @@ struct ResultView: View {
         VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .firstTextBaseline) {
                 Text(variant.look?.name ?? "Your look")
-                    .font(.title2.weight(.semibold))
+                    .font(BloomTypography.detailTitle)
                 Spacer()
                 if variant.isPreviewSimulation {
                     Text("Preview")
-                        .font(.caption.weight(.semibold))
+                        .font(BloomTypography.technical)
                         .padding(.horizontal, 10)
                         .frame(height: 28)
                         .background(BloomColor.softViolet, in: Capsule())
@@ -321,21 +321,21 @@ struct ResultView: View {
             }
 
             Text(variant.garmentSnapshot)
-                .font(.subheadline)
+                .font(BloomTypography.subheadline)
                 .foregroundStyle(BloomColor.muted)
                 .lineLimit(2)
 
             VStack(spacing: 16) {
                 HStack {
                     Text("Looks like you?")
-                        .font(.subheadline.weight(.semibold))
+                        .font(BloomTypography.subheadlineMedium)
                     Spacer()
                     FeedbackControl(value: $variant.feedbackLooksLikeMe)
                         .frame(width: 180)
                 }
                 HStack {
                     Text("Helpful?")
-                        .font(.subheadline.weight(.semibold))
+                        .font(BloomTypography.subheadlineMedium)
                     Spacer()
                     FeedbackControl(value: $variant.feedbackHelpful)
                         .frame(width: 180)
@@ -360,13 +360,13 @@ struct ResultView: View {
                 "Your result stays private. It is saved or shared only when you choose one of these actions.",
                 systemImage: "lock.fill"
             )
-            .font(.caption)
+            .font(BloomTypography.caption)
             .foregroundStyle(BloomColor.muted)
 
             Button("Use as a reference photo", systemImage: "person.crop.rectangle.stack") {
                 reuseAsReference()
             }
-            .font(.subheadline.weight(.medium))
+            .font(BloomTypography.subheadlineMedium)
             .foregroundStyle(BloomColor.violet)
             .frame(maxWidth: .infinity)
         }
@@ -464,7 +464,7 @@ private struct FeedbackButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .semibold))
+            .font(BloomTypography.captionMedium)
             .frame(maxWidth: .infinity)
             .frame(height: 38)
             .background(selected ? BloomColor.softViolet : BloomColor.paper, in: Capsule())

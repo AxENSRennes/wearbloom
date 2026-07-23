@@ -41,16 +41,16 @@ struct TryOnPrepView: View {
                         .foregroundStyle(BloomColor.ink)
                         Spacer()
                         Text("Try on")
-                            .font(.system(size: 19, weight: .black, design: .rounded))
+                            .font(BloomTypography.heading)
                         Spacer()
                         Color.clear.frame(width: 44, height: 44)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Ready to see it on you?")
-                            .font(.system(size: 29, weight: .black, design: .rounded))
+                            .font(BloomTypography.flowTitle)
                         Text("One clear photo and the pieces you chose. You stay in control of what is processed.")
-                            .font(.system(size: 15))
+                            .font(BloomTypography.subheadline)
                             .foregroundStyle(BloomColor.muted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -64,7 +64,7 @@ struct TryOnPrepView: View {
                             .overlay(RoundedRectangle(cornerRadius: 30).stroke(BloomColor.blue, lineWidth: 4))
                             .overlay(alignment: .bottomTrailing) {
                                 Label(currentReference == nil ? String(localized: "Add photo") : String(localized: "Change photo"), systemImage: "photo")
-                                    .font(.system(size: 13, weight: .black))
+                                    .font(BloomTypography.footnoteMedium)
                                     .foregroundStyle(BloomColor.ink)
                                     .padding(.horizontal, 14)
                                     .frame(height: 40)
@@ -77,7 +77,7 @@ struct TryOnPrepView: View {
 
                     VStack(alignment: .leading, spacing: 9) {
                         Text("YOUR OUTFIT")
-                            .font(.system(size: 11, weight: .black))
+                            .font(BloomTypography.technicalSmall)
                             .foregroundStyle(BloomColor.muted)
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
@@ -219,7 +219,7 @@ struct ReferencePickerView: View {
                                     .overlay(alignment: .bottomLeading) {
                                         if photo.isDefault || photo.isGeneratedReference {
                                             Text(photo.isGeneratedReference ? String(localized: "Generated") : String(localized: "Default"))
-                                                .font(.caption2.weight(.semibold))
+                                                .font(BloomTypography.technicalSmall)
                                                 .padding(.horizontal, 9)
                                                 .frame(height: 27)
                                                 .background(.ultraThinMaterial, in: Capsule())
@@ -287,18 +287,18 @@ struct RenderProgressView: View {
                 }
                 .frame(width: 148, height: 148)
                 Text(session.renderMessage)
-                    .font(.title2.weight(.semibold))
+                    .font(BloomTypography.detailTitle)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white)
                 Text("\(Int(session.renderProgress * 100))%")
-                    .font(.subheadline.monospacedDigit())
+                    .font(BloomTypography.technicalEmphasis)
                     .foregroundStyle(.white.opacity(0.55))
                 Spacer()
                 Button("Keep browsing") { dismiss() }
                     .buttonStyle(BloomButtonStyle(fill: .white))
                     .padding(.horizontal, 24)
                 Text("We’ll let you know when it’s ready.")
-                    .font(.caption)
+                    .font(BloomTypography.caption)
                     .foregroundStyle(.white.opacity(0.5))
             }
             .padding(.bottom, 24)
