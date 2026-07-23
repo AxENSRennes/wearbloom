@@ -64,10 +64,10 @@
     "Added as a generated reference." : {
 
     },
-    "AI processing" : {
+    "AI photo processing" : {
 
     },
-    "AI processing shares only selected photos with OpenAI for the preview you request. Optional diagnostics and usage go to Sentry and PostHog; they never include your photos." : {
+    "AI processing" : {
 
     },
     "All" : {
@@ -91,10 +91,16 @@
     "Bringing the look together…" : {
 
     },
+    "Build an outfit, then see it on you" : {
+
+    },
     "Build an outfit, then see it on you." : {
 
     },
     "Build outfit" : {
+
+    },
+    "Build your outfit" : {
 
     },
     "Camera" : {
@@ -104,9 +110,6 @@
 
     },
     "Category" : {
-
-    },
-    "Change" : {
 
     },
     "Change photo" : {
@@ -121,13 +124,16 @@
     "Choose a dress or both a top and bottom first." : {
 
     },
+    "Choose a dress, or pair a top and bottom. Outerwear is optional." : {
+
+    },
     "Choose a valid JPEG, PNG, or HEIC image." : {
 
     },
     "Choose photo" : {
 
     },
-    "Choose pieces from your closet" : {
+    "Choose your pieces" : {
 
     },
     "Cleaning the background on this device…" : {
@@ -142,7 +148,7 @@
     "Closet" : {
 
     },
-    "Compose, remix, then try it on" : {
+    "Complete your outfit" : {
 
     },
     "Composing color and shape…" : {
@@ -152,6 +158,33 @@
 
     },
     "Continue with Apple again, then retry deletion." : {
+
+    },
+    "Couldn’t delete this garment. Please try again." : {
+
+    },
+    "Couldn’t delete this look. Please try again." : {
+
+    },
+    "Couldn’t delete this preview. Please try again." : {
+
+    },
+    "Couldn’t delete this reference. Please try again." : {
+
+    },
+    "Couldn’t save this garment. Please try again." : {
+
+    },
+    "Couldn’t save this look. Please try again." : {
+
+    },
+    "Couldn’t save this reference. Please try again." : {
+
+    },
+    "Couldn’t start this preview. Please try again." : {
+
+    },
+    "Couldn’t update the default reference." : {
 
     },
     "Create" : {
@@ -194,6 +227,9 @@
 
     },
     "Details" : {
+
+    },
+    "Diagnostics and usage" : {
 
     },
     "Done" : {
@@ -248,6 +284,9 @@
 
     },
     "Help and support" : {
+
+    },
+    "Help improve WearBloom" : {
 
     },
     "Helpful?" : {
@@ -316,7 +355,13 @@
     "Not now" : {
 
     },
+    "Off" : {
+
+    },
     "OK" : {
+
+    },
+    "On" : {
 
     },
     "One clear photo and the pieces you chose. You stay in control of what is processed." : {
@@ -325,10 +370,7 @@
     "One photo is enough." : {
 
     },
-    "Open closet" : {
-
-    },
-    "Optional product analytics and diagnostics are shared with PostHog and Sentry only if you opt in. WearBloom does not include photos or prompts in analytics." : {
+    "Only the reference photo and garment photos you select for a preview are uploaded to our private servers and shared with OpenAI, our AI image provider." : {
 
     },
     "Or choose a dress" : {
@@ -347,6 +389,9 @@
 
     },
     "Photos are private by default" : {
+
+    },
+    "Photos are used to classify garments and create the preview you request. They are not used for advertising or cross-app tracking." : {
 
     },
     "Piece name" : {
@@ -371,6 +416,12 @@
 
     },
     "Pro generation is active" : {
+
+    },
+    "Product analytics and diagnostics are enabled by default and can be turned off in Settings. WearBloom does not include photos or prompts in analytics." : {
+
+    },
+    "Product usage is shared with PostHog and technical errors with Sentry. Diagnostics never include your photos or prompts." : {
 
     },
     "Profile and settings" : {
@@ -415,9 +466,6 @@
     "Replace" : {
 
     },
-    "Replace a piece" : {
-
-    },
     "Restore" : {
 
     },
@@ -427,9 +475,6 @@
     "Save" : {
 
     },
-    "Save look" : {
-
-    },
     "Save photo" : {
 
     },
@@ -437,6 +482,9 @@
 
     },
     "Saved outfit" : {
+
+    },
+    "Saved outfits and personal previews" : {
 
     },
     "Search your closet" : {
@@ -454,13 +502,13 @@
     "Share diagnostics and usage" : {
 
     },
+    "Share optional, photo-free diagnostics and usage. You can change this anytime in Settings." : {
+
+    },
     "Skip" : {
 
     },
     "Something went wrong. Please try again." : {
-
-    },
-    "Style" : {
 
     },
     "Style what you own." : {
@@ -479,6 +527,9 @@
 
     },
     "Suggested with %@ confidence" : {
+
+    },
+    "Tap a piece to add it to your outfit. Choose one per category." : {
 
     },
     "Tap a piece to replace or remove it" : {
@@ -515,6 +566,12 @@
 
     },
     "The render is still working. Check Looks again shortly." : {
+
+    },
+    "This is on by default so WearBloom can create previews. Turn it off at any time to prevent new photo uploads for AI processing." : {
+
+    },
+    "This is on by default to help improve WearBloom. You can turn it off at any time." : {
 
     },
     "This permanently deletes your account, private files, garments, photos, looks, and previews. Any App Store subscription continues until you cancel it with Apple." : {
@@ -556,6 +613,9 @@
     "Use separates" : {
 
     },
+    "Use the category buttons above to begin." : {
+
+    },
     "Variant %lld" : {
 
     },
@@ -577,10 +637,16 @@
     "WearBloom could not verify this app installation. Please try again." : {
 
     },
+    "WearBloom disables collection as soon as you turn this setting off." : {
+
+    },
     "WearBloom Pro" : {
 
     },
     "WearBloom Pro includes up to %lld AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings." : {
+
+    },
+    "What is shared" : {
 
     },
     "With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings." : {
@@ -590,6 +656,9 @@
 
     },
     "You have used this period’s previews." : {
+
+    },
+    "Your account was deleted remotely, but local cleanup failed. Restart WearBloom to retry." : {
 
     },
     "Your library" : {
@@ -602,6 +671,9 @@
 
     },
     "YOUR OUTFIT" : {
+
+    },
+    "Your outfit will come together here" : {
 
     },
     "Your photos" : {
