@@ -134,6 +134,7 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Debug \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -disableAutomaticPackageResolution \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             test
