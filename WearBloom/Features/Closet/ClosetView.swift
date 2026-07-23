@@ -245,6 +245,15 @@ struct GarmentCard: View {
                     )
             }
             .overlay(alignment: .topLeading) {
+                Image(garment.category.closetCardIconAsset)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 17, height: 17)
+                    .foregroundStyle(BloomColor.ink)
+                    .padding(12)
+                    .accessibilityHidden(true)
+            }
+            .overlay(alignment: .bottomTrailing) {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .black))
@@ -274,21 +283,10 @@ struct GarmentCard: View {
                 y: isSelected ? 7 : 4
             )
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(garment.name)
-                    .font(BloomTypography.subheadlineMedium)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
-
-                HStack(spacing: 6) {
-                    Capsule()
-                        .fill(garmentColor)
-                        .frame(width: 13, height: 4)
-                    Text(garment.category.title.uppercased())
-                        .font(BloomTypography.technicalSmall)
-                        .foregroundStyle(BloomColor.muted)
-                }
-            }
+            Text(garment.name)
+                .font(BloomTypography.subheadlineMedium)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
             .padding(.horizontal, 4)
         }
         .contentShape(Rectangle())

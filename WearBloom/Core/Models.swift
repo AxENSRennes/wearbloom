@@ -35,6 +35,16 @@ enum GarmentCategory: String, Codable, CaseIterable, Identifiable {
         case .outerwear: "jacket"
         }
     }
+
+    /// IconPark Outline asset displayed over garment imagery in closet cards.
+    var closetCardIconAsset: String {
+        switch self {
+        case .top: "category-top"
+        case .bottom: "category-bottom"
+        case .dress: "category-dress"
+        case .outerwear: "category-outerwear"
+        }
+    }
 }
 
 enum RenderState: String, Codable {
