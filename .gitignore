@@ -20,6 +20,7 @@ xcuserdata/
 
 # JavaScript / Bun dependencies
 node_modules/
+server/src/db/auth-schema.generated.ts
 
 # Local tools
 .codex/

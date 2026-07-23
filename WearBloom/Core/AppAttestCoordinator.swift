@@ -1,7 +1,7 @@
 import CryptoKit
 import DeviceCheck
 import Foundation
-import Security
+import WearBloomContract
 
 enum AppAttestClientError: LocalizedError {
     case enrollmentFailed
@@ -15,25 +15,27 @@ enum AppAttestClientError: LocalizedError {
     }
 }
 
-actor AppAttestCoordinator {
-    static let shared = AppAttestCoordinator()
-    private let service = DCAppAttestService.shared
-    private let session = URLSession(configuration: .ephemeral)
+actor AppAttestCoordinator: RequestIntegrityProvider {
+    private static let keychainService = "app.wearbloom.app-attest"
+    private static let keychainAccount = "key-id"
 
-    func headers(
-        baseURL: URL,
-        cookie: String?,
-        method: String,
-        path: String,
-        body: Data
-    ) async throws -> [String: String] {
+    private let service = DCAppAttestService.shared
+    private let baseURL: URL
+    private let credentials: APISessionCredentialStore
+
+    init(baseURL: URL, credentials: APISessionCredentialStore) {
+        self.baseURL = baseURL
+        self.credentials = credentials
+    }
+
+    func headers(method: String, path: String, body: Data) async throws -> [String: String] {
         guard service.isSupported else {
             // Apple does not support App Attest in Simulator. Production requires a real assertion.
             return ["X-App-Attest-Unsupported": "true"]
         }
 
-        let keyID = try await enrolledKey(baseURL: baseURL, cookie: cookie)
-        let challenge = try await challenge(baseURL: baseURL, cookie: cookie)
+        let keyID = try await enrolledKey()
+        let challenge = try await challenge()
         let bodyDigest = Data(SHA256.hash(data: body)).base64EncodedString()
         let canonical = "\(challenge)\n\(method.uppercased())\n\(path)\n\(bodyDigest)"
         let clientDataHash = Data(SHA256.hash(data: Data(canonical.utf8)))
@@ -46,80 +48,37 @@ actor AppAttestCoordinator {
     }
 
     func reset() {
-        AppAttestKeychain.delete()
+        SecureValueStore.delete(service: Self.keychainService, account: Self.keychainAccount)
     }
 
-    private func enrolledKey(baseURL: URL, cookie: String?) async throws -> String {
-        if let existing = AppAttestKeychain.load() { return existing }
-        let challenge = try await challenge(baseURL: baseURL, cookie: cookie)
+    private func enrolledKey() async throws -> String {
+        if let data = SecureValueStore.load(service: Self.keychainService, account: Self.keychainAccount),
+           let existing = String(data: data, encoding: .utf8) {
+            return existing
+        }
+        let challenge = try await challenge()
         let keyID = try await service.generateKey()
         let clientDataHash = Data(SHA256.hash(data: Data(challenge.utf8)))
         let attestation = try await service.attestKey(keyID, clientDataHash: clientDataHash)
-        let payload = try JSONEncoder().encode(EnrollmentBody(
-            challenge: challenge,
-            keyId: keyID,
-            attestation: attestation.base64EncodedString()
-        ))
-        var request = URLRequest(url: baseURL.appending(path: "/v1/attest/verify"))
-        request.httpMethod = "POST"
-        request.httpBody = payload
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let cookie { request.setValue(cookie, forHTTPHeaderField: "Cookie") }
-        let (_, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 204 else {
-            throw AppAttestClientError.enrollmentFailed
-        }
-        AppAttestKeychain.save(keyID)
+        let output = try await client().verifyAppAttest(
+            body: .json(.init(
+                challenge: challenge,
+                keyId: keyID,
+                attestation: attestation.base64EncodedString()
+            ))
+        )
+        guard case .noContent = output else { throw AppAttestClientError.enrollmentFailed }
+        try SecureValueStore.save(Data(keyID.utf8), service: Self.keychainService, account: Self.keychainAccount)
         return keyID
     }
 
-    private func challenge(baseURL: URL, cookie: String?) async throws -> String {
-        var request = URLRequest(url: baseURL.appending(path: "/v1/attest/challenge"))
-        if let cookie { request.setValue(cookie, forHTTPHeaderField: "Cookie") }
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
-              let challenge = try? JSONDecoder().decode(ChallengeBody.self, from: data).challenge else {
-            throw AppAttestClientError.invalidServerResponse
-        }
-        return challenge
-    }
-}
-
-private struct ChallengeBody: Decodable { let challenge: String }
-private struct EnrollmentBody: Encodable { let challenge: String; let keyId: String; let attestation: String }
-
-private enum AppAttestKeychain {
-    private static let service = "app.wearbloom.app-attest"
-    private static let account = "key-id"
-
-    static func save(_ value: String) {
-        delete()
-        let attributes: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: Data(value.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        ]
-        SecItemAdd(attributes as CFDictionary, nil)
+    private func challenge() async throws -> String {
+        let output = try await client().getAttestChallenge()
+        guard case let .ok(response) = output else { throw AppAttestClientError.invalidServerResponse }
+        return try response.body.json.challenge
     }
 
-    static func load() -> String? {
-        var query = baseQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    static func delete() {
-        SecItemDelete(baseQuery as CFDictionary)
-    }
-
-    private static var baseQuery: [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account]
+    private func client() -> Client {
+        WearBloomGeneratedContract.client(serverURL: baseURL, credentials: credentials)
     }
 }

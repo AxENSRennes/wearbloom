@@ -14,7 +14,7 @@ struct OnboardingView: View {
                     Spacer()
                     if page < 2 {
                         Button("Skip") { completion() }
-                            .font(.subheadline.weight(.medium))
+                            .font(BloomTypography.subheadlineMedium)
                             .foregroundStyle(BloomColor.muted)
                     }
                 }
@@ -54,12 +54,12 @@ struct OnboardingView: View {
                 if page == 2 {
                     VStack(alignment: .leading, spacing: 5) {
                         Toggle("Help improve WearBloom", isOn: $diagnosticsConsent)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(BloomTypography.subheadlineMedium)
                             .onChange(of: diagnosticsConsent) { _, enabled in
                                 Telemetry.setCollectionEnabled(enabled)
                             }
                         Text("Share optional, photo-free diagnostics and usage. You can change this anytime in Settings.")
-                            .font(.caption)
+                            .font(BloomTypography.caption)
                             .foregroundStyle(BloomColor.muted)
                     }
                     .padding(.horizontal, 22)
@@ -102,11 +102,11 @@ private struct OnboardingPage: View {
 
             VStack(spacing: 10) {
                 Text(title)
-                    .font(.system(size: 34, weight: .bold))
-                    .tracking(-1.1)
+                    .font(BloomTypography.displayLarge)
+                    .tracking(-1.25)
                     .multilineTextAlignment(.center)
                 Text(detail)
-                    .font(.system(size: 17))
+                    .font(BloomTypography.body)
                     .foregroundStyle(BloomColor.muted)
                     .multilineTextAlignment(.center)
             }

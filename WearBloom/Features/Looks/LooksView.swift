@@ -37,11 +37,15 @@ struct LooksView: View {
                             Button("Edit look", systemImage: "slider.horizontal.3") { session.load(look) }
                             Button("Delete", systemImage: "trash", role: .destructive) {
                                 let id = look.id
-                                modelContext.delete(look)
-                                Task {
-                                    do { try await WearBloomAPI.shared.deleteLook(id) }
-                                    catch { Telemetry.error(error, context: ["operation": "look_delete"]) }
-                                }
+                                SynchronizedDeletion.perform(
+                                    operation: "look_delete",
+                                    remote: { try await RemoteLibraryCoordinator.shared.deleteLook(id) },
+                                    local: {
+                                        modelContext.delete(look)
+                                        try modelContext.saveIfNeeded()
+                                    },
+                                    onFailure: { session.showToast(String(localized: "Couldn’t delete this look. Please try again.")) }
+                                )
                             }
                         }
                     }
@@ -207,13 +211,15 @@ private struct LookVariantsView: View {
 
     private func delete(_ variant: RenderVariant) {
         let remoteID = variant.remoteRenderID
-        modelContext.delete(variant)
-        try? modelContext.save()
-        guard let remoteID else { return }
-        Task {
-            do { try await WearBloomAPI.shared.deleteRender(remoteID) }
-            catch { Telemetry.error(error, context: ["operation": "render_delete"]) }
-        }
+        SynchronizedDeletion.perform(
+            operation: "render_delete",
+            remote: { try await RemoteLibraryCoordinator.shared.deleteRender(remoteID) },
+            local: {
+                modelContext.delete(variant)
+                try modelContext.saveIfNeeded()
+            },
+            onFailure: { session.showToast(String(localized: "Couldn’t delete this preview. Please try again.")) }
+        )
     }
 }
 
@@ -388,27 +394,33 @@ struct ResultView: View {
             generatedFromVariantID: variant.remoteRenderID
         )
         modelContext.insert(photo)
-        try? modelContext.save()
+        guard modelContext.saveReporting(operation: "generated_reference_save") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Couldn’t save this reference. Please try again."))
+            return
+        }
         Telemetry.event("generated_reference_created")
         session.showToast(String(localized: "Added as a generated reference."))
     }
 
     private func deleteVariant() {
         let remoteID = variant.remoteRenderID
-        modelContext.delete(variant)
-        try? modelContext.save()
-        dismiss()
-        guard let remoteID else { return }
-        Task {
-            do { try await WearBloomAPI.shared.deleteRender(remoteID) }
-            catch { Telemetry.error(error, context: ["operation": "render_delete"]) }
-        }
+        SynchronizedDeletion.perform(
+            operation: "render_delete",
+            remote: { try await RemoteLibraryCoordinator.shared.deleteRender(remoteID) },
+            local: {
+                modelContext.delete(variant)
+                try modelContext.saveIfNeeded()
+                dismiss()
+            },
+            onFailure: { session.showToast(String(localized: "Couldn’t delete this preview. Please try again.")) }
+        )
     }
 
     private func submitFeedbackIfComplete() {
         guard let looksLikeMe = variant.feedbackLooksLikeMe,
               let helpful = variant.feedbackHelpful else { return }
-        try? modelContext.save()
+        modelContext.saveReporting(operation: "render_feedback_save")
         Telemetry.event("render_feedback_submitted", properties: [
             "looks_like_me": looksLikeMe,
             "helpful": helpful,
@@ -417,7 +429,7 @@ struct ResultView: View {
         guard let remoteRenderID = variant.remoteRenderID else { return }
         Task {
             do {
-                try await WearBloomAPI.shared.sendFeedback(
+                try await RemoteLibraryCoordinator.shared.sendFeedback(
                     renderID: remoteRenderID,
                     looksLikeMe: looksLikeMe,
                     helpful: helpful

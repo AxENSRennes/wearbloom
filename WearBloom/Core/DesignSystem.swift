@@ -1,4 +1,122 @@
 import SwiftUI
+import UIKit
+
+enum BloomTypography {
+    enum Weight {
+        case regular
+        case medium
+        case bold
+    }
+
+    private static let editorialName = "Fraunces72pt-SemiBold"
+    private static let sansRegularName = "SpaceGrotesk-Regular"
+    private static let sansMediumName = "SpaceGrotesk-Medium"
+    private static let sansBoldName = "SpaceGrotesk-Bold"
+    private static let monoRegularName = "DMMono-Regular"
+    private static let monoMediumName = "DMMono-Medium"
+
+    // MARK: Editorial hierarchy — Fraunces
+
+    static let displayLarge = editorial(size: 34, relativeTo: .largeTitle)
+    static let pageTitle = editorial(size: 33, relativeTo: .largeTitle)
+    static let modalTitle = editorial(size: 30, relativeTo: .title)
+    static let flowTitle = editorial(size: 29, relativeTo: .title)
+    static let detailTitle = editorial(size: 22, relativeTo: .title2)
+    static let sectionTitle = editorial(size: 20, relativeTo: .title3)
+    static let heading = editorial(size: 19, relativeTo: .headline)
+    static let wordmark = editorial(size: 17, relativeTo: .headline)
+
+    // MARK: Interface hierarchy — Space Grotesk
+
+    static let body = sans(size: 17, relativeTo: .body)
+    static let bodyMedium = sans(size: 17, weight: .medium, relativeTo: .body)
+    static let callout = sans(size: 16, relativeTo: .callout)
+    static let calloutMedium = sans(size: 16, weight: .medium, relativeTo: .callout)
+    static let subheadline = sans(size: 15, relativeTo: .subheadline)
+    static let subheadlineMedium = sans(size: 15, weight: .medium, relativeTo: .subheadline)
+    static let secondary = sans(size: 14, relativeTo: .subheadline)
+    static let secondaryMedium = sans(size: 14, weight: .medium, relativeTo: .subheadline)
+    static let footnote = sans(size: 13, relativeTo: .footnote)
+    static let footnoteMedium = sans(size: 13, weight: .medium, relativeTo: .footnote)
+    static let caption = sans(size: 12, relativeTo: .caption)
+    static let captionMedium = sans(size: 12, weight: .medium, relativeTo: .caption)
+    static let caption2 = sans(size: 11, relativeTo: .caption2)
+    static let button = sans(size: 16, weight: .medium, relativeTo: .headline)
+    static let buttonCompact = sans(size: 14, weight: .medium, relativeTo: .subheadline)
+
+    // MARK: Technical metadata — DM Mono
+
+    static let technical = mono(size: 12, weight: .medium, relativeTo: .caption)
+    static let technicalSmall = mono(size: 11, weight: .medium, relativeTo: .caption2)
+    static let technicalTiny = mono(size: 8, weight: .medium, relativeTo: .caption2)
+
+    static func editorial(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        .custom(editorialName, size: size, relativeTo: style)
+    }
+
+    static func sans(
+        size: CGFloat,
+        weight: Weight = .regular,
+        relativeTo style: Font.TextStyle
+    ) -> Font {
+        .custom(sansName(for: weight), size: size, relativeTo: style)
+    }
+
+    static func mono(
+        size: CGFloat,
+        weight: Weight = .regular,
+        relativeTo style: Font.TextStyle
+    ) -> Font {
+        .custom(weight == .regular ? monoRegularName : monoMediumName, size: size, relativeTo: style)
+    }
+
+    static func uiEditorial(size: CGFloat) -> UIFont {
+        UIFont(name: editorialName, size: size) ?? .systemFont(ofSize: size, weight: .semibold)
+    }
+
+    static func uiSans(size: CGFloat, weight: Weight = .regular) -> UIFont {
+        UIFont(name: sansName(for: weight), size: size) ?? .systemFont(ofSize: size, weight: uiWeight(for: weight))
+    }
+
+    static func uiMono(size: CGFloat, weight: Weight = .regular) -> UIFont {
+        let name = weight == .regular ? monoRegularName : monoMediumName
+        return UIFont(name: name, size: size) ?? .monospacedSystemFont(ofSize: size, weight: uiWeight(for: weight))
+    }
+
+    static func configureUIKitAppearance() {
+        let navigation = UINavigationBarAppearance()
+        navigation.configureWithDefaultBackground()
+        navigation.titleTextAttributes[.font] = uiSans(size: 17, weight: .medium)
+        navigation.largeTitleTextAttributes[.font] = uiEditorial(size: 34)
+        UINavigationBar.appearance().standardAppearance = navigation
+        UINavigationBar.appearance().scrollEdgeAppearance = navigation
+
+        let tabBar = UITabBarAppearance()
+        tabBar.configureWithDefaultBackground()
+        for item in [tabBar.stackedLayoutAppearance, tabBar.inlineLayoutAppearance, tabBar.compactInlineLayoutAppearance] {
+            item.normal.titleTextAttributes[.font] = uiSans(size: 10, weight: .medium)
+            item.selected.titleTextAttributes[.font] = uiSans(size: 10, weight: .bold)
+        }
+        UITabBar.appearance().standardAppearance = tabBar
+        UITabBar.appearance().scrollEdgeAppearance = tabBar
+    }
+
+    private static func sansName(for weight: Weight) -> String {
+        switch weight {
+        case .regular: sansRegularName
+        case .medium: sansMediumName
+        case .bold: sansBoldName
+        }
+    }
+
+    private static func uiWeight(for weight: Weight) -> UIFont.Weight {
+        switch weight {
+        case .regular: .regular
+        case .medium: .medium
+        case .bold: .bold
+        }
+    }
+}
 
 enum BloomColor {
     static let ink = Color(hex: "171717")
@@ -98,7 +216,7 @@ struct BloomButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: compact ? 14 : 16, weight: .semibold))
+            .font(compact ? BloomTypography.buttonCompact : BloomTypography.button)
             .foregroundStyle(isEnabled ? (fill == BloomColor.ink || fill == BloomColor.blue ? .white : BloomColor.ink) : BloomColor.muted)
             .frame(maxWidth: compact ? nil : .infinity)
             .padding(.horizontal, compact ? 16 : 20)
@@ -121,7 +239,7 @@ struct BloomButtonStyle: ButtonStyle {
 struct BloomOutlineButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .semibold))
+            .font(BloomTypography.subheadlineMedium)
             .foregroundStyle(BloomColor.ink)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
@@ -143,7 +261,7 @@ struct BloomWordmark: View {
                 .frame(width: 24, height: 24)
                 .background(BloomColor.lime, in: Circle())
             Text("WearBloom")
-                .font(.system(size: 17, weight: .semibold))
+                .font(BloomTypography.wordmark)
         }
         .foregroundStyle(BloomColor.ink)
     }
@@ -180,11 +298,11 @@ struct BloomHeader: View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 33, weight: .black, design: .rounded))
-                    .tracking(-1.1)
+                    .font(BloomTypography.pageTitle)
+                    .tracking(-1.25)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(BloomTypography.secondaryMedium)
                         .foregroundStyle(BloomColor.muted)
                 }
             }
@@ -212,7 +330,7 @@ struct BloomPill: View {
             if let systemImage { Image(systemName: systemImage) }
             Text(title)
         }
-        .font(.system(size: 13, weight: .bold))
+        .font(BloomTypography.footnoteMedium)
         .foregroundStyle(selected ? .white : BloomColor.ink)
         .padding(.horizontal, 14)
         .frame(height: 36)

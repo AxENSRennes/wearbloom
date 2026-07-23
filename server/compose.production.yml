@@ -1,5 +1,37 @@
 name: wearbloom
 
+x-wearbloom-environment: &wearbloom-environment
+  NODE_ENV: production
+  DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD:?required}@postgres:5432/wearbloom
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?required}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://api.wearbloom.app}
+  STORAGE_ROOT: /app/data/private
+  PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://wearbloom.app}
+  AI_PROVIDER: ${AI_PROVIDER:-stub}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  IMAGE_MODEL: ${IMAGE_MODEL:-gpt-image-1}
+  IMAGE_SIZE: ${IMAGE_SIZE:-1024x1536}
+  PROMPT_VERSION: ${PROMPT_VERSION:-wearbloom-v1}
+  IMAGE_COST_MICROS: ${IMAGE_COST_MICROS:-0}
+  MAX_ASSETS_PER_OWNER: ${MAX_ASSETS_PER_OWNER:-500}
+  FREE_RENDER_ALLOWANCE: ${FREE_RENDER_ALLOWANCE:-2}
+  PAID_MONTHLY_ALLOWANCE: ${PAID_MONTHLY_ALLOWANCE:-20}
+  REVENUECAT_WEBHOOK_SECRET: ${REVENUECAT_WEBHOOK_SECRET:-}
+  APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+  APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+  APPLE_PRIVATE_KEY_BASE64: ${APPLE_PRIVATE_KEY_BASE64:-}
+  APPLE_APP_BUNDLE_IDENTIFIER: ${APPLE_APP_BUNDLE_IDENTIFIER:-com.axel.wearbloom}
+  APNS_KEY_ID: ${APNS_KEY_ID:-}
+  APNS_PRIVATE_KEY_BASE64: ${APNS_PRIVATE_KEY_BASE64:-}
+  APNS_TOPIC: ${APNS_TOPIC:-com.axel.wearbloom}
+  APNS_ENVIRONMENT: ${APNS_ENVIRONMENT:-production}
+  SENTRY_DSN_SERVER: ${SENTRY_DSN_SERVER:-}
+  POSTHOG_PROJECT_API_KEY: ${POSTHOG_PROJECT_API_KEY:-}
+  POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
+  APP_ATTEST_REQUIRED: ${APP_ATTEST_REQUIRED:-true}
+  APP_ATTEST_ALLOW_DEVELOPMENT: ${APP_ATTEST_ALLOW_DEVELOPMENT:-false}
+
 services:
   postgres:
     image: postgres:16.9-alpine
@@ -19,7 +51,6 @@ services:
   migrate:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
     entrypoint: ["bun", "run", "db:migrate"]
-    env_file: ${WEARBLOOM_ENV_FILE:-.env}
     environment:
       DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
     networks: [private]
@@ -30,18 +61,20 @@ services:
   api:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
     restart: unless-stopped
-    env_file: ${WEARBLOOM_ENV_FILE:-.env}
     environment:
+      <<: *wearbloom-environment
       ROLE: api
-      NODE_ENV: production
-      APP_ATTEST_REQUIRED: "true"
-      APNS_ENVIRONMENT: production
-      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
     volumes: [private-images:/app/data/private]
     networks: [private, dokploy-network]
     depends_on:
       postgres: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:3000/health');const j=await r.json();if(!r.ok||j.status!=='ok'||j.api!==true||j.worker!==true)process.exit(1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     labels:
       - traefik.enable=true
       - traefik.http.routers.wearbloom-api.rule=Host(`api.wearbloom.app`)
@@ -53,12 +86,9 @@ services:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
     command: ["bun", "src/worker.ts"]
     restart: unless-stopped
-    env_file: ${WEARBLOOM_ENV_FILE:-.env}
     environment:
+      <<: *wearbloom-environment
       ROLE: worker
-      NODE_ENV: production
-      APNS_ENVIRONMENT: production
-      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
     volumes: [private-images:/app/data/private]
     networks: [private]
     depends_on:
@@ -66,19 +96,27 @@ services:
       migrate: { condition: service_completed_successfully }
 
   web:
-    build: ../web
+    image: ${WEARBLOOM_WEB_IMAGE:?pin the promoted web image tag or digest}
     restart: unless-stopped
     networks: [dokploy-network]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.wearbloom-web.rule=Host(`wearbloom.app`)
+      - traefik.http.routers.wearbloom-web.rule=Host(`wearbloom.app`) || Host(`www.wearbloom.app`)
       - traefik.http.routers.wearbloom-web.entrypoints=websecure
       - traefik.http.routers.wearbloom-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.wearbloom-web.middlewares=wearbloom-www-redirect
+      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.regex=^https?://www\.wearbloom\.app/(.*)
+      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.replacement=https://wearbloom.app/$${1}
+      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.permanent=true
       - traefik.http.services.wearbloom-web.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   database-backup:
     image: postgres:16.9-alpine
-    profiles: [backup]
     restart: unless-stopped
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:?required}

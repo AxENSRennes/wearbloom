@@ -14,7 +14,7 @@ final class WearBloomAppDelegate: NSObject, UIApplicationDelegate, UNUserNotific
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        Task { try? await WearBloomAPI.shared.registerPushToken(token) }
+        Task { await RemoteLibraryCoordinator.shared.registerPushToken(token) }
     }
 
     nonisolated func userNotificationCenter(
@@ -33,6 +33,7 @@ struct WearBloomApp: App {
     private let modelContainer: ModelContainer
 
     init() {
+        BloomTypography.configureUIKitAppearance()
         Telemetry.configureIfAllowed()
         RevenueCatBootstrap.configure()
         _subscriptions = State(initialValue: SubscriptionManager())

@@ -1,27 +1,20 @@
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
-import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AppConfig } from "../config";
 import type { Database } from "../db/client";
 import * as schema from "../db/schema";
 import { validateComposition } from "../domain/composition";
-import { allowanceFor, canGenerate, quotaPeriod } from "../domain/quota";
+import { canGenerate } from "../domain/quota";
+import { getQuotaSnapshot, lockOwnerQuota } from "../domain/quota-store";
+import { upsertOwnedGarment, upsertOwnedLook, upsertOwnedReference } from "../domain/owned-records";
 import type { GarmentDetector } from "../ai/detection";
 import { inspectImage } from "../images/metadata";
 import type { PrivateStorage } from "../storage/storage";
 import { AppAttestError, type AppAttestVerifier } from "../security/app-attest";
 import { revokeAppleToken } from "../apple-auth";
-import { apiError } from "./errors";
+import { apiError, validationHook } from "./errors";
 import { track } from "../telemetry";
-import {
-  categorySchema,
-  errorSchema,
-  garmentInputSchema,
-  idSchema,
-  lookSchema,
-  renderSchema,
-  standardErrors,
-} from "./schemas";
 
 export type ApiVariables = { userId: string; requestId: string; rawBody?: Uint8Array };
 type ApiEnv = { Variables: ApiVariables };
@@ -33,351 +26,27 @@ type Dependencies = {
   appAttest: AppAttestVerifier;
 };
 
-const appAttestHeaders = z.object({
-  "x-app-attest-challenge": z.string().optional(),
-  "x-app-attest-key-id": z.string().optional(),
-  "x-app-attest-assertion": z.string().optional(),
-  "x-app-attest-unsupported": z.string().optional(),
-});
-
-const attestChallengeRoute = createRoute({
-  operationId: "getAttestChallenge",
-  method: "get",
-  path: "/attest/challenge",
-  tags: ["Integrity"],
-  responses: {
-    200: {
-      content: { "application/json": { schema: z.object({ challenge: z.string().uuid() }) } },
-      description: "One-time App Attest challenge",
-    },
-    ...standardErrors,
-  },
-});
-
-const attestVerifyRoute = createRoute({
-  operationId: "verifyAppAttest",
-  method: "post",
-  path: "/attest/verify",
-  tags: ["Integrity"],
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            challenge: z.string().uuid(),
-            keyId: z.string().min(10),
-            attestation: z.string().min(20),
-          }),
-        },
-      },
-    },
-  },
-  responses: { 204: { description: "App Attest key enrolled" }, ...standardErrors },
-});
-
-const uploadRoute = createRoute({
-  operationId: "uploadImage",
-  method: "post",
-  path: "/uploads",
-  tags: ["Images"],
-  request: {
-    headers: appAttestHeaders,
-    body: {
-      required: true,
-      content: {
-        "multipart/form-data": { schema: z.object({ image: z.any(), purpose: z.enum(["garment", "reference"]) }) },
-      },
-    },
-  },
-  responses: {
-    201: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            id: idSchema,
-            contentType: z.string(),
-            width: z.number().nullable(),
-            height: z.number().nullable(),
-          }),
-        },
-      },
-      description: "Private image stored",
-    },
-    ...standardErrors,
-    422: { content: { "application/json": { schema: errorSchema } }, description: "Invalid upload" },
-  },
-});
-
-const detectRoute = createRoute({
-  operationId: "detectGarment",
-  method: "post",
-  path: "/garments/detect",
-  tags: ["Garments"],
-  request: { body: { content: { "application/json": { schema: z.object({ assetId: idSchema }) } } } },
-  responses: {
-    200: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            category: categorySchema,
-            confidence: z.number(),
-            requiresConfirmation: z.boolean(),
-            model: z.string(),
-          }),
-        },
-      },
-      description: "Garment category suggestion",
-    },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Asset not found" },
-    ...standardErrors,
-  },
-});
-
-const saveGarmentRoute = createRoute({
-  operationId: "upsertGarment",
-  method: "put",
-  path: "/garments/{id}",
-  tags: ["Garments"],
-  request: {
-    params: z.object({ id: idSchema }),
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({ name: z.string().min(1).max(100), category: categorySchema, assetId: idSchema }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        "application/json": {
-          schema: z.object({ id: idSchema, name: z.string(), category: categorySchema, assetId: idSchema }),
-        },
-      },
-      description: "Saved garment",
-    },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Asset not found" },
-    ...standardErrors,
-  },
-});
-
-const deleteGarmentRoute = createRoute({
-  operationId: "deleteGarment",
-  method: "delete",
-  path: "/garments/{id}",
-  tags: ["Garments"],
-  request: { params: z.object({ id: idSchema }) },
-  responses: { 204: { description: "Garment and its private source image deleted idempotently" }, ...standardErrors },
-});
-
-const saveReferenceRoute = createRoute({
-  operationId: "upsertReference",
-  method: "put",
-  path: "/references/{id}",
-  tags: ["Images"],
-  request: {
-    params: z.object({ id: idSchema }),
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            assetId: idSchema,
-            isDefault: z.boolean().default(false),
-            generatedFromVariantId: idSchema.optional(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        "application/json": { schema: z.object({ id: idSchema, assetId: idSchema, isDefault: z.boolean() }) },
-      },
-      description: "Saved private reference",
-    },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Asset not found" },
-    ...standardErrors,
-  },
-});
-
-const deleteReferenceRoute = createRoute({
-  operationId: "deleteReference",
-  method: "delete",
-  path: "/references/{id}",
-  tags: ["Images"],
-  request: { params: z.object({ id: idSchema }) },
-  responses: { 204: { description: "Reference image deleted idempotently" }, ...standardErrors },
-});
-
-const saveLookRoute = createRoute({
-  operationId: "upsertLook",
-  method: "put",
-  path: "/looks/{id}",
-  tags: ["Looks"],
-  request: {
-    params: z.object({ id: idSchema }),
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            name: z.string().min(1).max(100),
-            note: z.string().max(1000).default(""),
-            garments: z.array(garmentInputSchema).min(1).max(3),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: { content: { "application/json": { schema: lookSchema } }, description: "Saved editable look" },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Garment not found" },
-    ...standardErrors,
-  },
-});
-
-const deleteLookRoute = createRoute({
-  operationId: "deleteLook",
-  method: "delete",
-  path: "/looks/{id}",
-  tags: ["Looks"],
-  request: { params: z.object({ id: idSchema }) },
-  responses: {
-    204: { description: "Look, variants, and generated result files deleted idempotently" },
-    ...standardErrors,
-  },
-});
-
-const createRenderRoute = createRoute({
-  operationId: "createRender",
-  method: "post",
-  path: "/renders",
-  tags: ["Renders"],
-  request: {
-    headers: appAttestHeaders.extend({ "idempotency-key": z.string().min(8).max(200) }),
-    body: {
-      content: {
-        "application/json": { schema: z.object({ renderId: idSchema, lookId: idSchema, referencePhotoId: idSchema }) },
-      },
-    },
-  },
-  responses: {
-    202: { content: { "application/json": { schema: renderSchema } }, description: "Render queued" },
-    409: { content: { "application/json": { schema: errorSchema } }, description: "Idempotency conflict" },
-    429: { content: { "application/json": { schema: errorSchema } }, description: "Allowance exhausted" },
-    ...standardErrors,
-  },
-});
-
-const getRenderRoute = createRoute({
-  operationId: "getRender",
-  method: "get",
-  path: "/renders/{id}",
-  tags: ["Renders"],
-  request: { params: z.object({ id: idSchema }) },
-  responses: {
-    200: { content: { "application/json": { schema: renderSchema } }, description: "Immutable render variant" },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Not found" },
-    ...standardErrors,
-  },
-});
-
-const deleteRenderRoute = createRoute({
-  operationId: "deleteRender",
-  method: "delete",
-  path: "/renders/{id}",
-  tags: ["Renders"],
-  request: { params: z.object({ id: idSchema }) },
-  responses: {
-    204: { description: "Render variant and its private result file deleted idempotently" },
-    409: { content: { "application/json": { schema: errorSchema } }, description: "Render is still in progress" },
-    ...standardErrors,
-  },
-});
-
-const feedbackRoute = createRoute({
-  operationId: "submitRenderFeedback",
-  method: "post",
-  path: "/renders/{id}/feedback",
-  tags: ["Renders"],
-  request: {
-    params: z.object({ id: idSchema }),
-    body: { content: { "application/json": { schema: z.object({ looksLikeMe: z.boolean(), helpful: z.boolean() }) } } },
-  },
-  responses: {
-    204: { description: "Feedback recorded" },
-    404: { content: { "application/json": { schema: errorSchema } }, description: "Not found" },
-    ...standardErrors,
-  },
-});
-
-const deleteAccountRoute = createRoute({
-  operationId: "deleteAccount",
-  method: "delete",
-  path: "/account",
-  tags: ["Account"],
-  responses: {
-    202: {
-      content: { "application/json": { schema: z.object({ cleanupQueued: z.number().int() }) } },
-      description: "Business data deleted and file cleanup queued",
-    },
-    409: {
-      content: { "application/json": { schema: errorSchema } },
-      description: "Sign in with Apple reauthentication required",
-    },
-    ...standardErrors,
-  },
-});
-
-const accountStatusRoute = createRoute({
-  operationId: "getAccountStatus",
-  method: "get",
-  path: "/account/status",
-  tags: ["Account"],
-  responses: {
-    200: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            userId: z.string(),
-            isPro: z.boolean(),
-            allowance: z.number().int(),
-            paidAllowance: z.number().int(),
-            used: z.number().int(),
-            remaining: z.number().int(),
-            periodKey: z.string(),
-          }),
-        },
-      },
-      description: "Server-authoritative identity, entitlement, and generation allowance",
-    },
-    ...standardErrors,
-  },
-});
-
-const registerPushDeviceRoute = createRoute({
-  operationId: "registerPushDevice",
-  method: "put",
-  path: "/push/device",
-  tags: ["Account"],
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: z.object({
-            token: z.string().regex(/^[a-f0-9]{64,200}$/),
-            environment: z.enum(["sandbox", "production"]),
-          }),
-        },
-      },
-    },
-  },
-  responses: { 204: { description: "Push device registered for render completion notifications" }, ...standardErrors },
-});
-
+import {
+  attestChallengeRoute,
+  attestVerifyRoute,
+  uploadRoute,
+  detectRoute,
+  saveGarmentRoute,
+  deleteGarmentRoute,
+  saveReferenceRoute,
+  deleteReferenceRoute,
+  saveLookRoute,
+  deleteLookRoute,
+  createRenderRoute,
+  getRenderRoute,
+  deleteRenderRoute,
+  feedbackRoute,
+  deleteAccountRoute,
+  accountStatusRoute,
+  registerPushDeviceRoute,
+} from "./route-definitions";
 export function createV1Routes(deps: Dependencies) {
-  const app = new OpenAPIHono<ApiEnv>();
+  const app = new OpenAPIHono<ApiEnv>({ defaultHook: validationHook });
 
   app.openapi(attestChallengeRoute, async (c) => {
     const challenge = await deps.appAttest.issueChallenge(c.get("userId"));
@@ -401,7 +70,7 @@ export function createV1Routes(deps: Dependencies) {
       .from(schema.assets)
       .where(and(eq(schema.assets.ownerId, ownerId), isNull(schema.assets.deletedAt)));
     if ((assetCount?.count ?? 0) >= deps.config.MAX_ASSETS_PER_OWNER) return apiError(c, "UPLOAD_COUNT_EXCEEDED", 422);
-    const input = await c.req.parseBody();
+    const input = c.req.valid("form");
     const file = input.image;
     if (!(file instanceof File)) return apiError(c, "UPLOAD_INVALID_IMAGE", 422);
     if (file.size > 12 * 1024 * 1024) return apiError(c, "UPLOAD_TOO_LARGE", 422);
@@ -463,13 +132,15 @@ export function createV1Routes(deps: Dependencies) {
       )
       .limit(1);
     if (!asset) return apiError(c, "NOT_FOUND", 404);
-    await deps.db
-      .insert(schema.garments)
-      .values({ id, ownerId, name: body.name, category: body.category, originalAssetId: asset.id })
-      .onConflictDoUpdate({
-        target: schema.garments.id,
-        set: { name: body.name, category: body.category, originalAssetId: asset.id, updatedAt: new Date() },
-      });
+    const saved = await upsertOwnedGarment(deps.db, {
+      id,
+      ownerId,
+      name: body.name,
+      category: body.category,
+      assetId: asset.id,
+      now: new Date(),
+    });
+    if (!saved) return apiError(c, "NOT_FOUND", 404);
     return c.json({ id, name: body.name, category: body.category, assetId: asset.id }, 200);
   });
 
@@ -535,30 +206,26 @@ export function createV1Routes(deps: Dependencies) {
         .limit(1);
       if (!sourceVariant) return apiError(c, "NOT_FOUND", 404);
     }
-    await deps.db.transaction(async (transaction) => {
-      if (body.isDefault)
-        await transaction
-          .update(schema.referencePhotos)
-          .set({ isDefault: false })
-          .where(eq(schema.referencePhotos.ownerId, ownerId));
-      await transaction
-        .insert(schema.referencePhotos)
-        .values({
+    try {
+      await deps.db.transaction(async (transaction) => {
+        const saved = await upsertOwnedReference(transaction, {
           id,
           ownerId,
           assetId: asset.id,
           isDefault: body.isDefault,
           ...(body.generatedFromVariantId ? { generatedFromVariantId: body.generatedFromVariantId } : {}),
-        })
-        .onConflictDoUpdate({
-          target: schema.referencePhotos.id,
-          set: {
-            assetId: asset.id,
-            isDefault: body.isDefault,
-            generatedFromVariantId: body.generatedFromVariantId ?? null,
-          },
         });
-    });
+        if (!saved) throw new Error("NOT_FOUND");
+        if (body.isDefault)
+          await transaction
+            .update(schema.referencePhotos)
+            .set({ isDefault: false })
+            .where(and(eq(schema.referencePhotos.ownerId, ownerId), sql`${schema.referencePhotos.id} <> ${id}`));
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "NOT_FOUND") return apiError(c, "NOT_FOUND", 404);
+      throw error;
+    }
     return c.json({ id, assetId: asset.id, isDefault: body.isDefault }, 200);
   });
 
@@ -599,16 +266,22 @@ export function createV1Routes(deps: Dependencies) {
       .where(and(eq(schema.garments.ownerId, ownerId), inArray(schema.garments.id, ids)));
     if (owned.length !== ids.length) return apiError(c, "NOT_FOUND", 404);
     const now = new Date();
-    await deps.db.transaction(async (transaction) => {
-      await transaction
-        .insert(schema.looks)
-        .values({ id, ownerId, name: body.name, note: body.note, updatedAt: now })
-        .onConflictDoUpdate({ target: schema.looks.id, set: { name: body.name, note: body.note, updatedAt: now } });
-      await transaction.delete(schema.lookGarments).where(eq(schema.lookGarments.lookId, id));
-      await transaction
-        .insert(schema.lookGarments)
-        .values(body.garments.map((piece) => ({ lookId: id, garmentId: piece.id, category: piece.category })));
-    });
+    try {
+      await deps.db.transaction(async (transaction) => {
+        const saved = await upsertOwnedLook(transaction, {
+          id,
+          ownerId,
+          name: body.name,
+          note: body.note,
+          garments: body.garments,
+          now,
+        });
+        if (!saved) throw new Error("NOT_FOUND");
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "NOT_FOUND") return apiError(c, "NOT_FOUND", 404);
+      throw error;
+    }
     return c.json({ id, name: body.name, note: body.note, garments: body.garments, updatedAt: now.toISOString() }, 200);
   });
 
@@ -682,30 +355,9 @@ export function createV1Routes(deps: Dependencies) {
         .innerJoin(schema.garments, eq(schema.lookGarments.garmentId, schema.garments.id))
         .where(eq(schema.lookGarments.lookId, look.id));
       validateComposition(pieces);
-      const now = new Date();
-      const [entitlement] = await transaction
-        .select()
-        .from(schema.entitlements)
-        .where(
-          and(
-            eq(schema.entitlements.ownerId, ownerId),
-            eq(schema.entitlements.isPro, true),
-            gt(schema.entitlements.expiresAt, now),
-          ),
-        )
-        .limit(1);
-      const isPro = Boolean(entitlement);
-      const periodKey = isPro ? quotaPeriod(now) : "free-lifetime";
-      const allowance = allowanceFor({
-        isPro,
-        freeAllowance: deps.config.FREE_RENDER_ALLOWANCE,
-        paidAllowance: deps.config.PAID_MONTHLY_ALLOWANCE,
-      });
-      const [usage] = await transaction
-        .select({ units: sql<number>`coalesce(sum(${schema.quotaLedger.units}), 0)::int` })
-        .from(schema.quotaLedger)
-        .where(and(eq(schema.quotaLedger.ownerId, ownerId), eq(schema.quotaLedger.periodKey, periodKey)));
-      if (!canGenerate({ used: usage?.units ?? 0, allowance })) throw new Error("QUOTA_EXHAUSTED");
+      await lockOwnerQuota(transaction, ownerId);
+      const quota = await getQuotaSnapshot(transaction, ownerId, new Date(), deps.config);
+      if (!canGenerate({ used: quota.used, allowance: quota.allowance })) throw new Error("QUOTA_EXHAUSTED");
       const [variant] = await transaction
         .insert(schema.renderVariants)
         .values({
@@ -724,9 +376,13 @@ export function createV1Routes(deps: Dependencies) {
         })
         .returning();
       if (!variant) throw new Error("INTERNAL_ERROR");
-      await transaction
-        .insert(schema.quotaLedger)
-        .values({ ownerId, renderVariantId: variant.id, units: 1, reason: "render_reserved", periodKey });
+      await transaction.insert(schema.quotaLedger).values({
+        ownerId,
+        renderVariantId: variant.id,
+        units: 1,
+        reason: "render_reserved",
+        periodKey: quota.periodKey,
+      });
       const result: RenderResponse = renderResponse(variant);
       await transaction
         .insert(schema.idempotencyKeys)
@@ -803,42 +459,8 @@ export function createV1Routes(deps: Dependencies) {
 
   app.openapi(accountStatusRoute, async (c) => {
     const ownerId = c.get("userId");
-    const now = new Date();
-    const [entitlement] = await deps.db
-      .select()
-      .from(schema.entitlements)
-      .where(
-        and(
-          eq(schema.entitlements.ownerId, ownerId),
-          eq(schema.entitlements.isPro, true),
-          gt(schema.entitlements.expiresAt, now),
-        ),
-      )
-      .limit(1);
-    const isPro = Boolean(entitlement);
-    const periodKey = isPro ? quotaPeriod(now) : "free-lifetime";
-    const allowance = allowanceFor({
-      isPro,
-      freeAllowance: deps.config.FREE_RENDER_ALLOWANCE,
-      paidAllowance: deps.config.PAID_MONTHLY_ALLOWANCE,
-    });
-    const [usage] = await deps.db
-      .select({ units: sql<number>`coalesce(sum(${schema.quotaLedger.units}), 0)::int` })
-      .from(schema.quotaLedger)
-      .where(and(eq(schema.quotaLedger.ownerId, ownerId), eq(schema.quotaLedger.periodKey, periodKey)));
-    const used = usage?.units ?? 0;
-    return c.json(
-      {
-        userId: ownerId,
-        isPro,
-        allowance,
-        paidAllowance: deps.config.PAID_MONTHLY_ALLOWANCE,
-        used,
-        remaining: Math.max(0, allowance - used),
-        periodKey,
-      },
-      200,
-    );
+    const quota = await getQuotaSnapshot(deps.db, ownerId, new Date(), deps.config);
+    return c.json({ userId: ownerId, ...quota }, 200);
   });
 
   app.openapi(registerPushDeviceRoute, async (c) => {

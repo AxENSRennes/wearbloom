@@ -40,6 +40,15 @@
           "error"
         ]
       },
+      "GarmentCategory": {
+        "type": "string",
+        "enum": [
+          "top",
+          "bottom",
+          "dress",
+          "outerwear"
+        ]
+      },
       "Look": {
         "type": "object",
         "properties": {
@@ -63,13 +72,7 @@
                   "format": "uuid"
                 },
                 "category": {
-                  "type": "string",
-                  "enum": [
-                    "top",
-                    "bottom",
-                    "dress",
-                    "outerwear"
-                  ]
+                  "$ref": "#/components/schemas/GarmentCategory"
                 }
               },
               "required": [
@@ -170,6 +173,16 @@
               }
             }
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -240,6 +253,16 @@
         "responses": {
           "204": {
             "description": "App Attest key enrolled"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -322,7 +345,8 @@
                 "type": "object",
                 "properties": {
                   "image": {
-                    "nullable": true
+                    "type": "string",
+                    "format": "binary"
                   },
                   "purpose": {
                     "type": "string",
@@ -333,6 +357,7 @@
                   }
                 },
                 "required": [
+                  "image",
                   "purpose"
                 ]
               }
@@ -369,6 +394,16 @@
                     "width",
                     "height"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -439,13 +474,7 @@
                   "type": "object",
                   "properties": {
                     "category": {
-                      "type": "string",
-                      "enum": [
-                        "top",
-                        "bottom",
-                        "dress",
-                        "outerwear"
-                      ]
+                      "$ref": "#/components/schemas/GarmentCategory"
                     },
                     "confidence": {
                       "type": "number"
@@ -463,6 +492,16 @@
                     "requiresConfirmation",
                     "model"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -539,13 +578,7 @@
                     "maxLength": 100
                   },
                   "category": {
-                    "type": "string",
-                    "enum": [
-                      "top",
-                      "bottom",
-                      "dress",
-                      "outerwear"
-                    ]
+                    "$ref": "#/components/schemas/GarmentCategory"
                   },
                   "assetId": {
                     "type": "string",
@@ -577,13 +610,7 @@
                       "type": "string"
                     },
                     "category": {
-                      "type": "string",
-                      "enum": [
-                        "top",
-                        "bottom",
-                        "dress",
-                        "outerwear"
-                      ]
+                      "$ref": "#/components/schemas/GarmentCategory"
                     },
                     "assetId": {
                       "type": "string",
@@ -596,6 +623,16 @@
                     "category",
                     "assetId"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -661,6 +698,16 @@
         "responses": {
           "204": {
             "description": "Garment and its private source image deleted idempotently"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -767,6 +814,16 @@
               }
             }
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -828,6 +885,16 @@
         "responses": {
           "204": {
             "description": "Reference image deleted idempotently"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -905,13 +972,7 @@
                           "format": "uuid"
                         },
                         "category": {
-                          "type": "string",
-                          "enum": [
-                            "top",
-                            "bottom",
-                            "dress",
-                            "outerwear"
-                          ]
+                          "$ref": "#/components/schemas/GarmentCategory"
                         }
                       },
                       "required": [
@@ -938,6 +999,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Look"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -1003,6 +1074,16 @@
         "responses": {
           "204": {
             "description": "Look, variants, and generated result files deleted idempotently"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -1126,6 +1207,16 @@
               }
             }
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -1138,6 +1229,16 @@
           },
           "403": {
             "description": "Request integrity rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Look or reference not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1207,6 +1308,16 @@
               }
             }
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -1268,6 +1379,16 @@
         "responses": {
           "204": {
             "description": "Render variant and its private result file deleted idempotently"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -1353,6 +1474,16 @@
         "responses": {
           "204": {
             "description": "Feedback recorded"
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -1446,6 +1577,16 @@
               }
             }
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -1515,6 +1656,16 @@
           "204": {
             "description": "Push device registered for render completion notifications"
           },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Authentication required",
             "content": {
@@ -1569,6 +1720,16 @@
                   "required": [
                     "cleanupQueued"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }

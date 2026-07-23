@@ -11,7 +11,7 @@ import type { GarmentDetector } from "./ai/detection";
 import type { PrivateStorage } from "./storage/storage";
 import type { AppAttestVerifier } from "./security/app-attest";
 import { RateLimitError, type RateLimiter } from "./security/rate-limit";
-import { apiError, errorHandler } from "./http/errors";
+import { apiError, errorHandler, validationHook } from "./http/errors";
 import { createV1Routes, type ApiVariables } from "./http/routes";
 
 type Env = { Variables: ApiVariables };
@@ -25,7 +25,7 @@ export function createApp(deps: {
   appAttest: AppAttestVerifier;
   rateLimiter: RateLimiter;
 }) {
-  const app = new OpenAPIHono<Env>();
+  const app = new OpenAPIHono<Env>({ defaultHook: validationHook });
 
   app.use("*", async (c, next) => {
     const requestId = crypto.randomUUID();

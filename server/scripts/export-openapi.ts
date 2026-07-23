@@ -25,8 +25,14 @@ const rateLimiter = new RateLimiter(db);
 const app = createApp({ config, db, storage, detector: new StubGarmentDetector(), auth, appAttest, rateLimiter });
 const response = await app.request("/openapi.json");
 if (!response.ok) throw new Error(`OpenAPI generation failed: ${response.status}`);
-const destination = resolve(import.meta.dir, "../../openapi/wearbloom-v1.json");
-await mkdir(dirname(destination), { recursive: true });
-await Bun.write(destination, `${JSON.stringify(await response.json(), null, 2)}\n`);
+const document = `${JSON.stringify(await response.json(), null, 2)}\n`;
+const destinations = [
+  resolve(import.meta.dir, "../../openapi/wearbloom-v1.json"),
+  resolve(import.meta.dir, "../../WearBloomContract/Sources/WearBloomContract/openapi.json"),
+];
+for (const destination of destinations) {
+  await mkdir(dirname(destination), { recursive: true });
+  await Bun.write(destination, document);
+}
 await client.end();
-console.log(destination);
+console.log(destinations.join("\n"));

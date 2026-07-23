@@ -104,11 +104,11 @@ final class AppSession {
             ]
             var seededGarments: [Garment] = []
             for (name, category, hex, symbol, assetName) in samples {
-                let photoData = assetName.flatMap(Self.bundledData(named:))
+                let photoData = assetName.flatMap(PreviewImageFactory.bundledData(named:))
                 let garment = Garment(
                     name: name,
                     category: category,
-                    imageData: photoData ?? Self.posterData(color: UIColor(Color(hex: hex)), symbol: symbol),
+                    imageData: photoData ?? PreviewImageFactory.garmentPoster(color: UIColor(Color(hex: hex)), symbol: symbol),
                     colorHex: hex
                 )
                 context.insert(garment)
@@ -121,7 +121,7 @@ final class AppSession {
                 let variant = RenderVariant(
                     sequence: 1,
                     state: .ready,
-                    resultData: Self.bundledData(named: "model-result.jpg"),
+                    resultData: PreviewImageFactory.bundledData(named: "model-result.jpg"),
                     garmentSnapshot: "Top: \(top.name) • Bottom: \(bottom.name)",
                     completedAt: .now,
                     look: look
@@ -137,7 +137,7 @@ final class AppSession {
         if try context.fetch(photoDescriptor).isEmpty {
             context.insert(ReferencePhoto(
                 name: String(localized: "Editorial sample"),
-                imageData: Self.bundledData(named: "model-create.jpg") ?? Self.referencePosterData(),
+                imageData: PreviewImageFactory.bundledData(named: "model-create.jpg") ?? PreviewImageFactory.referencePoster(),
                 isDefault: true
             ))
         }
@@ -151,13 +151,6 @@ final class AppSession {
         }
 #endif
 #endif
-    }
-
-    private static func bundledData(named name: String) -> Data? {
-        let parts = name.split(separator: ".", maxSplits: 1).map(String.init)
-        guard parts.count == 2,
-              let url = Bundle.main.url(forResource: parts[0], withExtension: parts[1]) else { return nil }
-        return try? Data(contentsOf: url)
     }
 
     func beginRender(
@@ -199,7 +192,6 @@ final class AppSession {
         let variant = RenderVariant(
             sequence: look.variants.count + 1,
             state: .queued,
-            referenceSnapshotData: reference.imageData,
             garmentSnapshot: selected.map { "\($0.category.title): \($0.name)" }.joined(separator: " • "),
             look: look
         )
@@ -209,7 +201,11 @@ final class AppSession {
         }
         context.insert(variant)
         look.variants.append(variant)
-        try? context.save()
+        guard context.saveReporting(operation: "render_queue_save") else {
+            context.rollback()
+            showToast(String(localized: "Couldn’t start this preview. Please try again."))
+            return
+        }
 
         renderingVariantID = variant.id
         Telemetry.event("render_started", properties: [
@@ -287,7 +283,7 @@ final class AppSession {
                     variant.state = .rendering
                     renderingVariantID = nil
                     renderProgress = 0
-                    try? context.save()
+                    context.saveReporting(operation: "render_background_state_save")
                     Telemetry.event("render_continuing_in_background")
                     showToast(error.localizedDescription)
                     return
@@ -296,7 +292,7 @@ final class AppSession {
                 variant.completedAt = .now
                 renderingVariantID = nil
                 renderProgress = 0
-                try? context.save()
+                context.saveReporting(operation: "render_failure_save")
                 Telemetry.error(error, context: ["operation": "render"])
                 Telemetry.event("render_failed", properties: ["mode": "remote"])
                 if case let APIClientError.server(code, _) = error, code == "QUOTA_EXHAUSTED" {
@@ -308,12 +304,12 @@ final class AppSession {
                 return
             }
         } else {
-            variant.resultData = Self.composePreview(referenceData: reference.imageData, garments: selected)
+            variant.resultData = PreviewImageFactory.compose(referenceData: reference.imageData, garments: selected)
             variant.isPreviewSimulation = true
         }
         variant.state = .ready
         variant.completedAt = .now
-        try? context.save()
+        context.saveReporting(operation: "render_success_save")
         withAnimation(.smooth) { renderProgress = 1 }
         renderingVariantID = nil
         resultVariantID = variant.id
@@ -337,19 +333,23 @@ final class AppSession {
                     variant.state = .ready
                     variant.isPreviewSimulation = false
                     variant.completedAt = .now
-                    try? context.save()
+                    context.saveReporting(operation: "render_reconcile_success_save")
                     resultVariantID = variant.id
                     if let name = variant.look?.name {
                         await RenderNotificationCenter.shared.notifyCompletion(lookName: name)
                     }
                     Telemetry.event("render_recovered_after_resume")
-                    if let status = try? await WearBloomAPI.shared.accountStatus() { apply(status) }
+                    do {
+                        apply(try await WearBloomAPI.shared.accountStatus())
+                    } catch {
+                        Telemetry.error(error, context: ["operation": "account_status_refresh"])
+                    }
                 } catch APIClientError.timedOut {
                     // The server still owns the job. It will be checked again on the next app activation.
                 } catch {
                     variant.state = .failed
                     variant.completedAt = .now
-                    try? context.save()
+                    context.saveReporting(operation: "render_reconcile_failure_save")
                     Telemetry.error(error, context: ["operation": "render_reconcile"])
                 }
             }
@@ -364,77 +364,4 @@ final class AppSession {
         }
     }
 
-    private static func posterData(color: UIColor, symbol: String) -> Data? {
-        let size = CGSize(width: 700, height: 840)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.jpegData(withCompressionQuality: 0.88) { context in
-            UIColor(red: 0.97, green: 0.94, blue: 0.90, alpha: 1).setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            color.withAlphaComponent(0.22).setFill()
-            context.cgContext.fillEllipse(in: CGRect(x: 65, y: 60, width: 570, height: 570))
-            let image = UIImage(systemName: symbol)?.withTintColor(color, renderingMode: .alwaysOriginal)
-            image?.draw(in: CGRect(x: 145, y: 150, width: 410, height: 500))
-        }
-    }
-
-    private static func referencePosterData() -> Data? {
-        let size = CGSize(width: 820, height: 1120)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.jpegData(withCompressionQuality: 0.9) { context in
-            UIColor(Color(hex: "FF6A55")).setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            UIColor(Color(hex: "5B3DF5")).setFill()
-            context.cgContext.fillEllipse(in: CGRect(x: -140, y: 80, width: 680, height: 680))
-            UIColor(Color(hex: "D8FF3E")).setFill()
-            context.cgContext.fillEllipse(in: CGRect(x: 415, y: 535, width: 530, height: 530))
-            UIColor(red: 0.76, green: 0.53, blue: 0.40, alpha: 1).setFill()
-            context.cgContext.fillEllipse(in: CGRect(x: 320, y: 150, width: 180, height: 220))
-            UIColor(Color(hex: "171717")).setFill()
-            context.cgContext.fillEllipse(in: CGRect(x: 295, y: 105, width: 230, height: 165))
-            let body = UIBezierPath(roundedRect: CGRect(x: 205, y: 330, width: 410, height: 630), cornerRadius: 170)
-            UIColor(Color(hex: "F6F0E7")).setFill()
-            body.fill()
-            let paragraph = NSMutableParagraphStyle()
-            paragraph.alignment = .center
-            ("YOUR PHOTO" as NSString).draw(
-                in: CGRect(x: 180, y: 995, width: 460, height: 60),
-                withAttributes: [
-                    .font: UIFont.monospacedSystemFont(ofSize: 28, weight: .bold),
-                    .foregroundColor: UIColor(Color(hex: "171717")),
-                    .paragraphStyle: paragraph
-                ]
-            )
-        }
-    }
-
-    private static func composePreview(referenceData: Data?, garments: [Garment]) -> Data? {
-        guard let referenceData, let reference = UIImage(data: referenceData) else { return referenceData }
-        let size = CGSize(width: 1024, height: 1365)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.jpegData(withCompressionQuality: 0.92) { context in
-            reference.draw(in: CGRect(origin: .zero, size: size))
-            UIColor(Color(hex: "3038F2")).withAlphaComponent(0.20).setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            let panel = CGRect(x: 90, y: 900, width: 844, height: 340)
-            let panelPath = UIBezierPath(roundedRect: panel, cornerRadius: 52)
-            UIColor(Color(hex: "F6F0E7")).withAlphaComponent(0.94).setFill()
-            panelPath.fill()
-            UIColor(Color(hex: "171717")).setStroke()
-            panelPath.lineWidth = 7
-            panelPath.stroke()
-            let tileWidth: CGFloat = 190
-            let gap: CGFloat = 22
-            let total = CGFloat(garments.count) * tileWidth + CGFloat(max(0, garments.count - 1)) * gap
-            var x = panel.midX - total / 2
-            for garment in garments {
-                if let data = garment.imageData, let image = UIImage(data: data) {
-                    let rect = CGRect(x: x, y: panel.minY + 52, width: tileWidth, height: 235)
-                    UIBezierPath(roundedRect: rect, cornerRadius: 35).addClip()
-                    image.draw(in: rect)
-                    context.cgContext.resetClip()
-                }
-                x += tileWidth + gap
-            }
-        }
-    }
 }

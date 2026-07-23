@@ -1,7 +1,6 @@
-import { z } from "zod";
+import type { Category } from "./categories";
 
-export const categorySchema = z.enum(["top", "bottom", "dress", "outerwear"]);
-export type Category = z.infer<typeof categorySchema>;
+export type { Category } from "./categories";
 
 export type CompositionPiece = { id: string; category: Category };
 

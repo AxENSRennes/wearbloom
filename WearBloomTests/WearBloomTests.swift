@@ -51,6 +51,7 @@ struct LookCompositionTests {
         #expect(LookComposition.isComplete([dress]))
         #expect(LookComposition.isComplete([dress, coat]))
         #expect(!LookComposition.isComplete([dress, top]))
+        #expect(!LookComposition.isComplete([dress, Garment(name: "Second dress", category: .dress)]))
     }
 
     @Test("Server account status controls both current and paid allowances")
@@ -80,8 +81,7 @@ struct PrivacyAndSharingTests {
         let key = PrivacyChoices.aiProcessingConsentKey
         let original = defaults.object(forKey: key)
         defer {
-            if let original { defaults.set(original, forKey: key) }
-            else { defaults.removeObject(forKey: key) }
+            if let original { defaults.set(original, forKey: key) } else { defaults.removeObject(forKey: key) }
         }
 
         defaults.removeObject(forKey: key)
@@ -98,8 +98,7 @@ struct PrivacyAndSharingTests {
         let key = PrivacyChoices.diagnosticsConsentKey
         let original = defaults.object(forKey: key)
         defer {
-            if let original { defaults.set(original, forKey: key) }
-            else { defaults.removeObject(forKey: key) }
+            if let original { defaults.set(original, forKey: key) } else { defaults.removeObject(forKey: key) }
         }
 
         defaults.removeObject(forKey: key)

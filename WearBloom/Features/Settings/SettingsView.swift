@@ -151,7 +151,7 @@ struct SettingsView: View {
         isDeletingAccount = true
         defer { isDeletingAccount = false }
         do {
-            try await WearBloomAPI.shared.deleteAccount()
+            try await RemoteLibraryCoordinator.shared.deleteAccount()
         } catch {
             Telemetry.error(error, context: ["operation": "account_delete"])
             if case let APIClientError.server(code, _) = error, code == "APPLE_REAUTH_REQUIRED" {
@@ -166,7 +166,11 @@ struct SettingsView: View {
         for look in looks { modelContext.delete(look) }
         for garment in garments { modelContext.delete(garment) }
         for reference in references { modelContext.delete(reference) }
-        try? modelContext.save()
+        guard modelContext.saveReporting(operation: "account_local_delete") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Your account was deleted remotely, but local cleanup failed. Restart WearBloom to retry."))
+            return
+        }
         session.resetAfterAccountDeletion()
         await subscriptions.logOut()
         Telemetry.event("account_data_deleted")
@@ -190,12 +194,11 @@ struct SettingsView: View {
         }
         Task {
             do {
-                try await WearBloomAPI.shared.signInWithApple(
+                let status = try await RemoteLibraryCoordinator.shared.linkAppleAccount(
                     identityToken: token,
                     authorizationCode: authorizationCode,
                     nonce: nonce
                 )
-                let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
                 Telemetry.identify(userID: status.userId)
                 await subscriptions.logIn(appUserID: status.userId)
@@ -227,6 +230,7 @@ private enum AppleNonce {
 }
 
 private struct ManageReferencesView: View {
+    @Environment(AppSession.self) private var session
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ReferencePhoto.createdAt, order: .reverse) private var references: [ReferencePhoto]
 
@@ -245,35 +249,49 @@ private struct ManageReferencesView: View {
                     if reference.isDefault { Text("DEFAULT").font(.caption2.bold()).foregroundStyle(BloomColor.violet) }
                 }
                 .swipeActions(edge: .leading) {
-                    Button("Default") {
-                        for item in references { item.isDefault = item.id == reference.id }
-                        try? modelContext.save()
-                        syncDefault(reference)
-                    }.tint(BloomColor.violet)
+                    Button("Default") { makeDefault(reference) }
+                        .tint(BloomColor.violet)
                 }
             }
-            .onDelete { offsets in
-                for index in offsets {
-                    let reference = references[index]
-                    let id = reference.id
-                    modelContext.delete(reference)
-                    Task {
-                        do { try await WearBloomAPI.shared.deleteReference(id) }
-                        catch { Telemetry.error(error, context: ["operation": "reference_delete"]) }
-                    }
-                }
-                try? modelContext.save()
-            }
+            .onDelete(perform: deleteReferences)
         }
         .navigationTitle("Reference photos")
+    }
+
+    private func makeDefault(_ reference: ReferencePhoto) {
+        for item in references {
+            item.isDefault = item.id == reference.id
+        }
+        guard modelContext.saveReporting(operation: "reference_default_save") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Couldn’t update the default reference."))
+            return
+        }
+        syncDefault(reference)
+    }
+
+    private func deleteReferences(at offsets: IndexSet) {
+        for index in offsets {
+            let reference = references[index]
+            let id = reference.id
+            SynchronizedDeletion.perform(
+                operation: "reference_delete",
+                remote: { try await RemoteLibraryCoordinator.shared.deleteReference(id) },
+                local: {
+                    modelContext.delete(reference)
+                    try modelContext.saveIfNeeded()
+                },
+                onFailure: { session.showToast(String(localized: "Couldn’t delete this reference. Please try again.")) }
+            )
+        }
     }
 
     private func syncDefault(_ reference: ReferencePhoto) {
         guard let imageData = reference.imageData else { return }
         Task { @MainActor in
-            guard await WearBloomAPI.shared.isConfigured else { return }
+            guard await RemoteLibraryCoordinator.shared.isConfigured else { return }
             do {
-                reference.remoteAssetID = try await WearBloomAPI.shared.saveReference(
+                reference.remoteAssetID = try await RemoteLibraryCoordinator.shared.saveReference(
                     RemoteReferenceInput(
                         id: reference.id,
                         imageData: imageData,
@@ -283,7 +301,7 @@ private struct ManageReferencesView: View {
                     ),
                     isDefault: true
                 )
-                try? modelContext.save()
+                modelContext.saveReporting(operation: "reference_default_sync_save")
             } catch {
                 Telemetry.error(error, context: ["operation": "reference_default_sync"])
             }

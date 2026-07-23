@@ -32,6 +32,7 @@ struct ContentView: View {
                 }
             }
         }
+        .font(BloomTypography.body)
         .preferredColorScheme(.light)
         .onAppear {
 #if DEBUG
@@ -78,7 +79,7 @@ struct ContentView: View {
                 .safeAreaInset(edge: .bottom) {
                     VStack(spacing: 7) {
                         Text("WearBloom Pro includes up to \(session.paidRenderAllowance) AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings.")
-                            .font(.caption)
+                            .font(BloomTypography.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         HStack(spacing: 18) {
@@ -86,7 +87,7 @@ struct ContentView: View {
                             Link("Terms", destination: URL(string: "https://wearbloom.app/terms.html")!)
                             Button("Restore") { Task { await subscriptions.restorePurchases() } }
                         }
-                        .font(.caption.weight(.semibold))
+                        .font(BloomTypography.captionMedium)
                     }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
@@ -134,7 +135,7 @@ private struct RootTabView: View {
         .overlay(alignment: .top) {
             if let toast = session.toast {
                 Text(toast)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(BloomTypography.secondaryMedium)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 11)
                     .background(BloomColor.ink, in: Capsule())

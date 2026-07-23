@@ -256,7 +256,11 @@ struct ReferencePickerView: View {
             isDefault: true
         )
         modelContext.insert(photo)
-        try? modelContext.save()
+        guard modelContext.saveReporting(operation: "reference_save") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Couldn’t save this reference. Please try again."))
+            return
+        }
         Telemetry.event("reference_added", properties: ["source": "photo_library_or_camera"])
         session.selectedReferenceID = photo.id
     }

@@ -26,5 +26,13 @@ let package = Package(
                 .plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator"),
             ]
         ),
+        .testTarget(
+            name: "WearBloomContractTests",
+            dependencies: [
+                "WearBloomContract",
+                .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+                .product(name: "HTTPTypes", package: "swift-http-types"),
+            ]
+        ),
     ]
 )

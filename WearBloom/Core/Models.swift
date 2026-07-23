@@ -46,7 +46,9 @@ enum RenderState: String, Codable {
 
 enum LookComposition {
     static func isComplete(_ garments: [Garment]) -> Bool {
-        isComplete(categories: Set(garments.map(\.category)))
+        let categoryList = garments.map(\.category)
+        let categories = Set(categoryList)
+        return categories.count == categoryList.count && isComplete(categories: categories)
     }
 
     static func isComplete(categories: Set<GarmentCategory>) -> Bool {
@@ -62,8 +64,8 @@ final class Garment {
     @Attribute(.unique) var id: UUID
     var name: String
     var categoryRawValue: String
-    var imageData: Data?
-    var originalImageData: Data?
+    @Attribute(.externalStorage) var imageData: Data?
+    @Attribute(.externalStorage) var originalImageData: Data?
     var remoteAssetID: UUID?
     var colorHex: String
     var isFavorite: Bool
@@ -91,7 +93,7 @@ final class Garment {
         self.name = name
         categoryRawValue = category.rawValue
         self.imageData = imageData
-        self.originalImageData = originalImageData ?? imageData
+        self.originalImageData = originalImageData
         self.remoteAssetID = remoteAssetID
         self.colorHex = colorHex
         self.isFavorite = isFavorite
@@ -103,7 +105,7 @@ final class Garment {
 final class ReferencePhoto {
     @Attribute(.unique) var id: UUID
     var name: String
-    var imageData: Data?
+    @Attribute(.externalStorage) var imageData: Data?
     var remoteAssetID: UUID?
     var isDefault: Bool
     var isGeneratedReference: Bool
@@ -168,8 +170,8 @@ final class RenderVariant {
     @Attribute(.unique) var id: UUID
     var sequence: Int
     var stateRawValue: String
-    var resultData: Data?
-    var referenceSnapshotData: Data?
+    @Attribute(.externalStorage) var resultData: Data?
+    @Attribute(.externalStorage) var referenceSnapshotData: Data?
     var garmentSnapshot: String
     var createdAt: Date
     var completedAt: Date?

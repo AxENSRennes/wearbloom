@@ -1,0 +1,67 @@
+included:
+  - WearBloom
+  - WearBloomTests
+  - WearBloomUITests
+
+excluded:
+  - WearBloomContract/.build
+
+# Keep the first rollout focused on correctness and architecture rather than
+# formatting preferences that would create a large, low-value baseline.
+disabled_rules:
+  - identifier_name
+  - line_length
+  - multiple_closures_with_trailing_closure
+  - trailing_comma
+
+opt_in_rules:
+  - contains_over_filter_is_empty
+  - discarded_notification_center_observer
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - force_unwrapping
+  - incompatible_concurrency_annotation
+  - private_swiftui_state
+  - unhandled_throwing_task
+
+file_length:
+  warning: 400
+  error: 600
+
+type_body_length:
+  warning: 300
+  error: 500
+
+function_body_length:
+  warning: 60
+  error: 200
+
+cyclomatic_complexity:
+  warning: 12
+  error: 25
+
+large_tuple:
+  warning: 3
+  error: 5
+
+custom_rules:
+  no_silent_swiftdata_save:
+    name: "No silent SwiftData save"
+    regex: 'try\?\s+(?:modelContext|context)\.save\(\)'
+    message: "Use autosave or handle the persistence error explicitly."
+    severity: error
+
+  no_silent_api_error:
+    name: "No silent API error"
+    regex: 'try\?\s+await\s+WearBloomAPI'
+    message: "Handle or record API failures instead of discarding them."
+    severity: warning
+
+  no_api_calls_in_features:
+    name: "No API calls in feature views"
+    included: 'WearBloom/Features/.*\.swift'
+    regex: 'WearBloomAPI(?:\.shared)?\.'
+    message: "Move remote orchestration behind an application coordinator."
+    severity: warning

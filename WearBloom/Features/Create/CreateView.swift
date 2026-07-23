@@ -104,7 +104,7 @@ struct CreateView: View {
                 isTryOnPrepPresented = false
                 Task {
                     try? await Task.sleep(for: .milliseconds(250))
-                    if await WearBloomAPI.shared.isConfigured && !session.hasAIProcessingConsent {
+                    if await RemoteLibraryCoordinator.shared.isConfigured && !session.hasAIProcessingConsent {
                         isAIConsentPresented = true
                     } else {
                         startRender()
@@ -380,7 +380,11 @@ struct CreateView: View {
             modelContext.insert(look)
             session.activeLookID = look.id
         }
-        try? modelContext.save()
+        guard modelContext.saveReporting(operation: "look_save") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Couldn’t save this look. Please try again."))
+            return
+        }
         Telemetry.event("look_saved", properties: ["piece_count": selected.count])
         session.showToast(String(localized: "Look saved."))
     }

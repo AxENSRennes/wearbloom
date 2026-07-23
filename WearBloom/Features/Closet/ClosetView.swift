@@ -5,7 +5,8 @@ import SwiftUI
 struct ClosetView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Garment.createdAt, order: .reverse) private var garments: [Garment]
+    @Query(filter: #Predicate<Garment> { !$0.isArchived }, sort: \Garment.createdAt, order: .reverse)
+    private var garments: [Garment]
     @State private var category: GarmentCategory?
     @State private var isAddingGarment = false
     @State private var editingGarment: Garment?
@@ -14,8 +15,7 @@ struct ClosetView: View {
 
     private var filtered: [Garment] {
         garments.filter { garment in
-            !garment.isArchived
-                && (category == nil || garment.category == category)
+            (category == nil || garment.category == category)
                 && (!showFavoritesOnly || garment.isFavorite)
                 && (query.isEmpty || garment.name.localizedStandardContains(query))
         }
@@ -200,11 +200,15 @@ struct ClosetView: View {
 
     private func delete(_ garment: Garment) {
         let id = garment.id
-        modelContext.delete(garment)
-        Task {
-            do { try await WearBloomAPI.shared.deleteGarment(id) }
-            catch { Telemetry.error(error, context: ["operation": "garment_delete"]) }
-        }
+        SynchronizedDeletion.perform(
+            operation: "garment_delete",
+            remote: { try await RemoteLibraryCoordinator.shared.deleteGarment(id) },
+            local: {
+                modelContext.delete(garment)
+                try modelContext.saveIfNeeded()
+            },
+            onFailure: { session.showToast(String(localized: "Couldn’t delete this garment. Please try again.")) }
+        )
     }
 }
 
@@ -356,7 +360,11 @@ struct AddGarmentView: View {
             originalImageData: originalImageData,
             remoteAssetID: remoteAssetID
         ))
-        try? modelContext.save()
+        guard modelContext.saveReporting(operation: "garment_save") else {
+            modelContext.rollback()
+            session.showToast(String(localized: "Couldn’t save this garment. Please try again."))
+            return
+        }
         Telemetry.event("garment_added", properties: ["category": category.rawValue])
         dismiss()
     }
@@ -368,10 +376,10 @@ struct AddGarmentView: View {
         isCleaningBackground = true
         imageData = await GarmentImageProcessor.shared.cleanBackground(from: data)
         isCleaningBackground = false
-        guard await WearBloomAPI.shared.isConfigured, session.hasAIProcessingConsent else { return }
+        guard await RemoteLibraryCoordinator.shared.isConfigured, session.hasAIProcessingConsent else { return }
         isDetectingCategory = true
         do {
-            let detection = try await WearBloomAPI.shared.detectGarment(data: data)
+            let detection = try await RemoteLibraryCoordinator.shared.detectGarment(data: data)
             category = detection.category
             remoteAssetID = detection.assetID
             detectionConfidence = detection.confidence

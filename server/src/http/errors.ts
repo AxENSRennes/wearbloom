@@ -5,6 +5,7 @@ import { captureException } from "../telemetry";
 export type ErrorBody = { error: { code: string; message: string; requestId: string } };
 
 const messages: Record<string, string> = {
+  INVALID_REQUEST: "The request is malformed or contains invalid values.",
   AUTH_REQUIRED: "Sign in is required for this request.",
   NOT_FOUND: "The requested item was not found.",
   LOOK_EMPTY: "Add at least one garment to the look.",
@@ -34,14 +35,20 @@ const messages: Record<string, string> = {
 type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 500;
 
 export function apiError<S extends ErrorStatus>(c: Context, code: string, status: S) {
+  const requestId = (c.get("requestId") as string | undefined) ?? crypto.randomUUID();
   const body: ErrorBody = {
     error: {
       code,
       message: messages[code] ?? "The request could not be completed.",
-      requestId: c.get("requestId") as string,
+      requestId,
     },
   };
+  c.header("X-Request-ID", requestId);
   return c.json(body, status);
+}
+
+export function validationHook(result: { success: boolean }, c: Context) {
+  if (!result.success) return apiError(c, "INVALID_REQUEST", 400);
 }
 
 export function errorHandler(error: Error, c: Context) {
@@ -49,5 +56,18 @@ export function errorHandler(error: Error, c: Context) {
   const code = messages[error.message] ? error.message : "INTERNAL_ERROR";
   captureException(error, { request_id: String(c.get("requestId") ?? "unknown"), error_code: code });
   console.error(JSON.stringify({ level: "error", requestId: c.get("requestId"), code, error: error.message }));
-  return code === "INTERNAL_ERROR" ? apiError(c, code, 500) : apiError(c, code, 422);
+  switch (code) {
+    case "INTERNAL_ERROR":
+      return apiError(c, code, 500);
+    case "NOT_FOUND":
+      return apiError(c, code, 404);
+    case "QUOTA_EXHAUSTED":
+    case "RATE_LIMITED":
+      return apiError(c, code, 429);
+    case "RENDER_IN_PROGRESS":
+    case "APPLE_REAUTH_REQUIRED":
+      return apiError(c, code, 409);
+    default:
+      return apiError(c, code, 422);
+  }
 }

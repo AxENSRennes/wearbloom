@@ -3,17 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 71;
 	objects = {
 
-/* Begin PBXFileReference section */
-		A20000000000000000000001 /* WearBloom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WearBloom.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A20000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
-		A20000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		A20000000000000000000004 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
-		C20000000000000000000001 /* WearBloomTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearBloomTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D20000000000000000000001 /* WearBloomUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearBloomUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+/* Begin PBXBuildFile section */
+		A50000000000000000000001 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* RevenueCat */; };
+		A50000000000000000000002 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000003 /* RevenueCatUI */; };
+		A50000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000005 /* Sentry */; };
+		A50000000000000000000004 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000007 /* PostHog */; };
+		A50000000000000000000005 /* WearBloomContract in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000009 /* WearBloomContract */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		C50000000000000000000001 /* PBXContainerItemProxy */ = {
@@ -32,8 +31,17 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* WearBloom.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WearBloom.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000002 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		A20000000000000000000003 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		A20000000000000000000004 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		C20000000000000000000001 /* WearBloomTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearBloomTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D20000000000000000000001 /* WearBloomUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearBloomUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A30000000000000000000002 /* Exceptions for "WearBloom" folder in "WearBloom" target */ = {
+		A30000000000000000000002 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -43,24 +51,9 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A30000000000000000000001 /* WearBloom */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				A30000000000000000000002 /* Exceptions for "WearBloom" folder in "WearBloom" target */,
-			);
-			path = WearBloom;
-			sourceTree = "<group>";
-		};
-		C30000000000000000000001 /* WearBloomTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WearBloomTests;
-			sourceTree = "<group>";
-		};
-		D30000000000000000000001 /* WearBloomUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WearBloomUITests;
-			sourceTree = "<group>";
-		};
+		A30000000000000000000001 /* WearBloom */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A30000000000000000000002 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WearBloom; sourceTree = "<group>"; };
+		C30000000000000000000001 /* WearBloomTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WearBloomTests; sourceTree = "<group>"; };
+		D30000000000000000000001 /* WearBloomUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = WearBloomUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,14 +84,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXBuildFile section */
-		A50000000000000000000001 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* RevenueCat */; };
-		A50000000000000000000002 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000003 /* RevenueCatUI */; };
-		A50000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000005 /* Sentry */; };
-		A50000000000000000000004 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000007 /* PostHog */; };
-		A50000000000000000000005 /* WearBloomContract in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000009 /* WearBloomContract */; };
-/* End PBXBuildFile section */
 
 /* Begin PBXGroup section */
 		A60000000000000000000001 = {
@@ -221,10 +206,10 @@
 					A10000000000000000000001 = {
 						CreatedOnToolsVersion = 26.6;
 						SystemCapabilities = {
-							com.apple.AssociatedDomains = {
+							com.apple.AppAttest = {
 								enabled = 1;
 							};
-							com.apple.AppAttest = {
+							com.apple.AssociatedDomains = {
 								enabled = 1;
 							};
 							com.apple.InAppPurchase = {
@@ -264,7 +249,6 @@
 				B10000000000000000000006 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				B10000000000000000000008 /* XCLocalSwiftPackageReference "WearBloomContract" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = A60000000000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";

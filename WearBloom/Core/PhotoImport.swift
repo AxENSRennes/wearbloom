@@ -56,7 +56,7 @@ struct PhotoGuideView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(BloomColor.violet)
             Text("Use a clear, full-length photo in even light.")
-                .font(.system(size: 14, weight: .medium))
+                .font(BloomTypography.secondaryMedium)
                 .foregroundStyle(BloomColor.muted)
             Spacer()
         }

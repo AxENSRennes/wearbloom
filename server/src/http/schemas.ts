@@ -1,4 +1,7 @@
 import { z } from "@hono/zod-openapi";
+import { categorySchema } from "../domain/categories";
+
+export { categorySchema } from "../domain/categories";
 
 export const errorSchema = z
   .object({
@@ -11,7 +14,6 @@ export const errorSchema = z
   .openapi("Error");
 
 export const idSchema = z.string().uuid();
-export const categorySchema = z.enum(["top", "bottom", "dress", "outerwear"]);
 
 export const garmentInputSchema = z.object({
   id: idSchema,
@@ -41,6 +43,7 @@ export const renderSchema = z
   .openapi("RenderVariant");
 
 export const standardErrors = {
+  400: { content: { "application/json": { schema: errorSchema } }, description: "Malformed request" },
   401: { content: { "application/json": { schema: errorSchema } }, description: "Authentication required" },
   403: { content: { "application/json": { schema: errorSchema } }, description: "Request integrity rejected" },
   422: { content: { "application/json": { schema: errorSchema } }, description: "Invalid business input" },
