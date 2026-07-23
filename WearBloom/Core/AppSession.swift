@@ -85,74 +85,9 @@ final class AppSession {
         selectedTab = 1
         Telemetry.event("look_edit_started", properties: ["piece_count": look.garments.count, "variant_count": look.variants.count])
     }
+}
 
-    func seedIfNeeded(context: ModelContext) throws {
-#if !DEBUG
-        // Production libraries always start from the user's own wardrobe.
-        return
-#else
-        var garmentDescriptor = FetchDescriptor<Garment>()
-        garmentDescriptor.fetchLimit = 1
-        if try context.fetch(garmentDescriptor).isEmpty {
-            let samples: [(String, GarmentCategory, String, String, String?)] = [
-                ("Plum gathered top", .top, "#7C3558", "tshirt.fill", "plum-blouse.png"),
-                ("Orchid knit top", .top, "#BEB2D8", "tshirt.fill", "orchid-knit.png"),
-                ("Black wide-leg trousers", .bottom, "#252525", "figure.stand.dress.line.vertical.figure", "black-trousers.jpg"),
-                ("Cobalt overshirt", .outerwear, "#3038F2", "jacket.fill", "cobalt-overshirt.png"),
-                ("Coral column dress", .dress, "#FF6D5B", "figure.dress.line.vertical.figure", "coral-dress.png"),
-                ("Lime car coat", .outerwear, "#D9FF43", "jacket.fill", "lime-coat.png")
-            ]
-            var seededGarments: [Garment] = []
-            for (name, category, hex, symbol, assetName) in samples {
-                let photoData = assetName.flatMap(PreviewImageFactory.bundledData(named:))
-                let garment = Garment(
-                    name: name,
-                    category: category,
-                    imageData: photoData ?? PreviewImageFactory.garmentPoster(color: UIColor(Color(hex: hex)), symbol: symbol),
-                    colorHex: hex
-                )
-                context.insert(garment)
-                seededGarments.append(garment)
-            }
-
-            if let top = seededGarments.first(where: { $0.category == .top }),
-               let bottom = seededGarments.first(where: { $0.category == .bottom }) {
-                let look = Look(name: String(localized: "Easy contrast"), isFavorite: true, garments: [top, bottom])
-                let variant = RenderVariant(
-                    sequence: 1,
-                    state: .ready,
-                    resultData: PreviewImageFactory.bundledData(named: "model-result.jpg"),
-                    garmentSnapshot: "Top: \(top.name) • Bottom: \(bottom.name)",
-                    completedAt: .now,
-                    look: look
-                )
-                look.variants.append(variant)
-                context.insert(look)
-                context.insert(variant)
-            }
-        }
-
-        var photoDescriptor = FetchDescriptor<ReferencePhoto>()
-        photoDescriptor.fetchLimit = 1
-        if try context.fetch(photoDescriptor).isEmpty {
-            context.insert(ReferencePhoto(
-                name: String(localized: "Editorial sample"),
-                imageData: PreviewImageFactory.bundledData(named: "model-create.jpg") ?? PreviewImageFactory.referencePoster(),
-                isDefault: true
-            ))
-        }
-        try context.save()
-
-#if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-reviewSelection") {
-            let allGarments = try context.fetch(FetchDescriptor<Garment>())
-            if let top = allGarments.first(where: { $0.category == .top }) { select(top) }
-            if let bottom = allGarments.first(where: { $0.category == .bottom }) { select(bottom) }
-        }
-#endif
-#endif
-    }
-
+extension AppSession {
     func beginRender(
         garments: [Garment],
         references: [ReferencePhoto],
@@ -160,35 +95,99 @@ final class AppSession {
         context: ModelContext,
         isPro: Bool
     ) async {
-        guard renderingVariantID == nil else { return }
+        guard let preparation = await prepareRender(
+            garments: garments,
+            references: references,
+            looks: looks,
+            context: context,
+            isPro: isPro
+        ) else { return }
+
+        let remoteTask = makeRemoteTask(for: preparation)
+        guard await advanceRenderProgress() else { return }
+        guard await resolveRender(
+            preparation,
+            remoteTask: remoteTask,
+            context: context,
+            isPro: isPro
+        ) else { return }
+        await finishRender(preparation, context: context)
+    }
+
+    private func prepareRender(
+        garments: [Garment],
+        references: [ReferencePhoto],
+        looks: [Look],
+        context: ModelContext,
+        isPro: Bool
+    ) async -> RenderPreparation? {
+        guard renderingVariantID == nil else { return nil }
         let remoteConfigured = await WearBloomAPI.shared.isConfigured
         guard !remoteConfigured || (serverRendersRemaining ?? 1) > 0 else {
             isPaywallPresented = true
-            return
+            return nil
         }
         let selected = garments.filter { selectedGarmentIDs.values.contains($0.id) }
         guard LookComposition.isComplete(selected) else {
             showToast(String(localized: "Choose a dress or both a top and bottom first."))
-            return
+            return nil
         }
-        let reference = references.first { $0.id == selectedReferenceID }
+        guard let reference = selectedReference(from: references) else {
+            showToast(String(localized: "Add a reference photo first."))
+            return nil
+        }
+        guard !remoteConfigured || reference.imageData != nil else {
+            showToast(String(localized: "The reference photo could not be read."))
+            return nil
+        }
+        let look = upsertDraftLook(selected: selected, looks: looks, context: context)
+        let variant = queueVariant(for: look, selected: selected, remoteConfigured: remoteConfigured, context: context)
+        guard context.saveReporting(operation: "render_queue_save") else {
+            context.rollback()
+            showToast(String(localized: "Couldn’t start this preview. Please try again."))
+            return nil
+        }
+        renderingVariantID = variant.id
+        renderProgress = 0.08
+        variant.state = .rendering
+        Telemetry.event("render_started", properties: [
+            "piece_count": selected.count,
+            "is_pro": isPro,
+            "mode": remoteConfigured ? "remote" : "on_device_preview"
+        ])
+        return RenderPreparation(
+            selected: selected,
+            reference: reference,
+            look: look,
+            variant: variant,
+            remoteConfigured: remoteConfigured
+        )
+    }
+
+    private func selectedReference(from references: [ReferencePhoto]) -> ReferencePhoto? {
+        references.first { $0.id == selectedReferenceID }
             ?? references.first(where: \ReferencePhoto.isDefault)
             ?? references.first
-        guard let reference else {
-            showToast(String(localized: "Add a reference photo first."))
-            return
-        }
+    }
 
-        let look: Look
+    private func upsertDraftLook(selected: [Garment], looks: [Look], context: ModelContext) -> Look {
         if let activeLookID, let existing = looks.first(where: { $0.id == activeLookID }) {
-            look = existing
-            look.garments = selected
-            look.updatedAt = .now
-        } else {
-            look = Look(name: String(localized: "Look \(looks.count + 1)"), garments: selected)
-            context.insert(look)
-            activeLookID = look.id
+            existing.garments = selected
+            existing.updatedAt = .now
+            return existing
         }
+        let look = Look(name: String(localized: "Look \(looks.count + 1)"), garments: selected)
+        context.insert(look)
+        activeLookID = look.id
+        return look
+    }
+
+    private func queueVariant(
+        for look: Look,
+        selected: [Garment],
+        remoteConfigured: Bool,
+        context: ModelContext
+    ) -> RenderVariant {
         let variant = RenderVariant(
             sequence: look.variants.count + 1,
             state: .queued,
@@ -201,56 +200,39 @@ final class AppSession {
         }
         context.insert(variant)
         look.variants.append(variant)
-        guard context.saveReporting(operation: "render_queue_save") else {
-            context.rollback()
-            showToast(String(localized: "Couldn’t start this preview. Please try again."))
-            return
-        }
+        return variant
+    }
 
-        renderingVariantID = variant.id
-        Telemetry.event("render_started", properties: [
-            "piece_count": selected.count,
-            "is_pro": isPro,
-            "mode": remoteConfigured ? "remote" : "on_device_preview"
-        ])
-        renderProgress = 0.08
-        variant.state = .rendering
-
-        let remoteTask: Task<RemoteRenderResult, Error>?
-        if remoteConfigured {
-            guard let referenceData = reference.imageData else {
-                variant.state = .failed
-                renderingVariantID = nil
-                showToast(String(localized: "The reference photo could not be read."))
-                return
-            }
-            let remoteInput = RemoteLookInput(
-                id: look.id,
-                renderID: variant.id,
-                name: look.name,
-                garments: selected.compactMap { garment in
-                    guard let imageData = garment.imageData else { return nil }
-                    return RemoteGarmentInput(
-                        id: garment.id,
-                        name: garment.name,
-                        category: garment.category,
-                        imageData: garment.originalImageData ?? imageData,
-                        remoteAssetID: garment.remoteAssetID
-                    )
-                },
-                reference: RemoteReferenceInput(
-                    id: reference.id,
-                    imageData: referenceData,
-                    remoteAssetID: reference.remoteAssetID,
-                    isGenerated: reference.isGeneratedReference,
-                    generatedFromVariantID: reference.generatedFromVariantID
-                )
+    private func makeRemoteTask(for preparation: RenderPreparation) -> Task<RemoteRenderResult, Error>? {
+        guard preparation.remoteConfigured, let referenceData = preparation.reference.imageData else { return nil }
+        let input = RemoteLookInput(
+            id: preparation.look.id,
+            renderID: preparation.variant.id,
+            name: preparation.look.name,
+            garments: preparation.selected.compactMap(Self.remoteInput(for:)),
+            reference: RemoteReferenceInput(
+                id: preparation.reference.id,
+                imageData: referenceData,
+                remoteAssetID: preparation.reference.remoteAssetID,
+                isGenerated: preparation.reference.isGeneratedReference,
+                generatedFromVariantID: preparation.reference.generatedFromVariantID
             )
-            remoteTask = Task { try await WearBloomAPI.shared.render(remoteInput) }
-        } else {
-            remoteTask = nil
-        }
+        )
+        return Task { try await WearBloomAPI.shared.render(input) }
+    }
 
+    private static func remoteInput(for garment: Garment) -> RemoteGarmentInput? {
+        guard let imageData = garment.imageData else { return nil }
+        return RemoteGarmentInput(
+            id: garment.id,
+            name: garment.name,
+            category: garment.category,
+            imageData: garment.originalImageData ?? imageData,
+            remoteAssetID: garment.remoteAssetID
+        )
+    }
+
+    private func advanceRenderProgress() async -> Bool {
         let phases: [(Double, String, UInt64)] = [
             (0.22, String(localized: "Reading the silhouette…"), 650_000_000),
             (0.46, String(localized: "Composing color and shape…"), 800_000_000),
@@ -258,66 +240,86 @@ final class AppSession {
             (0.91, String(localized: "Finishing the details…"), 650_000_000)
         ]
         for phase in phases {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { return false }
             try? await Task.sleep(nanoseconds: phase.2)
             withAnimation(.smooth(duration: 0.6)) {
                 renderProgress = phase.0
                 renderMessage = phase.1
             }
         }
+        return true
+    }
 
-        if let remoteTask {
-            renderMessage = String(localized: "Rendering your personal preview…")
-            renderProgress = 0.94
-            do {
-                let result = try await remoteTask.value
-                variant.resultData = result.data
-                variant.isPreviewSimulation = false
-                variant.remoteRenderID = result.renderID
-                reference.remoteAssetID = result.referenceAsset
-                for garment in selected { garment.remoteAssetID = result.garmentAssets[garment.id] }
-                if !isPro { freeRendersUsed += 1 }
-                if let serverRendersRemaining { self.serverRendersRemaining = max(0, serverRendersRemaining - 1) }
-            } catch {
-                if case APIClientError.timedOut = error {
-                    variant.state = .rendering
-                    renderingVariantID = nil
-                    renderProgress = 0
-                    context.saveReporting(operation: "render_background_state_save")
-                    Telemetry.event("render_continuing_in_background")
-                    showToast(error.localizedDescription)
-                    return
-                }
-                variant.state = .failed
-                variant.completedAt = .now
-                renderingVariantID = nil
-                renderProgress = 0
-                context.saveReporting(operation: "render_failure_save")
-                Telemetry.error(error, context: ["operation": "render"])
-                Telemetry.event("render_failed", properties: ["mode": "remote"])
-                if case let APIClientError.server(code, _) = error, code == "QUOTA_EXHAUSTED" {
-                    serverRendersRemaining = 0
-                    isPaywallPresented = true
-                } else {
-                    showToast(error.localizedDescription)
-                }
-                return
-            }
-        } else {
-            variant.resultData = PreviewImageFactory.compose(referenceData: reference.imageData, garments: selected)
-            variant.isPreviewSimulation = true
+    private func resolveRender(
+        _ preparation: RenderPreparation,
+        remoteTask: Task<RemoteRenderResult, Error>?,
+        context: ModelContext,
+        isPro: Bool
+    ) async -> Bool {
+        guard let remoteTask else {
+            preparation.variant.resultData = PreviewImageFactory.compose(
+                referenceData: preparation.reference.imageData,
+                garments: preparation.selected
+            )
+            preparation.variant.isPreviewSimulation = true
+            return true
         }
-        variant.state = .ready
+        renderMessage = String(localized: "Rendering your personal preview…")
+        renderProgress = 0.94
+        do {
+            apply(try await remoteTask.value, to: preparation, isPro: isPro)
+            return true
+        } catch {
+            handleRenderFailure(error, variant: preparation.variant, context: context)
+            return false
+        }
+    }
+
+    private func apply(_ result: RemoteRenderResult, to preparation: RenderPreparation, isPro: Bool) {
+        preparation.variant.resultData = result.data
+        preparation.variant.isPreviewSimulation = false
+        preparation.variant.remoteRenderID = result.renderID
+        preparation.reference.remoteAssetID = result.referenceAsset
+        for garment in preparation.selected { garment.remoteAssetID = result.garmentAssets[garment.id] }
+        if !isPro { freeRendersUsed += 1 }
+        if let serverRendersRemaining { self.serverRendersRemaining = max(0, serverRendersRemaining - 1) }
+    }
+
+    private func handleRenderFailure(_ error: Error, variant: RenderVariant, context: ModelContext) {
+        renderingVariantID = nil
+        renderProgress = 0
+        if case APIClientError.timedOut = error {
+            variant.state = .rendering
+            context.saveReporting(operation: "render_background_state_save")
+            Telemetry.event("render_continuing_in_background")
+            showToast(error.localizedDescription)
+            return
+        }
+        variant.state = .failed
         variant.completedAt = .now
+        context.saveReporting(operation: "render_failure_save")
+        Telemetry.error(error, context: ["operation": "render"])
+        Telemetry.event("render_failed", properties: ["mode": "remote"])
+        if case let APIClientError.server(code, _) = error, code == "QUOTA_EXHAUSTED" {
+            serverRendersRemaining = 0
+            isPaywallPresented = true
+        } else {
+            showToast(error.localizedDescription)
+        }
+    }
+
+    private func finishRender(_ preparation: RenderPreparation, context: ModelContext) async {
+        preparation.variant.state = .ready
+        preparation.variant.completedAt = .now
         context.saveReporting(operation: "render_success_save")
         withAnimation(.smooth) { renderProgress = 1 }
         renderingVariantID = nil
-        resultVariantID = variant.id
+        resultVariantID = preparation.variant.id
         Telemetry.event("render_succeeded", properties: [
-            "piece_count": selected.count,
-            "mode": variant.isPreviewSimulation ? "on_device_preview" : "remote"
+            "piece_count": preparation.selected.count,
+            "mode": preparation.variant.isPreviewSimulation ? "on_device_preview" : "remote"
         ])
-        await RenderNotificationCenter.shared.notifyCompletion(lookName: look.name)
+        await RenderNotificationCenter.shared.notifyCompletion(lookName: preparation.look.name)
     }
 
     func reconcilePendingRenders(_ variants: [RenderVariant], context: ModelContext) {
@@ -364,4 +366,12 @@ final class AppSession {
         }
     }
 
+}
+
+private struct RenderPreparation {
+    let selected: [Garment]
+    let reference: ReferencePhoto
+    let look: Look
+    let variant: RenderVariant
+    let remoteConfigured: Bool
 }
