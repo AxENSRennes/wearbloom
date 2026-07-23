@@ -1,5 +1,75 @@
 import SwiftUI
 
+struct PrivacySettingLabel: View {
+    let title: String
+    let systemImage: String
+    let isEnabled: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Label(title, systemImage: systemImage)
+            Spacer()
+            Text(isEnabled ? String(localized: "On") : String(localized: "Off"))
+                .font(.caption.weight(.bold))
+                .foregroundStyle(isEnabled ? BloomColor.blue : BloomColor.muted)
+        }
+    }
+}
+
+struct AIProcessingPrivacySettingsView: View {
+    @Environment(AppSession.self) private var session
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle(
+                    "Allow AI photo processing",
+                    isOn: Binding(
+                        get: { session.hasAIProcessingConsent },
+                        set: { session.setAIProcessingConsent($0) }
+                    )
+                )
+            } footer: {
+                Text("This is on by default so WearBloom can create previews. Turn it off at any time to prevent new photo uploads for AI processing.")
+            }
+
+            Section("What is shared") {
+                Text("Only the reference photo and garment photos you select for a preview are uploaded to our private servers and shared with OpenAI, our AI image provider.")
+                Text("Photos are used to classify garments and create the preview you request. They are not used for advertising or cross-app tracking.")
+                Link("Read the privacy policy", destination: URL(string: "https://wearbloom.app/privacy.html")!)
+            }
+        }
+        .tint(BloomColor.blue)
+        .navigationTitle("AI photo processing")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct DiagnosticsPrivacySettingsView: View {
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Share diagnostics and usage", isOn: $diagnosticsConsent)
+                    .onChange(of: diagnosticsConsent) { _, enabled in
+                        Telemetry.setCollectionEnabled(enabled)
+                    }
+            } footer: {
+                Text("This is on by default to help improve WearBloom. You can turn it off at any time.")
+            }
+
+            Section("What is shared") {
+                Text("Product usage is shared with PostHog and technical errors with Sentry. Diagnostics never include your photos or prompts.")
+                Text("WearBloom disables collection as soon as you turn this setting off.")
+            }
+        }
+        .tint(BloomColor.blue)
+        .navigationTitle("Diagnostics and usage")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 struct AIProcessingConsentView: View {
     @Environment(\.dismiss) private var dismiss
     let primaryActionTitle: String
@@ -51,7 +121,7 @@ struct PrivacyView: View {
                     .font(.system(size: 30, weight: .bold))
                 Text("Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them.")
                 Text("With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings.")
-                Text("Optional product analytics and diagnostics are shared with PostHog and Sentry only if you opt in. WearBloom does not include photos or prompts in analytics.")
+                Text("Product analytics and diagnostics are enabled by default and can be turned off in Settings. WearBloom does not include photos or prompts in analytics.")
                 Text("Deleting your account removes its associated records and private files. App Store subscription cancellation is managed separately through Apple.")
                 Text("Previews are style inspiration—not a prediction of exact fit or sizing.")
             }

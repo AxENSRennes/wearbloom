@@ -356,7 +356,6 @@ struct CreateView: View {
     private func startRender() {
         isRenderingPresented = true
         Task {
-            await RenderNotificationCenter.shared.requestPermission()
             await session.beginRender(
                 garments: garments,
                 references: references,

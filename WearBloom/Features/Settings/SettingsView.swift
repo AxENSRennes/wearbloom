@@ -15,10 +15,9 @@ struct SettingsView: View {
     @Query private var looks: [Look]
     @Query private var references: [ReferencePhoto]
     @State private var isCustomerCenterPresented = false
-    @State private var isAIConsentPresented = false
     @State private var isDeleteConfirmationPresented = false
     @State private var isDeletingAccount = false
-    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
     @State private var appleNonce: String?
 
     var body: some View {
@@ -86,42 +85,25 @@ struct SettingsView: View {
                         PrivacyView()
                     }
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Label("AI photo processing", systemImage: "wand.and.stars")
-                            Spacer()
-                            Text(session.hasAIProcessingConsent ? String(localized: "Allowed") : String(localized: "Not allowed yet"))
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(session.hasAIProcessingConsent ? BloomColor.blue : BloomColor.muted)
-                        }
-                        Text(session.hasAIProcessingConsent
-                            ? String(localized: "WearBloom may process only the photos you select when you request a preview.")
-                            : String(localized: "WearBloom will ask before uploading photos for your first AI preview."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        if session.hasAIProcessingConsent {
-                            Button("Withdraw AI processing permission", role: .destructive) {
-                                session.setAIProcessingConsent(false)
-                            }
-                        } else {
-                            Button("Review and allow") { isAIConsentPresented = true }
-                                .fontWeight(.semibold)
-                        }
+                    NavigationLink {
+                        AIProcessingPrivacySettingsView()
+                    } label: {
+                        PrivacySettingLabel(
+                            title: String(localized: "AI photo processing"),
+                            systemImage: "wand.and.stars",
+                            isEnabled: session.hasAIProcessingConsent
+                        )
                     }
 
-                    Toggle(
-                        "Share diagnostics and usage",
-                        isOn: Binding(
-                            get: { diagnosticsConsent },
-                            set: {
-                                diagnosticsConsent = $0
-                                Telemetry.setCollectionEnabled($0)
-                            }
+                    NavigationLink {
+                        DiagnosticsPrivacySettingsView()
+                    } label: {
+                        PrivacySettingLabel(
+                            title: String(localized: "Share diagnostics and usage"),
+                            systemImage: "waveform.path.ecg",
+                            isEnabled: diagnosticsConsent
                         )
-                    )
-                    Text("Diagnostics stay off until you choose to share them. When enabled, product usage goes to PostHog and technical errors go to Sentry; neither includes your photos.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    }
                     Button("Delete account and data", systemImage: "trash", role: .destructive) {
                         isDeleteConfirmationPresented = true
                     }
@@ -142,11 +124,6 @@ struct SettingsView: View {
                 CustomerCenterView()
                     .onCustomerCenterRestoreCompleted { subscriptions.update($0) }
                     .onCustomerCenterRestoreFailed { subscriptions.report($0) }
-            }
-            .sheet(isPresented: $isAIConsentPresented) {
-                AIProcessingConsentView(primaryActionTitle: String(localized: "Allow AI photo processing")) {
-                    session.setAIProcessingConsent(true)
-                }
             }
             .confirmationDialog(
                 "Delete your WearBloom account?",

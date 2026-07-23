@@ -7,7 +7,7 @@ enum Telemetry {
     private static let logger = Logger(subsystem: "app.wearbloom", category: "product")
 
     static var isCollectionEnabled: Bool {
-        UserDefaults.standard.bool(forKey: PrivacyChoices.diagnosticsConsentKey)
+        PrivacyChoices.hasDiagnosticsConsent
     }
 
     static func configureIfAllowed() {

@@ -6,14 +6,6 @@ final class WearBloomUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-reviewTab", "1", "-reviewSelection"]
 
-        addUIInterruptionMonitor(withDescription: "Notification permission") { alert in
-            if alert.buttons["Allow"].exists {
-                alert.buttons["Allow"].tap()
-                return true
-            }
-            return false
-        }
-
         app.launch()
 
         XCTAssertTrue(app.tabBars.buttons["Closet"].waitForExistence(timeout: 5))
@@ -67,6 +59,11 @@ final class WearBloomUITests: XCTestCase {
 
         XCTAssertEqual(first.frame.height, second.frame.height, accuracy: 1)
         XCTAssertLessThan(first.frame.maxY, nextRow.frame.minY)
+
+        let categoryCarousel = app.scrollViews["closet-category-carousel"]
+        XCTAssertTrue(categoryCarousel.exists)
+        categoryCarousel.swipeLeft()
+        XCTAssertTrue(app.buttons["Favorites"].isHittable)
     }
 
     @MainActor
@@ -83,5 +80,28 @@ final class WearBloomUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Looks"].waitForExistence(timeout: 5))
         XCTAssertEqual(profile.frame.width, closetFrame.width, accuracy: 1)
         XCTAssertEqual(profile.frame.height, closetFrame.height, accuracy: 1)
+    }
+
+    @MainActor
+    func testPrivacyChoicesOpenTheirExplanations() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reviewTab", "0"]
+        app.launch()
+
+        app.buttons["Profile and settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+
+        let aiProcessing = app.staticTexts["AI photo processing"]
+        for _ in 0..<3 where !aiProcessing.exists { app.swipeUp() }
+        XCTAssertTrue(aiProcessing.waitForExistence(timeout: 3))
+        aiProcessing.tap()
+        XCTAssertTrue(app.switches["Allow AI photo processing"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons["Settings"].tap()
+
+        let diagnostics = app.staticTexts["Share diagnostics and usage"]
+        for _ in 0..<3 where !diagnostics.exists { app.swipeUp() }
+        XCTAssertTrue(diagnostics.waitForExistence(timeout: 3))
+        diagnostics.tap()
+        XCTAssertTrue(app.switches["Share diagnostics and usage"].waitForExistence(timeout: 5))
     }
 }

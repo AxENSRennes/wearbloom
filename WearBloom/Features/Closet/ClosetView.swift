@@ -108,16 +108,22 @@ struct ClosetView: View {
     }
 
     private var categoryPicker: some View {
-        BloomFlowLayout(spacing: 8) {
-            FilterPill(title: String(localized: "All"), selected: category == nil) { category = nil }
-            ForEach(GarmentCategory.allCases) { item in
-                FilterPill(title: item.title, selected: category == item) { category = item }
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                FilterPill(title: String(localized: "All"), selected: category == nil) { category = nil }
+                ForEach(GarmentCategory.allCases) { item in
+                    FilterPill(title: item.title, selected: category == item) { category = item }
+                }
+                FilterPill(title: String(localized: "Favorites"), selected: showFavoritesOnly) {
+                    showFavoritesOnly.toggle()
+                }
             }
-            FilterPill(title: String(localized: "Favorites"), selected: showFavoritesOnly) {
-                showFavoritesOnly.toggle()
-            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
         }
-        .padding(.vertical, 2)
+        .scrollIndicators(.hidden)
+        .scrollClipDisabled()
+        .accessibilityIdentifier("closet-category-carousel")
     }
 
     private var selectionTray: some View {

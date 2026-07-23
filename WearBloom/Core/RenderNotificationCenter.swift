@@ -5,17 +5,9 @@ import UserNotifications
 actor RenderNotificationCenter {
     static let shared = RenderNotificationCenter()
 
-    func requestPermission() async {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        guard settings.authorizationStatus == .notDetermined else { return }
-        let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) == true
-        if granted {
-            await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
-        }
-    }
-
     func notifyCompletion(lookName: String) async {
+        let appIsActive = await MainActor.run { UIApplication.shared.applicationState == .active }
+        guard !appIsActive else { return }
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
         let content = UNMutableNotificationContent()

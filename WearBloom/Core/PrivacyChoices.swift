@@ -6,7 +6,13 @@ enum PrivacyChoices {
     static let diagnosticsConsentKey = "diagnosticsConsent"
 
     static var hasAIProcessingConsent: Bool {
-        UserDefaults.standard.integer(forKey: aiProcessingConsentKey) >= aiProcessingConsentVersion
+        guard UserDefaults.standard.object(forKey: aiProcessingConsentKey) != nil else { return true }
+        return UserDefaults.standard.integer(forKey: aiProcessingConsentKey) >= aiProcessingConsentVersion
+    }
+
+    static var hasDiagnosticsConsent: Bool {
+        guard UserDefaults.standard.object(forKey: diagnosticsConsentKey) != nil else { return true }
+        return UserDefaults.standard.bool(forKey: diagnosticsConsentKey)
     }
 
     static func setAIProcessingConsent(_ allowed: Bool) {
