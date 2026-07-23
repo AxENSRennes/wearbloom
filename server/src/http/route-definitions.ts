@@ -323,6 +323,7 @@ export const accountStatusRoute = createRoute({
         "application/json": {
           schema: z.object({
             userId: z.string(),
+            appAccountToken: z.string().uuid(),
             isPro: z.boolean(),
             allowance: z.number().int(),
             paidAllowance: z.number().int(),
@@ -333,6 +334,40 @@ export const accountStatusRoute = createRoute({
         },
       },
       description: "Server-authoritative identity, entitlement, and generation allowance",
+    },
+    ...standardErrors,
+  },
+});
+
+export const syncAppleSubscriptionRoute = createRoute({
+  operationId: "syncAppleSubscription",
+  method: "post",
+  path: "/subscriptions/apple/sync",
+  tags: ["Subscriptions"],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: z.object({
+            signedTransactions: z.array(z.string().min(100).max(50_000)).min(1).max(20),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: z.object({ synced: z.literal(true) }) } },
+      description: "Signed StoreKit transactions verified and reconciled with Apple",
+    },
+    409: {
+      content: { "application/json": { schema: errorSchema } },
+      description: "A different App Store subscription is already linked",
+    },
+    503: {
+      content: { "application/json": { schema: errorSchema } },
+      description: "Production App Store verification is not configured",
     },
     ...standardErrors,
   },

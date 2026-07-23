@@ -1545,6 +1545,10 @@
                     "userId": {
                       "type": "string"
                     },
+                    "appAccountToken": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
                     "isPro": {
                       "type": "boolean"
                     },
@@ -1566,6 +1570,7 @@
                   },
                   "required": [
                     "userId",
+                    "appAccountToken",
                     "isPro",
                     "allowance",
                     "paidAllowance",
@@ -1609,6 +1614,122 @@
           },
           "422": {
             "description": "Invalid business input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/apple/sync": {
+      "post": {
+        "operationId": "syncAppleSubscription",
+        "tags": [
+          "Subscriptions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "signedTransactions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 100,
+                      "maxLength": 50000
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  }
+                },
+                "required": [
+                  "signedTransactions"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed StoreKit transactions verified and reconciled with Apple",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "synced": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "synced"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request integrity rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A different App Store subscription is already linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid business input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Production App Store verification is not configured",
             "content": {
               "application/json": {
                 "schema": {

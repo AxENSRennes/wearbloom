@@ -1,6 +1,5 @@
 import AuthenticationServices
 import CryptoKit
-import RevenueCatUI
 import Security
 import SwiftData
 import SwiftUI
@@ -14,7 +13,6 @@ struct SettingsView: View {
     @Query private var garments: [Garment]
     @Query private var looks: [Look]
     @Query private var references: [ReferencePhoto]
-    @State private var isCustomerCenterPresented = false
     @State private var isDeleteConfirmationPresented = false
     @State private var isDeletingAccount = false
     @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
@@ -69,9 +67,10 @@ struct SettingsView: View {
                         "Manage App Store subscription",
                         destination: URL(string: "https://apps.apple.com/account/subscriptions")!
                     )
-                    Button("Subscription and support", systemImage: "person.text.rectangle") {
-                        isCustomerCenterPresented = true
-                    }
+                    Link(
+                        "Subscription and support",
+                        destination: URL(string: "https://wearbloom.app/support.html")!
+                    )
                 }
                 Section("Your library") {
                     LabeledContent("Garments", value: "\(garments.count)")
@@ -120,11 +119,6 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-            .sheet(isPresented: $isCustomerCenterPresented) {
-                CustomerCenterView()
-                    .onCustomerCenterRestoreCompleted { subscriptions.update($0) }
-                    .onCustomerCenterRestoreFailed { subscriptions.report($0) }
-            }
             .confirmationDialog(
                 "Delete your WearBloom account?",
                 isPresented: $isDeleteConfirmationPresented,
@@ -172,7 +166,7 @@ struct SettingsView: View {
             return
         }
         session.resetAfterAccountDeletion()
-        await subscriptions.logOut()
+        subscriptions.clearAccount()
         Telemetry.event("account_data_deleted")
         Telemetry.resetIdentity()
         Telemetry.setCollectionEnabled(false)
@@ -201,7 +195,10 @@ struct SettingsView: View {
                 )
                 session.apply(status)
                 Telemetry.identify(userID: status.userId)
-                await subscriptions.logIn(appUserID: status.userId)
+                await subscriptions.configureAccount(
+                    appAccountToken: status.appAccountToken,
+                    isPro: status.isPro
+                )
                 session.hasLinkedAppleAccount = true
                 UserDefaults.standard.set(true, forKey: "hasLinkedAppleAccount")
                 Telemetry.event("apple_account_linked")

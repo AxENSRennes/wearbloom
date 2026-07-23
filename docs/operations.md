@@ -4,7 +4,7 @@
 
 The GitHub Actions workflow publishes `ghcr.io/axensrennes/wearbloom:server-<commit-sha>` and `ghcr.io/axensrennes/wearbloom:web-<commit-sha>` after validation. Production should use their resolved manifest digests. It must never deploy the mutable `latest` tag.
 
-Required server settings are documented in `server/.env.example`. Production additionally requires Apple, RevenueCat, OpenAI, PostHog/Sentry, and App Attest values. `APP_ATTEST_REQUIRED=true` is forced in the production compose file.
+Required server settings are documented in `server/.env.example`. Production additionally requires Apple Sign in, App Store Server API, OpenAI, PostHog/Sentry, and App Attest values. `APP_ATTEST_REQUIRED=true` is forced in the production compose file.
 
 Dokploy may store Apple and APNs `.p8` values either as escaped PEM text (`APPLE_PRIVATE_KEY` / `APNS_PRIVATE_KEY`) or base64 (`APPLE_PRIVATE_KEY_BASE64` / `APNS_PRIVATE_KEY_BASE64`). For APNs, map the sandbox or production key ID and value into the generic `APNS_KEY_ID` and `APNS_PRIVATE_KEY_BASE64` variables for that environment.
 
@@ -24,4 +24,4 @@ Test restoration monthly in an isolated staging database with `pg_restore`, then
 
 ## External setup still required
 
-Dokploy domains and TLS, Apple identifiers/keys, APNs, RevenueCat products and `pro` entitlement, PostHog and Sentry projects, provider credentials, and App Store Connect metadata belong to the owner accounts and are intentionally not stored in this repository.
+Dokploy domains and TLS, Apple identifiers/keys, APNs, App Store products and server-notification endpoints, PostHog and Sentry projects, provider credentials, and App Store Connect metadata belong to the owner accounts and are intentionally not stored in this repository.

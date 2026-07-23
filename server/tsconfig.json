@@ -10,8 +10,13 @@
     "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedSideEffectImports": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "drizzle.config.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "drizzle.config.ts"]
 }

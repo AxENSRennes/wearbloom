@@ -20,7 +20,7 @@ Official sources:
 - Third-party AI processing is blocked until the user explicitly permits sharing selected photos with OpenAI. Permission can be withdrawn in Settings.
 - Analytics and diagnostics are off by default, exclude photo content, and can be enabled or withdrawn in Settings.
 - Camera/photo purpose strings, an app privacy manifest, privacy/terms/support links, purchase restoration, and a direct subscription-management link are present.
-- The paywall is dismissible and has a fixed disclosure of ongoing value, automatic renewal, restore, privacy, and terms. RevenueCat supplies localized prices and periods.
+- The paywall is dismissible and has a fixed disclosure of ongoing value, automatic renewal, restore, privacy, and terms. StoreKit supplies localized prices and periods.
 - The app disclaims that generated previews are style inspiration rather than exact fit or sizing predictions.
 - Uploaded photos and results are private; the app has no public feed, chat, or broad distribution of user-generated content.
 
@@ -28,7 +28,7 @@ Official sources:
 
 Do not submit until every item below is complete.
 
-- Replace `REVENUECAT_API_KEY` in `Configuration/Release.xcconfig` with the production public Apple SDK key. The Release app intentionally fails fast with the placeholder.
+- Verify the Release build points to the production WearBloom API. No subscription secret or vendor SDK key belongs in the iOS app.
 - PostHog is configured for the EU project with its current default analytics retention of up to 84 months, as disclosed in the privacy policy. Finish configuring Sentry and ensure its crash and diagnostic retention does not exceed the separately disclosed 12-month limit. If Sentry will not ship, leave its DSN unset and remove its diagnostics disclosure before submission.
 - Confirm production and offsite backup pruning runs successfully and does not exceed the 8-day maximum disclosed in the privacy policy.
 - Deploy `web/public` and verify that each URL returns `200`, meaningful HTML, and a valid TLS certificate in a logged-out browser:
@@ -42,12 +42,12 @@ Do not submit until every item below is complete.
 
 ## Subscriptions and paywall
 
-- Create one subscription group with `monthly` and `yearly`; attach both to the RevenueCat `pro` entitlement and `default` offering.
+- Create one subscription group with product identifiers `monthly` and `yearly`.
 - Complete localization, duration, price, review screenshot, and review notes for both products, then add both products to the app version submission.
-- Confirm the RevenueCat paywall visibly shows each plan's localized price and period before purchase. Do not use hard-coded prices in screenshots or text.
+- Confirm the StoreKit paywall visibly shows each plan's localized price and period before purchase. Do not use hard-coded prices in screenshots or text.
 - Confirm the promised allowance is accurate in production. The in-app paywall reads `PAID_MONTHLY_ALLOWANCE` from the account-status API; keep App Store metadata, terms, and review notes aligned with that server value.
 - Test purchase, pending Ask to Buy, restore, expiration, billing retry, cancellation, reinstall, account linking, and deletion with an active subscription.
-- Configure App Store Server Notifications through RevenueCat and verify signed/idempotent webhook handling.
+- Configure App Store Server Notifications V2 directly to `https://api.wearbloom.app/v1/webhooks/app-store` for both production and sandbox, send a test notification, and verify signed/idempotent handling.
 
 ## App Store Connect privacy answers
 

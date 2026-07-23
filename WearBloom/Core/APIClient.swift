@@ -183,8 +183,12 @@ extension WearBloomAPI {
         let output = try await withClient { try await $0.getAccountStatus() }
         guard case let .ok(response) = output else { throw APIClientError.invalidResponse }
         let status = try response.body.json
+        guard let appAccountToken = UUID(uuidString: status.appAccountToken) else {
+            throw APIClientError.invalidResponse
+        }
         return AccountStatus(
             userId: status.userId,
+            appAccountToken: appAccountToken,
             isPro: status.isPro,
             allowance: status.allowance,
             paidAllowance: status.paidAllowance,
@@ -192,6 +196,14 @@ extension WearBloomAPI {
             remaining: status.remaining,
             periodKey: status.periodKey
         )
+    }
+
+    func syncAppleSubscription(signedTransactions: [String]) async throws {
+        try await ensureAnonymousSession()
+        let body = try JSONEncoder().encode(
+            AppleSubscriptionSyncBody(signedTransactions: signedTransactions)
+        )
+        _ = try await request(path: "/v1/subscriptions/apple/sync", method: "POST", body: body)
     }
 
     func sendFeedback(renderID: UUID, looksLikeMe: Bool, helpful: Bool) async throws {

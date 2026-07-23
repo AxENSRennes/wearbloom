@@ -84,22 +84,25 @@ export function createAuth(config: AppConfig, db: Database) {
               .where(eq(schema.entitlements.ownerId, newOwnerId))
               .limit(1);
             if (oldEntitlement && newEntitlement) {
-              const expirations = [oldEntitlement.expiresAt, newEntitlement.expiresAt].filter(
-                (date): date is Date => date !== null,
-              );
-              await transaction
-                .update(schema.entitlements)
-                .set({
-                  isPro: oldEntitlement.isPro || newEntitlement.isPro,
-                  expiresAt: expirations.sort((a, b) => b.getTime() - a.getTime())[0] ?? null,
-                  updatedAt: new Date(),
-                })
-                .where(eq(schema.entitlements.ownerId, newOwnerId));
-              await transaction.delete(schema.entitlements).where(eq(schema.entitlements.ownerId, oldOwnerId));
+              const oldHasPurchase = Boolean(oldEntitlement.originalTransactionId);
+              const newHasPurchase = Boolean(newEntitlement.originalTransactionId);
+              const keepOld =
+                oldHasPurchase &&
+                (!newHasPurchase ||
+                  (oldEntitlement.expiresAt?.getTime() ?? 0) > (newEntitlement.expiresAt?.getTime() ?? 0));
+              if (keepOld) {
+                await transaction.delete(schema.entitlements).where(eq(schema.entitlements.ownerId, newOwnerId));
+                await transaction
+                  .update(schema.entitlements)
+                  .set({ ownerId: newOwnerId, updatedAt: new Date() })
+                  .where(eq(schema.entitlements.ownerId, oldOwnerId));
+              } else {
+                await transaction.delete(schema.entitlements).where(eq(schema.entitlements.ownerId, oldOwnerId));
+              }
             } else if (oldEntitlement) {
               await transaction
                 .update(schema.entitlements)
-                .set({ ownerId: newOwnerId, revenueCatAppUserId: newOwnerId })
+                .set({ ownerId: newOwnerId, updatedAt: new Date() })
                 .where(eq(schema.entitlements.ownerId, oldOwnerId));
             }
           });

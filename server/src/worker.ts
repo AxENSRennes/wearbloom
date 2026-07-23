@@ -10,6 +10,9 @@ import { StubImageProvider } from "./ai/stub-provider";
 import { LocalPrivateStorage } from "./storage/local-storage";
 import { APNSClient } from "./notifications/apns";
 import { captureException, configureTelemetry, track } from "./telemetry";
+import { AppleSubscriptionService } from "./subscriptions/apple-subscriptions";
+import { renderInputSnapshotSchema } from "./domain/render-contract";
+import { errorMessage } from "./errors";
 
 const config = loadConfig({ ...process.env, ROLE: "worker" });
 configureTelemetry(config, "worker");
@@ -21,6 +24,8 @@ const provider: ImageGenerationProvider =
     : new StubImageProvider();
 const workerId = `${hostname()}-${process.pid}`;
 const push = new APNSClient(config);
+const subscriptions = new AppleSubscriptionService(config, db);
+let lastSubscriptionReconciliationAt = 0;
 
 async function claimRender(): Promise<string | undefined> {
   return db.transaction(async (transaction) => {
@@ -58,9 +63,7 @@ async function processRender(id: string): Promise<void> {
       .where(eq(schema.referencePhotos.id, variant.referencePhotoId))
       .limit(1);
     if (!reference) throw new Error("REFERENCE_MISSING");
-    const snapshot = variant.inputSnapshot as {
-      garments: Array<{ name: string; category: string; assetId: string | null }>;
-    };
+    const snapshot = renderInputSnapshotSchema.parse(variant.inputSnapshot);
     const garments: GenerationInput["garments"] = [];
     for (const piece of snapshot.garments) {
       if (!piece.assetId) throw new Error("GARMENT_IMAGE_MISSING");
@@ -115,7 +118,7 @@ async function processRender(id: string): Promise<void> {
           level: "error",
           message: "Render notification failed",
           renderId: id,
-          code: (error as Error).message,
+          code: errorMessage(error),
         }),
       );
     });
@@ -137,7 +140,7 @@ async function processRender(id: string): Promise<void> {
       provider: provider.name,
     });
   } catch (error) {
-    const code = (error as Error).message.slice(0, 100);
+    const code = errorMessage(error).slice(0, 100);
     await db.transaction(async (transaction) => {
       await transaction
         .update(schema.renderVariants)
@@ -169,7 +172,7 @@ async function processRender(id: string): Promise<void> {
           level: "error",
           message: "Render notification failed",
           renderId: id,
-          code: (notificationError as Error).message,
+          code: errorMessage(notificationError),
         }),
       );
     });
@@ -231,6 +234,10 @@ console.log(JSON.stringify({ level: "info", message: "WearBloom worker starting"
 while (true) {
   await heartbeat();
   await processCleanup();
+  if (Date.now() - lastSubscriptionReconciliationAt >= 60 * 60_000) {
+    lastSubscriptionReconciliationAt = Date.now();
+    await subscriptions.reconcileStale();
+  }
   if (Date.now() % 60_000 < 2_000) await pruneTransientSecurityData();
   const id = await claimRender();
   if (id) await processRender(id);

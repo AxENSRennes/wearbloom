@@ -60,6 +60,7 @@ struct LookCompositionTests {
 
         session.apply(AccountStatus(
             userId: "test-user",
+            appAccountToken: UUID(),
             isPro: false,
             allowance: 3,
             paidAllowance: 24,

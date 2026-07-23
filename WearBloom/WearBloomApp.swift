@@ -35,7 +35,6 @@ struct WearBloomApp: App {
     init() {
         BloomTypography.configureUIKitAppearance()
         Telemetry.configureIfAllowed()
-        RevenueCatBootstrap.configure()
         _subscriptions = State(initialValue: SubscriptionManager())
         do {
             modelContainer = try ModelContainer(

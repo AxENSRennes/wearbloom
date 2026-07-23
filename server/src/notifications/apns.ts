@@ -1,6 +1,9 @@
 import { connect } from "node:http2";
 import { importPKCS8, SignJWT } from "jose";
+import { z } from "zod";
 import type { AppConfig } from "../config";
+
+const errorResponseSchema = z.object({ reason: z.string().optional() });
 
 type PushInput = {
   token: string;
@@ -110,9 +113,19 @@ function request(
     });
     stream.on("end", () => {
       client.close();
-      const reason = response ? (JSON.parse(response) as { reason?: string }).reason : undefined;
+      const reason = parseReason(response);
       resolve(reason ? { status, reason } : { status });
     });
     stream.end(body);
   });
+}
+
+function parseReason(response: string): string | undefined {
+  if (!response) return undefined;
+  try {
+    const parsed = errorResponseSchema.safeParse(JSON.parse(response));
+    return parsed.success ? parsed.data.reason : undefined;
+  } catch {
+    return undefined;
+  }
 }

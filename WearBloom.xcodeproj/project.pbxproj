@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A50000000000000000000001 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* RevenueCat */; };
-		A50000000000000000000002 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000003 /* RevenueCatUI */; };
 		A50000000000000000000003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000005 /* Sentry */; };
 		A50000000000000000000004 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000007 /* PostHog */; };
 		A50000000000000000000005 /* WearBloomContract in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000009 /* WearBloomContract */; };
@@ -61,8 +59,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A50000000000000000000001 /* RevenueCat in Frameworks */,
-				A50000000000000000000002 /* RevenueCatUI in Frameworks */,
 				A50000000000000000000003 /* Sentry in Frameworks */,
 				A50000000000000000000004 /* PostHog in Frameworks */,
 				A50000000000000000000005 /* WearBloomContract in Frameworks */,
@@ -137,8 +133,6 @@
 			);
 			name = WearBloom;
 			packageProductDependencies = (
-				B10000000000000000000002 /* RevenueCat */,
-				B10000000000000000000003 /* RevenueCatUI */,
 				B10000000000000000000005 /* Sentry */,
 				B10000000000000000000007 /* PostHog */,
 				B10000000000000000000009 /* WearBloomContract */,
@@ -244,7 +238,6 @@
 			mainGroup = A60000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 				B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				B10000000000000000000006 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				B10000000000000000000008 /* XCLocalSwiftPackageReference "WearBloomContract" */,
@@ -545,14 +538,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.74.0;
-			};
-		};
 		B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
@@ -572,16 +557,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B10000000000000000000002 /* RevenueCat */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
-			productName = RevenueCat;
-		};
-		B10000000000000000000003 /* RevenueCatUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B10000000000000000000001 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
-			productName = RevenueCatUI;
-		};
 		B10000000000000000000005 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = B10000000000000000000004 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;

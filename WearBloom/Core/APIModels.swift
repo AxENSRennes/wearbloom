@@ -45,6 +45,7 @@ struct GarmentDetection: Sendable {
 
 struct AccountStatus: Sendable {
     let userId: String
+    let appAccountToken: UUID
     let isPro: Bool
     let allowance: Int
     let paidAllowance: Int
@@ -88,6 +89,10 @@ struct AppleSignInBody: Encodable {
     let identityToken: String
     let authorizationCode: String
     let nonce: String
+}
+
+struct AppleSubscriptionSyncBody: Encodable {
+    let signedTransactions: [String]
 }
 
 struct ErrorEnvelope: Decodable {

@@ -4,7 +4,7 @@ WearBloom is a native SwiftUI app for composing looks from a private closet and 
 
 Open `WearBloom.xcodeproj` and run the shared `WearBloom` scheme. The app uses Swift 6 strict concurrency and iOS 26. Debug builds use an explicitly labeled on-device preview when `API_BASE_URL` is empty. Configure the API to exercise private uploads, category detection, queued AI generation, server quotas, feedback, and deletion.
 
-RevenueCat setup is documented in `docs/revenuecat-ios.md`; production deployment, smoke checks, rollback, and backups are documented in `docs/operations.md`.
+StoreKit and App Store Server setup is documented in `docs/app-store-subscriptions.md`; production deployment, smoke checks, rollback, and backups are documented in `docs/operations.md`.
 
 ## Local server
 

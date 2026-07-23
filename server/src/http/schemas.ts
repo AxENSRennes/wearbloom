@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi";
 import { categorySchema } from "../domain/categories";
 
 export { categorySchema } from "../domain/categories";
+export { renderResponseSchema as renderSchema } from "../domain/render-contract";
 
 export const errorSchema = z
   .object({
@@ -29,18 +30,6 @@ export const lookSchema = z
     updatedAt: z.string().datetime(),
   })
   .openapi("Look");
-
-export const renderSchema = z
-  .object({
-    id: idSchema,
-    lookId: idSchema,
-    status: z.enum(["queued", "processing", "succeeded", "failed", "cancelled"]),
-    resultURL: z.string().nullable(),
-    errorCode: z.string().nullable(),
-    createdAt: z.string().datetime(),
-    completedAt: z.string().datetime().nullable(),
-  })
-  .openapi("RenderVariant");
 
 export const standardErrors = {
   400: { content: { "application/json": { schema: errorSchema } }, description: "Malformed request" },

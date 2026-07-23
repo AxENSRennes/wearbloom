@@ -1,7 +1,5 @@
 #include "Base.xcconfig"
 
-// Replace with the public Apple SDK key from RevenueCat before archiving.
-REVENUECAT_API_KEY = REPLACE_WITH_REVENUECAT_APPLE_PUBLIC_SDK_KEY
 API_BASE_URL = https:/$()/api.wearbloom.app
 SENTRY_DSN = https:/$()/8fecaaf9e0edd0372dc09f8be3e00c22@o4511765145387008.ingest.de.sentry.io/4511765147091024
 POSTHOG_API_KEY = phc_CdX8FSY8ksWqVWN3Riz6maThCxqHcsmcA79xjZPKPbcY

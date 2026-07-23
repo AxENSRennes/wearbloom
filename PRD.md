@@ -95,7 +95,7 @@ The paywall appears when the user has exhausted her free or paid allowance. A pa
 
 Unused allowance does not roll over in the working model. A technically failed generation is not deducted; the exact recovery policy for a low-quality but technically valid result remains configurable.
 
-RevenueCat manages App Store products, offerings, purchases, restoration, and the `pro` entitlement. The paywall must match WearBloom's visual direction and use localized product information from RevenueCat, but its exact implementation may evolve. The server remains responsible for deciding whether a generation is allowed and for applying quotas idempotently.
+StoreKit 2 manages App Store products, purchases, and restoration. The paywall must match WearBloom's visual direction and use localized product information returned by StoreKit. The WearBloom server verifies Apple-signed transactions, processes App Store Server Notifications V2, reconciles subscription status with Apple, and remains authoritative for generation access and idempotent quotas.
 
 ## 5. Distribution and viral loops
 
@@ -126,7 +126,7 @@ The product should feel organic, energetic, tactile, and fashion-led: collage-ba
 
 The iOS app uses Swift 6 with strict concurrency, SwiftUI, SwiftData, Swift Concurrency, and the latest stable iOS 26 SDK available during implementation.
 
-Use Apple frameworks where appropriate, including PhotosUI, Vision, AuthenticationServices, Keychain Services, App Attest, UserNotifications/APNs, ImageIO, and OSLog. RevenueCat handles purchases, Swift OpenAPI Generator provides the API client, Sentry captures errors and performance, PostHog captures product analytics, and Swift Testing/XCTest cover automated tests.
+Use Apple frameworks where appropriate, including PhotosUI, Vision, AuthenticationServices, StoreKit 2, Keychain Services, App Attest, UserNotifications/APNs, ImageIO, and OSLog. Swift OpenAPI Generator provides the API client, Sentry captures errors and performance, PostHog captures product analytics and paywall experiments, and Swift Testing/XCTest cover automated tests.
 
 The codebase follows a feature-based organization. The implementation agent chooses the exact modules and folder structure. The interface should remain Apple-native and use additional UI dependencies only when they solve a concrete problem better than platform frameworks.
 

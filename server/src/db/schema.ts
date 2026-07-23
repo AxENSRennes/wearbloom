@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { RenderInputSnapshot, RenderResponse } from "../domain/render-contract";
 import { GARMENT_CATEGORIES } from "../domain/categories";
 import { user } from "./auth-schema";
 
@@ -119,7 +120,7 @@ export const renderVariants = pgTable(
     referencePhotoId: uuid("reference_photo_id").references(() => referencePhotos.id, { onDelete: "set null" }),
     resultAssetId: uuid("result_asset_id").references(() => assets.id, { onDelete: "set null" }),
     status: renderStatus("status").notNull().default("queued"),
-    inputSnapshot: jsonb("input_snapshot").notNull(),
+    inputSnapshot: jsonb("input_snapshot").$type<RenderInputSnapshot>().notNull(),
     provider: text("provider").notNull(),
     model: text("model").notNull(),
     promptVersion: text("prompt_version").notNull(),
@@ -159,12 +160,35 @@ export const entitlements = pgTable("entitlements", {
   ownerId: text("owner_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
-  revenueCatAppUserId: text("revenuecat_app_user_id").notNull().unique(),
+  appleAppAccountToken: uuid("apple_app_account_token").notNull().defaultRandom().unique(),
+  originalTransactionId: text("original_transaction_id").unique(),
+  latestTransactionId: text("latest_transaction_id"),
   productId: text("product_id"),
+  status: text("status").notNull().default("inactive"),
   isPro: boolean("is_pro").notNull().default(false),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
+  willRenew: boolean("will_renew").notNull().default(false),
+  environment: text("environment"),
+  lastAppleSignedAt: timestamp("last_apple_signed_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const appleSubscriptionNotifications = pgTable(
+  "apple_subscription_notifications",
+  {
+    notificationUuid: uuid("notification_uuid").primaryKey(),
+    notificationType: text("notification_type").notNull(),
+    subtype: text("subtype"),
+    environment: text("environment"),
+    originalTransactionId: text("original_transaction_id"),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("apple_subscription_notifications_transaction_idx").on(table.originalTransactionId),
+    index("apple_subscription_notifications_received_idx").on(table.receivedAt),
+  ],
+);
 
 export const cleanupJobs = pgTable(
   "cleanup_jobs",
@@ -187,7 +211,7 @@ export const idempotencyKeys = pgTable(
     key: text("key").notNull(),
     operation: text("operation").notNull(),
     responseStatus: integer("response_status"),
-    responseBody: jsonb("response_body"),
+    responseBody: jsonb("response_body").$type<RenderResponse>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("idempotency_owner_key").on(table.ownerId, table.key)],

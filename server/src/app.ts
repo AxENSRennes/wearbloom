@@ -11,10 +11,10 @@ import type { GarmentDetector } from "./ai/detection";
 import type { PrivateStorage } from "./storage/storage";
 import type { AppAttestVerifier } from "./security/app-attest";
 import { RateLimitError, type RateLimiter } from "./security/rate-limit";
+import { AppleSubscriptionError, type AppleSubscriptionService } from "./subscriptions/apple-subscriptions";
 import { apiError, errorHandler, validationHook } from "./http/errors";
-import { createV1Routes, type ApiVariables } from "./http/routes";
-
-type Env = { Variables: ApiVariables };
+import type { ApiEnv } from "./http/env";
+import { createV1Routes } from "./http/routes";
 
 export function createApp(deps: {
   config: AppConfig;
@@ -24,8 +24,9 @@ export function createApp(deps: {
   auth: Auth;
   appAttest: AppAttestVerifier;
   rateLimiter: RateLimiter;
+  subscriptions: AppleSubscriptionService;
 }) {
-  const app = new OpenAPIHono<Env>({ defaultHook: validationHook });
+  const app = new OpenAPIHono<ApiEnv>({ defaultHook: validationHook });
 
   app.use("*", async (c, next) => {
     const requestId = crypto.randomUUID();
@@ -53,7 +54,16 @@ export function createApp(deps: {
       .from(schema.workerHeartbeats)
       .where(gt(schema.workerHeartbeats.lastSeenAt, new Date(Date.now() - 60_000)))
       .limit(1);
-    return c.json({ status: "ok", api: true, worker: Boolean(heartbeat), version: "1.0.0" });
+    return c.json({
+      status: "ok",
+      api: true,
+      worker: Boolean(heartbeat),
+      appleSubscriptions: {
+        notifications: deps.subscriptions.canVerifyProductionNotifications,
+        reconciliation: deps.subscriptions.canReconcileWithApple,
+      },
+      version: "1.0.0",
+    });
   });
 
   app.post("/v1/auth/sign-in/apple-native", async (c) => {
@@ -102,47 +112,15 @@ export function createApp(deps: {
 
   app.on(["GET", "POST"], "/v1/auth/*", (c) => deps.auth.handler(c.req.raw));
 
-  app.post("/v1/webhooks/revenuecat", async (c) => {
-    if (!deps.config.REVENUECAT_WEBHOOK_SECRET) return apiError(c, "NOT_FOUND", 404);
-    if (c.req.header("authorization") !== `Bearer ${deps.config.REVENUECAT_WEBHOOK_SECRET}`)
-      return apiError(c, "AUTH_REQUIRED", 401);
-    const body = await c.req.json<{
-      event?: {
-        app_user_id?: string;
-        product_id?: string;
-        expiration_at_ms?: number | null;
-        type?: string;
-        entitlement_ids?: string[];
-      };
-    }>();
-    const event = body.event;
-    const ownerId = event?.app_user_id;
-    if (!ownerId || !event) return c.json({ accepted: true }, 202);
-    // Cancellation normally means "will not renew"; access remains active until expiration.
-    const deactivation = new Set(["EXPIRATION"]);
-    const isPro = event.entitlement_ids?.includes("pro") === true && !deactivation.has(event.type ?? "");
-    const expiresAt = event.expiration_at_ms ? new Date(event.expiration_at_ms) : new Date("9999-12-31T00:00:00Z");
-    await deps.db
-      .insert(schema.entitlements)
-      .values({
-        ownerId,
-        revenueCatAppUserId: ownerId,
-        productId: event.product_id,
-        isPro,
-        expiresAt,
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: schema.entitlements.ownerId,
-        set: {
-          revenueCatAppUserId: ownerId,
-          productId: event.product_id,
-          isPro,
-          expiresAt,
-          updatedAt: new Date(),
-        },
-      });
-    return c.json({ accepted: true }, 202);
+  app.post("/v1/webhooks/app-store", async (c) => {
+    const body = z.object({ signedPayload: z.string().min(100) }).parse(await c.req.json());
+    try {
+      const result = await deps.subscriptions.handleNotification(body.signedPayload);
+      return c.json({ accepted: true, result }, 200);
+    } catch (error) {
+      if (error instanceof AppleSubscriptionError) return apiError(c, error.message, 503);
+      throw error;
+    }
   });
 
   app.use("/v1/*", async (c, next) => {

@@ -1,4 +1,3 @@
-import RevenueCatUI
 import SwiftData
 import SwiftUI
 
@@ -54,7 +53,10 @@ struct ContentView: View {
                 let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
                 Telemetry.identify(userID: status.userId)
-                await subscriptions.logIn(appUserID: status.userId)
+                await subscriptions.configureAccount(
+                    appAccountToken: status.appAccountToken,
+                    isPro: status.isPro
+                )
                 session.reconcilePendingRenders(variants, context: modelContext)
             } catch {
                 Telemetry.error(error, context: ["operation": "account_bootstrap"])
@@ -65,35 +67,7 @@ struct ContentView: View {
             session.reconcilePendingRenders(variants, context: modelContext)
         }
         .sheet(isPresented: $session.isPaywallPresented) {
-            PaywallView(displayCloseButton: true)
-                .onPurchaseCompleted { customerInfo in
-                    subscriptions.update(customerInfo)
-                    if subscriptions.isPro { session.isPaywallPresented = false }
-                }
-                .onRestoreCompleted { customerInfo in
-                    subscriptions.update(customerInfo)
-                    if subscriptions.isPro { session.isPaywallPresented = false }
-                }
-                .onPurchaseFailure { subscriptions.report($0) }
-                .onRestoreFailure { subscriptions.report($0) }
-                .safeAreaInset(edge: .bottom) {
-                    VStack(spacing: 7) {
-                        Text("WearBloom Pro includes up to \(session.paidRenderAllowance) AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings.")
-                            .font(BloomTypography.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        HStack(spacing: 18) {
-                            Link("Privacy", destination: URL(string: "https://wearbloom.app/privacy.html")!)
-                            Link("Terms", destination: URL(string: "https://wearbloom.app/terms.html")!)
-                            Button("Restore") { Task { await subscriptions.restorePurchases() } }
-                        }
-                        .font(BloomTypography.captionMedium)
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(.ultraThinMaterial)
-                }
+            WearBloomPaywallView(paidRenderAllowance: session.paidRenderAllowance)
         }
         .sheet(isPresented: $session.isProfilePresented) {
             SettingsView()

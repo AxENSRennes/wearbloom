@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { captureException } from "../telemetry";
+import type { ApiEnv } from "./env";
 
 export type ErrorBody = { error: { code: string; message: string; requestId: string } };
 
@@ -30,12 +31,20 @@ const messages: Record<string, string> = {
   APPLE_TOKEN_SUBJECT_MISMATCH: "Apple returned credentials for a different account. Please try again.",
   APPLE_TOKEN_REVOCATION_FAILED: "Apple account access could not be revoked. Please try deleting again.",
   APPLE_REAUTH_REQUIRED: "Continue with Apple again, then retry account deletion.",
+  APPLE_SUBSCRIPTIONS_NOT_CONFIGURED: "App Store subscription verification is not configured.",
+  APPLE_TRANSACTION_INVALID: "Apple could not verify this subscription transaction.",
+  APPLE_PRODUCT_INVALID: "This App Store product is not recognized.",
+  APPLE_SUBSCRIPTION_ALREADY_LINKED: "A different App Store subscription is already linked to this account.",
 };
 
-type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 500;
+type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 422 | 429 | 500 | 503;
 
-export function apiError<S extends ErrorStatus>(c: Context, code: string, status: S) {
-  const requestId = (c.get("requestId") as string | undefined) ?? crypto.randomUUID();
+export function apiError<S extends ErrorStatus>(c: Context<ApiEnv>, code: string, status: S) {
+  return c.json(apiErrorBody(c, code), status);
+}
+
+export function apiErrorBody(c: Context<ApiEnv>, code: string): ErrorBody {
+  const requestId = c.get("requestId") ?? crypto.randomUUID();
   const body: ErrorBody = {
     error: {
       code,
@@ -44,14 +53,19 @@ export function apiError<S extends ErrorStatus>(c: Context, code: string, status
     },
   };
   c.header("X-Request-ID", requestId);
-  return c.json(body, status);
+  return body;
 }
 
-export function validationHook(result: { success: boolean }, c: Context) {
+export function throwApiError<S extends ErrorStatus>(c: Context<ApiEnv>, code: string, status: S): never {
+  throw new HTTPException(status, { res: apiError(c, code, status) });
+}
+
+export function validationHook(result: { success: boolean }, c: Context<ApiEnv>) {
   if (!result.success) return apiError(c, "INVALID_REQUEST", 400);
+  return undefined;
 }
 
-export function errorHandler(error: Error, c: Context) {
+export function errorHandler(error: Error, c: Context<ApiEnv>) {
   if (error instanceof HTTPException) return error.getResponse();
   const code = messages[error.message] ? error.message : "INTERNAL_ERROR";
   captureException(error, { request_id: String(c.get("requestId") ?? "unknown"), error_code: code });

@@ -8,6 +8,7 @@ import { createDatabase } from "../src/db/client";
 import { LocalPrivateStorage } from "../src/storage/local-storage";
 import { AppAttestVerifier } from "../src/security/app-attest";
 import { RateLimiter } from "../src/security/rate-limit";
+import { AppleSubscriptionService } from "../src/subscriptions/apple-subscriptions";
 
 const config = loadConfig({
   NODE_ENV: "test",
@@ -22,7 +23,17 @@ const storage = new LocalPrivateStorage("./data/openapi-placeholder");
 const auth = createAuth(config, db);
 const appAttest = new AppAttestVerifier(config, db);
 const rateLimiter = new RateLimiter(db);
-const app = createApp({ config, db, storage, detector: new StubGarmentDetector(), auth, appAttest, rateLimiter });
+const subscriptions = new AppleSubscriptionService(config, db);
+const app = createApp({
+  config,
+  db,
+  storage,
+  detector: new StubGarmentDetector(),
+  auth,
+  appAttest,
+  rateLimiter,
+  subscriptions,
+});
 const response = await app.request("/openapi.json");
 if (!response.ok) throw new Error(`OpenAPI generation failed: ${response.status}`);
 const document = `${JSON.stringify(await response.json(), null, 2)}\n`;

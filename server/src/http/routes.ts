@@ -1,29 +1,33 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AppConfig } from "../config";
 import type { Database } from "../db/client";
 import * as schema from "../db/schema";
+import { renderResponseSchema, type RenderResponse } from "../domain/render-contract";
 import { validateComposition } from "../domain/composition";
 import { canGenerate } from "../domain/quota";
 import { getQuotaSnapshot, lockOwnerQuota } from "../domain/quota-store";
 import { upsertOwnedGarment, upsertOwnedLook, upsertOwnedReference } from "../domain/owned-records";
+import { errorMessage } from "../errors";
 import type { GarmentDetector } from "../ai/detection";
 import { inspectImage } from "../images/metadata";
 import type { PrivateStorage } from "../storage/storage";
 import { AppAttestError, type AppAttestVerifier } from "../security/app-attest";
 import { revokeAppleToken } from "../apple-auth";
-import { apiError, validationHook } from "./errors";
+import { apiError, throwApiError, validationHook } from "./errors";
 import { track } from "../telemetry";
+import { AppleSubscriptionError, type AppleSubscriptionService } from "../subscriptions/apple-subscriptions";
+import type { ApiEnv } from "./env";
 
-export type ApiVariables = { userId: string; requestId: string; rawBody?: Uint8Array };
-type ApiEnv = { Variables: ApiVariables };
 type Dependencies = {
   db: Database;
   storage: PrivateStorage;
   detector: GarmentDetector;
   config: AppConfig;
   appAttest: AppAttestVerifier;
+  subscriptions: AppleSubscriptionService;
 };
 
 import {
@@ -43,6 +47,7 @@ import {
   feedbackRoute,
   deleteAccountRoute,
   accountStatusRoute,
+  syncAppleSubscriptionRoute,
   registerPushDeviceRoute,
 } from "./route-definitions";
 export function createV1Routes(deps: Dependencies) {
@@ -79,7 +84,7 @@ export function createV1Routes(deps: Dependencies) {
     try {
       metadata = inspectImage(bytes);
     } catch (error) {
-      return apiError(c, (error as Error).message, 422);
+      return apiError(c, errorMessage(error, "UPLOAD_INVALID_IMAGE"), 422);
     }
     if ((metadata.width ?? 0) > 10_000 || (metadata.height ?? 0) > 10_000)
       return apiError(c, "UPLOAD_INVALID_IMAGE", 422);
@@ -325,7 +330,7 @@ export function createV1Routes(deps: Dependencies) {
         .from(schema.idempotencyKeys)
         .where(and(eq(schema.idempotencyKeys.ownerId, ownerId), eq(schema.idempotencyKeys.key, key)))
         .limit(1);
-      if (existing?.responseBody) return existing.responseBody as RenderResponse;
+      if (existing?.responseBody) return renderResponseSchema.parse(existing.responseBody);
       const [look] = await transaction
         .select()
         .from(schema.looks)
@@ -459,8 +464,26 @@ export function createV1Routes(deps: Dependencies) {
 
   app.openapi(accountStatusRoute, async (c) => {
     const ownerId = c.get("userId");
+    await deps.subscriptions.reconcileOwner(ownerId);
+    const entitlement = await deps.subscriptions.ensureAccount(ownerId);
     const quota = await getQuotaSnapshot(deps.db, ownerId, new Date(), deps.config);
-    return c.json({ userId: ownerId, ...quota }, 200);
+    return c.json({ userId: ownerId, appAccountToken: entitlement.appleAppAccountToken, ...quota }, 200);
+  });
+
+  app.openapi(syncAppleSubscriptionRoute, async (c) => {
+    try {
+      await deps.subscriptions.syncTransactions(c.get("userId"), c.req.valid("json").signedTransactions);
+      return c.json({ synced: true as const }, 200);
+    } catch (error) {
+      if (!(error instanceof AppleSubscriptionError)) throw error;
+      if (error.message === "APPLE_SUBSCRIPTIONS_NOT_CONFIGURED") {
+        throwApiError(c, error.message, 503);
+      }
+      if (error.message === "APPLE_SUBSCRIPTION_ALREADY_LINKED") {
+        throwApiError(c, error.message, 409);
+      }
+      throwApiError(c, error.message, 422);
+    }
   });
 
   app.openapi(registerPushDeviceRoute, async (c) => {
@@ -519,17 +542,17 @@ export function createV1Routes(deps: Dependencies) {
   return app;
 }
 
-async function verifyExpensiveRequest(c: Parameters<typeof apiError>[0], deps: Dependencies): Promise<void> {
+async function verifyExpensiveRequest(c: Context<ApiEnv>, deps: Dependencies): Promise<void> {
   try {
     await deps.appAttest.verifyRequest({
-      ownerId: c.get("userId") as string,
+      ownerId: c.get("userId"),
       challenge: c.req.header("x-app-attest-challenge"),
       keyId: c.req.header("x-app-attest-key-id"),
       assertion: c.req.header("x-app-attest-assertion"),
       unsupported: c.req.header("x-app-attest-unsupported"),
       method: c.req.method,
       path: c.req.path,
-      body: (c.get("rawBody") as Uint8Array | undefined) ?? new Uint8Array(),
+      body: c.get("rawBody") ?? new Uint8Array(),
     });
   } catch (error) {
     const response = apiError(c, error instanceof AppAttestError ? error.message : "APP_ATTEST_REQUIRED", 403);
@@ -538,15 +561,6 @@ async function verifyExpensiveRequest(c: Parameters<typeof apiError>[0], deps: D
 }
 
 type RenderRow = typeof schema.renderVariants.$inferSelect;
-type RenderResponse = {
-  id: string;
-  lookId: string;
-  status: RenderRow["status"];
-  resultURL: string | null;
-  errorCode: string | null;
-  createdAt: string;
-  completedAt: string | null;
-};
 
 function renderResponse(row: RenderRow): RenderResponse {
   return {

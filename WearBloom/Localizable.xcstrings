@@ -4,6 +4,16 @@
     "%@ is waiting in Looks." : {
 
     },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
     "%lld free renders remaining" : {
 
     },
@@ -229,6 +239,9 @@
     "Dress" : {
 
     },
+    "Easy contrast" : {
+
+    },
     "Edit" : {
 
     },
@@ -239,6 +252,9 @@
 
     },
     "Edit this look to create its first personal preview." : {
+
+    },
+    "Editorial sample" : {
 
     },
     "Every preview is kept as its own variant." : {

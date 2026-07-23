@@ -7,6 +7,7 @@ import { createDatabase } from "./db/client";
 import { LocalPrivateStorage } from "./storage/local-storage";
 import { AppAttestVerifier } from "./security/app-attest";
 import { RateLimiter } from "./security/rate-limit";
+import { AppleSubscriptionService } from "./subscriptions/apple-subscriptions";
 import { configureTelemetry } from "./telemetry";
 
 const config = loadConfig();
@@ -18,7 +19,8 @@ const detector = openai ? new OpenAIGarmentDetector(openai) : new StubGarmentDet
 const auth = createAuth(config, db);
 const appAttest = new AppAttestVerifier(config, db);
 const rateLimiter = new RateLimiter(db);
-const app = createApp({ config, db, storage, detector, auth, appAttest, rateLimiter });
+const subscriptions = new AppleSubscriptionService(config, db);
+const app = createApp({ config, db, storage, detector, auth, appAttest, rateLimiter, subscriptions });
 
 console.log(JSON.stringify({ level: "info", message: "WearBloom API starting", port: config.PORT }));
 
