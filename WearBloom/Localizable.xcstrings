@@ -7,9 +7,6 @@
     "%lld free renders remaining" : {
 
     },
-    "%lld pieces · style what you own" : {
-
-    },
     "%lld previews" : {
 
     },
@@ -91,9 +88,6 @@
     "Bringing the look together…" : {
 
     },
-    "Build an outfit, then see it on you" : {
-
-    },
     "Build an outfit, then see it on you." : {
 
     },
@@ -122,9 +116,6 @@
 
     },
     "Choose a dress or both a top and bottom first." : {
-
-    },
-    "Choose a dress, or pair a top and bottom. Outerwear is optional." : {
 
     },
     "Choose a valid JPEG, PNG, or HEIC image." : {
@@ -484,9 +475,6 @@
     "Saved outfit" : {
 
     },
-    "Saved outfits and personal previews" : {
-
-    },
     "Search your closet" : {
 
     },
@@ -527,9 +515,6 @@
 
     },
     "Suggested with %@ confidence" : {
-
-    },
-    "Tap a piece to add it to your outfit. Choose one per category." : {
 
     },
     "Tap a piece to replace or remove it" : {

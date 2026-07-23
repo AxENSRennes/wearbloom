@@ -10,7 +10,6 @@ struct LooksView: View {
     var body: some View {
         BloomPageScaffold(
             title: String(localized: "Looks"),
-            subtitle: String(localized: "Saved outfits and personal previews"),
             bottomPadding: 126
         ) {
             session.isProfilePresented = true

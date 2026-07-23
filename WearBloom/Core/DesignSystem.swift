@@ -167,7 +167,7 @@ struct BloomPageBackground: View {
 
 struct BloomPageScaffold<Content: View>: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
     var contentSpacing: CGFloat = 20
     var bottomPadding: CGFloat = 108
     var viewportBottomPadding: CGFloat = 0
@@ -176,7 +176,7 @@ struct BloomPageScaffold<Content: View>: View {
 
     init(
         title: String,
-        subtitle: String,
+        subtitle: String? = nil,
         contentSpacing: CGFloat = 20,
         bottomPadding: CGFloat = 108,
         viewportBottomPadding: CGFloat = 0,

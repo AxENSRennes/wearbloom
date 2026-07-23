@@ -45,7 +45,6 @@ struct CreateView: View {
     var body: some View {
         BloomPageScaffold(
             title: session.activeLookID == nil ? String(localized: "Create") : String(localized: "Edit look"),
-            subtitle: String(localized: "Build an outfit, then see it on you"),
             contentSpacing: 18,
             bottomPadding: 138,
             viewportBottomPadding: 0
@@ -155,10 +154,6 @@ struct CreateView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Build your outfit")
                         .font(BloomTypography.sectionTitle)
-                    Text("Choose a dress, or pair a top and bottom. Outerwear is optional.")
-                        .font(BloomTypography.footnoteMedium)
-                        .foregroundStyle(BloomColor.muted)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 if session.selectedGarmentIDs[.dress] == nil {

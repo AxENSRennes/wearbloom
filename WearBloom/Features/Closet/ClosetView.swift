@@ -28,7 +28,6 @@ struct ClosetView: View {
     var body: some View {
         BloomPageScaffold(
             title: String(localized: "Closet"),
-            subtitle: String(localized: "\(garments.filter { !$0.isArchived }.count) pieces · style what you own"),
             contentSpacing: 16,
             bottomPadding: selected.isEmpty ? 132 : 224
         ) {
@@ -62,10 +61,6 @@ struct ClosetView: View {
             if filtered.isEmpty {
                 emptyState
             } else {
-                Text("Tap a piece to add it to your outfit. Choose one per category.")
-                    .font(BloomTypography.footnoteMedium)
-                    .foregroundStyle(BloomColor.muted)
-
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 16) {
                     ForEach(filtered) { garment in
                         let isSelected = session.selectedGarmentIDs.values.contains(garment.id)
