@@ -2,7 +2,7 @@ name: wearbloom
 
 x-wearbloom-environment: &wearbloom-environment
   NODE_ENV: production
-  DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD:?required}@postgres:5432/wearbloom
+  DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD:?required}@wearbloom-postgres:5432/wearbloom
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?required}
   BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://api.wearbloom.app}
   STORAGE_ROOT: /app/data/private
@@ -26,7 +26,6 @@ x-wearbloom-environment: &wearbloom-environment
   APNS_PRIVATE_KEY_BASE64: ${APNS_PRIVATE_KEY_BASE64:-}
   APNS_TOPIC: ${APNS_TOPIC:-com.axel.wearbloom}
   APNS_ENVIRONMENT: ${APNS_ENVIRONMENT:-production}
-  SENTRY_DSN_SERVER: ${SENTRY_DSN_SERVER:-}
   POSTHOG_PROJECT_API_KEY: ${POSTHOG_PROJECT_API_KEY:-}
   POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
   APP_ATTEST_REQUIRED: ${APP_ATTEST_REQUIRED:-true}
@@ -41,7 +40,9 @@ services:
       POSTGRES_USER: wearbloom
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
     volumes: [postgres-data:/var/lib/postgresql/data]
-    networks: [private]
+    networks:
+      private:
+        aliases: [wearbloom-postgres]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wearbloom -d wearbloom"]
       interval: 5s
@@ -52,7 +53,7 @@ services:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
     entrypoint: ["bun", "run", "db:migrate"]
     environment:
-      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@postgres:5432/wearbloom
+      DATABASE_URL: postgres://wearbloom:${POSTGRES_PASSWORD}@wearbloom-postgres:5432/wearbloom
     networks: [private]
     depends_on:
       postgres: { condition: service_healthy }
@@ -77,6 +78,7 @@ services:
       start_period: 20s
     labels:
       - traefik.enable=true
+      - traefik.docker.network=dokploy-network
       - traefik.http.routers.wearbloom-api.rule=Host(`api.wearbloom.app`)
       - traefik.http.routers.wearbloom-api.entrypoints=websecure
       - traefik.http.routers.wearbloom-api.tls.certresolver=letsencrypt
@@ -84,7 +86,7 @@ services:
 
   worker:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
-    command: ["bun", "src/worker.ts"]
+    entrypoint: ["bun", "src/worker.ts"]
     restart: unless-stopped
     environment:
       <<: *wearbloom-environment
@@ -121,7 +123,7 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:?required}
     entrypoint: ["/bin/sh", "-ec"]
-    command: ["while true; do pg_dump -h postgres -U wearbloom -d wearbloom -Fc -f /backups/wearbloom-$$(date -u +%Y%m%dT%H%M%SZ).dump; find /backups -type f -mtime +7 -delete; sleep 86400; done"]
+    command: ["while true; do pg_dump -h wearbloom-postgres -U wearbloom -d wearbloom -Fc -f /backups/wearbloom-$$(date -u +%Y%m%dT%H%M%SZ).dump; find /backups -type f -mtime +7 -delete; sleep 86400; done"]
     volumes: [database-backups:/backups]
     networks: [private]
     depends_on:

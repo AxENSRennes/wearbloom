@@ -14,6 +14,7 @@ export function createAuth(config: AppConfig, db: Database) {
   return betterAuth({
     secret: config.BETTER_AUTH_SECRET,
     baseURL: config.BETTER_AUTH_URL,
+    basePath: "/v1/auth",
     database: drizzleAdapter(db, { provider: "pg", schema }),
     trustedOrigins: [config.PUBLIC_APP_URL, "https://appleid.apple.com"],
     socialProviders: hasApple
