@@ -113,12 +113,17 @@ export function createApp(deps: {
   app.on(["GET", "POST"], "/v1/auth/*", (c) => deps.auth.handler(c.req.raw));
 
   app.post("/v1/webhooks/app-store", async (c) => {
-    const body = z.object({ signedPayload: z.string().min(100) }).parse(await c.req.json());
+    const parsed = z
+      .object({ signedPayload: z.string().min(100) })
+      .safeParse(await c.req.json().catch(() => undefined));
+    if (!parsed.success) return apiError(c, "INVALID_REQUEST", 400);
     try {
-      const result = await deps.subscriptions.handleNotification(body.signedPayload);
+      const result = await deps.subscriptions.handleNotification(parsed.data.signedPayload);
       return c.json({ accepted: true, result }, 200);
     } catch (error) {
-      if (error instanceof AppleSubscriptionError) return apiError(c, error.message, 503);
+      if (error instanceof AppleSubscriptionError) {
+        return apiError(c, error.message, error.message === "APPLE_SUBSCRIPTIONS_NOT_CONFIGURED" ? 503 : 422);
+      }
       throw error;
     }
   });
