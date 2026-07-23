@@ -72,7 +72,10 @@ struct ClosetView: View {
                         Button { toggle(garment) } label: {
                             GarmentCard(garment: garment, isSelected: isSelected)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(GarmentCardButtonStyle())
+                        .sensoryFeedback(.selection, trigger: isSelected)
+                        .accessibilityLabel("\(garment.name), \(garment.category.title)")
+                        .accessibilityAddTraits(isSelected ? .isSelected : [])
                         .contextMenu {
                             Button("View details", systemImage: "info.circle") { editingGarment = garment }
                             Button {
@@ -216,47 +219,93 @@ struct GarmentCard: View {
     let garment: Garment
     var isSelected = false
 
+    private let imageCornerRadius: CGFloat = 20
+
+    private var garmentColor: Color {
+        Color(hex: garment.colorHex)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 9) {
             ZStack {
-                BloomColor.paper
-                ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
-                    .padding(6)
+                RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous)
+                    .fill(isSelected ? BloomColor.coral.opacity(0.8) : garmentColor.opacity(0.12))
+                    .offset(y: isSelected ? 5 : 3)
+
+                ZStack {
+                    BloomColor.paper
+                    garmentColor.opacity(isSelected ? 0.1 : 0.06)
+                    ImageDataView(data: garment.imageData, contentMode: .fit, fallback: garment.category.symbol)
+                        .padding(7)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 190)
-            .clipped()
-            .overlay(alignment: .topTrailing) {
-                Image(systemName: isSelected ? "checkmark" : (garment.isFavorite ? "heart.fill" : "heart"))
-                    .font(.system(size: 13, weight: .black))
-                    .frame(width: 30, height: 30)
-                    .background(isSelected ? BloomColor.lime : BloomColor.paper.opacity(0.96), in: Circle())
-                    .foregroundStyle(isSelected ? BloomColor.ink : (garment.isFavorite ? BloomColor.coral : BloomColor.ink))
-                    .overlay(Circle().stroke(BloomColor.ink, lineWidth: isSelected ? 1.5 : 0))
-                    .padding(9)
+            .aspectRatio(0.84, contentMode: .fit)
+            .overlay {
+                RoundedRectangle(cornerRadius: imageCornerRadius, style: .continuous)
+                    .stroke(
+                        isSelected ? BloomColor.blue : BloomColor.ink.opacity(0.09),
+                        lineWidth: isSelected ? 2 : 1
+                    )
             }
+            .overlay(alignment: .topLeading) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundStyle(BloomColor.ink)
+                        .frame(width: 30, height: 30)
+                        .background(BloomColor.lime, in: Circle())
+                        .overlay(Circle().stroke(BloomColor.ink, lineWidth: 1.25))
+                        .padding(9)
+                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityHidden(true)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if garment.isFavorite {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(BloomColor.coral)
+                        .frame(width: 30, height: 30)
+                        .background(BloomColor.paper.opacity(0.96), in: Circle())
+                        .padding(9)
+                        .accessibilityHidden(true)
+                }
+            }
+            .shadow(
+                color: isSelected ? BloomColor.blue.opacity(0.18) : .black.opacity(0.055),
+                radius: isSelected ? 12 : 8,
+                y: isSelected ? 7 : 4
+            )
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(garment.name)
                     .font(BloomTypography.subheadlineMedium)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, minHeight: 36, alignment: .topLeading)
-                Text(garment.category.title)
-                    .font(BloomTypography.technical)
-                    .foregroundStyle(BloomColor.muted)
+
+                HStack(spacing: 6) {
+                    Capsule()
+                        .fill(garmentColor)
+                        .frame(width: 13, height: 4)
+                    Text(garment.category.title.uppercased())
+                        .font(BloomTypography.technicalSmall)
+                        .foregroundStyle(BloomColor.muted)
+                }
             }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 9)
-            .frame(height: 68, alignment: .top)
+            .padding(.horizontal, 4)
         }
-        .frame(height: 258)
-        .background(BloomColor.paper)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(isSelected ? BloomColor.blue : BloomColor.ink.opacity(0.14), lineWidth: isSelected ? 3 : 1)
-        }
-        .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct GarmentCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.975 : 1)
+            .opacity(configuration.isPressed ? 0.9 : 1)
+            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
