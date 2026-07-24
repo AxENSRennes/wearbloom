@@ -198,6 +198,38 @@ extension WearBloomAPI {
         )
     }
 
+    func privacyPreferences() async throws -> PrivacyPreferences {
+        let output = try await withClient { try await $0.getPrivacyPreferences() }
+        guard case let .ok(response) = output else { throw APIClientError.invalidResponse }
+        let preference = try response.body.json
+        return PrivacyPreferences(
+            analyticsEnabled: preference.analyticsEnabled,
+            diagnosticsEnabled: preference.diagnosticsEnabled,
+            consentVersion: preference.consentVersion,
+            updatedAt: preference.updatedAt
+        )
+    }
+
+    @discardableResult
+    func updatePrivacyPreferences(telemetryEnabled: Bool) async throws -> PrivacyPreferences {
+        let output = try await withClient {
+            try await $0.updatePrivacyPreferences(
+                body: .json(.init(
+                    analyticsEnabled: telemetryEnabled,
+                    diagnosticsEnabled: telemetryEnabled
+                ))
+            )
+        }
+        guard case let .ok(response) = output else { throw APIClientError.invalidResponse }
+        let preference = try response.body.json
+        return PrivacyPreferences(
+            analyticsEnabled: preference.analyticsEnabled,
+            diagnosticsEnabled: preference.diagnosticsEnabled,
+            consentVersion: preference.consentVersion,
+            updatedAt: preference.updatedAt
+        )
+    }
+
     func syncAppleSubscription(signedTransactions: [String]) async throws {
         try await ensureAnonymousSession()
         let body = try JSONEncoder().encode(

@@ -76,8 +76,8 @@ struct LookCompositionTests {
 
 @Suite("Privacy and sharing")
 struct PrivacyAndSharingTests {
-    @Test("AI processing defaults on and remembers an explicit choice")
-    func aiProcessingDefaultsOn() {
+    @Test("AI processing defaults off and remembers an explicit choice")
+    func aiProcessingDefaultsOff() {
         let defaults = UserDefaults.standard
         let key = PrivacyChoices.aiProcessingConsentKey
         let original = defaults.object(forKey: key)
@@ -86,15 +86,15 @@ struct PrivacyAndSharingTests {
         }
 
         defaults.removeObject(forKey: key)
-        #expect(PrivacyChoices.hasAIProcessingConsent)
+        #expect(!PrivacyChoices.hasAIProcessingConsent)
         PrivacyChoices.setAIProcessingConsent(false)
         #expect(!PrivacyChoices.hasAIProcessingConsent)
         PrivacyChoices.setAIProcessingConsent(true)
         #expect(PrivacyChoices.hasAIProcessingConsent)
     }
 
-    @Test("Diagnostics default on and remember an explicit choice")
-    func diagnosticsDefaultOn() {
+    @Test("Diagnostics default off and remember an explicit choice")
+    func diagnosticsDefaultsOff() {
         let defaults = UserDefaults.standard
         let key = PrivacyChoices.diagnosticsConsentKey
         let original = defaults.object(forKey: key)
@@ -103,9 +103,11 @@ struct PrivacyAndSharingTests {
         }
 
         defaults.removeObject(forKey: key)
-        #expect(Telemetry.isCollectionEnabled)
+        #expect(!Telemetry.isCollectionEnabled)
+        #expect(!PrivacyChoices.hasExplicitDiagnosticsChoice)
         defaults.set(false, forKey: key)
         #expect(!Telemetry.isCollectionEnabled)
+        #expect(PrivacyChoices.hasExplicitDiagnosticsChoice)
         defaults.set(true, forKey: key)
         #expect(Telemetry.isCollectionEnabled)
     }

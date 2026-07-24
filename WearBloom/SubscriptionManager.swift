@@ -18,6 +18,7 @@ final class SubscriptionManager {
     private(set) var isLoading = false
     private(set) var isPurchasing = false
     private(set) var isRestoring = false
+    private(set) var productLoadErrorMessage: String?
     private(set) var errorMessage: String?
 
     private var appAccountToken: UUID? = SubscriptionManager.localTestingToken()
@@ -60,6 +61,7 @@ final class SubscriptionManager {
 
     func refresh() async {
         isLoading = true
+        productLoadErrorMessage = nil
         defer { isLoading = false }
         do {
             let loaded = try await Product.products(for: AppStoreProducts.all)
@@ -73,7 +75,8 @@ final class SubscriptionManager {
                 throw SubscriptionConfigurationError.missingProducts(missing.sorted())
             }
         } catch {
-            report(error)
+            productLoadErrorMessage = Self.userFacingMessage(for: error)
+            Telemetry.error(error, context: ["operation": "app_store_product_load"])
         }
         await refreshEntitlements()
     }

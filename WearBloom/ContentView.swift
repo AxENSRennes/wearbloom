@@ -52,7 +52,7 @@ struct ContentView: View {
             do {
                 let status = try await WearBloomAPI.shared.accountStatus()
                 session.apply(status)
-                Telemetry.identify(userID: status.userId)
+                await Telemetry.synchronizeServerPreference(userID: status.userId)
                 await subscriptions.configureAccount(
                     appAccountToken: status.appAccountToken,
                     isPro: status.isPro

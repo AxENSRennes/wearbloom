@@ -104,4 +104,26 @@ final class WearBloomUITests: XCTestCase {
         diagnostics.tap()
         XCTAssertTrue(app.switches["Share diagnostics and usage"].waitForExistence(timeout: 5))
     }
+
+    @MainActor
+    func testPaywallReviewPricing() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reviewTab", "0", "-reviewPricing"]
+        app.launch()
+
+        app.buttons["Profile and settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.buttons["View plans"].tap()
+
+        XCTAssertTrue(app.staticTexts["WearBloom Pro"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Monthly"].exists)
+        XCTAssertTrue(app.staticTexts["$9.99"].exists)
+        XCTAssertTrue(app.staticTexts["Yearly"].exists)
+        XCTAssertTrue(app.staticTexts["$29.99"].exists)
+
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "WearBloom Pro App Review"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

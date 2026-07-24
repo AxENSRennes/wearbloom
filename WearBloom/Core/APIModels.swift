@@ -54,6 +54,17 @@ struct AccountStatus: Sendable {
     let periodKey: String
 }
 
+struct PrivacyPreferences: Sendable {
+    let analyticsEnabled: Bool
+    let diagnosticsEnabled: Bool
+    let consentVersion: Int
+    let updatedAt: Date
+
+    var combinedTelemetryEnabled: Bool {
+        analyticsEnabled && diagnosticsEnabled
+    }
+}
+
 enum APIClientError: LocalizedError {
     case notConfigured
     case invalidResponse

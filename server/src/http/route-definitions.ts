@@ -339,6 +339,54 @@ export const accountStatusRoute = createRoute({
   },
 });
 
+const privacyPreferencesSchema = z.object({
+  analyticsEnabled: z.boolean(),
+  diagnosticsEnabled: z.boolean(),
+  consentVersion: z.number().int().positive(),
+  updatedAt: z.string().datetime(),
+});
+
+export const getPrivacyPreferencesRoute = createRoute({
+  operationId: "getPrivacyPreferences",
+  method: "get",
+  path: "/account/privacy",
+  tags: ["Account"],
+  responses: {
+    200: {
+      content: { "application/json": { schema: privacyPreferencesSchema } },
+      description: "Optional telemetry preferences, denied by default",
+    },
+    ...standardErrors,
+  },
+});
+
+export const updatePrivacyPreferencesRoute = createRoute({
+  operationId: "updatePrivacyPreferences",
+  method: "put",
+  path: "/account/privacy",
+  tags: ["Account"],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: z.object({
+            analyticsEnabled: z.boolean(),
+            diagnosticsEnabled: z.boolean(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: privacyPreferencesSchema } },
+      description: "Optional telemetry preferences updated",
+    },
+    ...standardErrors,
+  },
+});
+
 export const syncAppleSubscriptionRoute = createRoute({
   operationId: "syncAppleSubscription",
   method: "post",

@@ -39,8 +39,8 @@ enum Telemetry {
         }
     }
 
-    static func setCollectionEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: PrivacyChoices.diagnosticsConsentKey)
+    static func setCollectionEnabled(_ enabled: Bool, syncWithServer: Bool = true) {
+        PrivacyChoices.setDiagnosticsConsent(enabled)
         if enabled {
             configureIfAllowed()
         } else {
@@ -49,6 +49,31 @@ enum Telemetry {
             PostHogSDK.shared.close()
             SentrySDK.close()
         }
+        guard syncWithServer else { return }
+        Task {
+            do {
+                _ = try await WearBloomAPI.shared.updatePrivacyPreferences(telemetryEnabled: enabled)
+            } catch {
+                logger.error("Unable to synchronize telemetry preference")
+            }
+        }
+    }
+
+    static func synchronizeServerPreference(userID: String) async {
+        do {
+            if PrivacyChoices.hasExplicitDiagnosticsChoice {
+                _ = try await WearBloomAPI.shared.updatePrivacyPreferences(
+                    telemetryEnabled: PrivacyChoices.hasDiagnosticsConsent
+                )
+            } else {
+                let preference = try await WearBloomAPI.shared.privacyPreferences()
+                setCollectionEnabled(preference.combinedTelemetryEnabled, syncWithServer: false)
+            }
+        } catch {
+            setCollectionEnabled(false, syncWithServer: false)
+            logger.error("Unable to load telemetry preference; collection remains disabled")
+        }
+        identify(userID: userID)
     }
 
     static func event(_ name: String, properties: [String: Any] = [:]) {

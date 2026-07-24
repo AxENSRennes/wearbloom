@@ -73,6 +73,20 @@ export function createAuth(config: AppConfig, db: Database) {
               .update(schema.deviceTokens)
               .set({ ownerId: newOwnerId, updatedAt: new Date() })
               .where(eq(schema.deviceTokens.ownerId, oldOwnerId));
+            const [oldPrivacyPreferences] = await transaction
+              .select()
+              .from(schema.privacyPreferences)
+              .where(eq(schema.privacyPreferences.ownerId, oldOwnerId))
+              .limit(1);
+            if (oldPrivacyPreferences) {
+              await transaction
+                .delete(schema.privacyPreferences)
+                .where(eq(schema.privacyPreferences.ownerId, newOwnerId));
+              await transaction
+                .update(schema.privacyPreferences)
+                .set({ ownerId: newOwnerId, updatedAt: new Date() })
+                .where(eq(schema.privacyPreferences.ownerId, oldOwnerId));
+            }
             const [oldEntitlement] = await transaction
               .select()
               .from(schema.entitlements)

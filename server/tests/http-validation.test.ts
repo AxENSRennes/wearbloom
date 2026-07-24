@@ -15,4 +15,15 @@ describe("HTTP validation envelope", () => {
     expect(body.error.requestId).toMatch(/^[0-9a-f-]{36}$/);
     expect(response.headers.get("X-Request-ID")).toBe(body.error.requestId);
   });
+
+  test("requires both optional telemetry choices when updating privacy", async () => {
+    const app = createV1Routes({} as never);
+    const response = await app.request("/account/privacy", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ analyticsEnabled: true }),
+    });
+
+    expect(response.status).toBe(400);
+  });
 });

@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.lifestyle</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>API_BASE_URL</key>
 	<string>$(API_BASE_URL)</string>
 	<key>SENTRY_DSN</key>

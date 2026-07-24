@@ -31,8 +31,32 @@ struct WearBloomPaywallView: View {
                         benefit("Keep every saved look private", icon: "photo.on.rectangle")
                     }
 
-                    if subscriptions.isLoading {
+                    if isReviewPricingPreview {
+                        VStack(spacing: 12) {
+                            reviewPriceCard(
+                                title: "Monthly",
+                                period: "$9.99 every 1 month",
+                                price: "$9.99"
+                            )
+                            reviewPriceCard(
+                                title: "Yearly",
+                                period: "$29.99 every 1 year",
+                                price: "$29.99"
+                            )
+                        }
+                    } else if subscriptions.isLoading {
                         ProgressView("Loading App Store plans…")
+                    } else if let productLoadErrorMessage = subscriptions.productLoadErrorMessage {
+                        VStack(spacing: 12) {
+                            Text(productLoadErrorMessage)
+                                .font(BloomTypography.callout)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button("Try again") {
+                                Task { await subscriptions.refresh() }
+                            }
+                            .buttonStyle(BloomButtonStyle(fill: BloomColor.violet))
+                        }
                     } else {
                         ForEach(subscriptions.products, id: \.id) { product in
                             Button {
@@ -108,6 +132,35 @@ struct WearBloomPaywallView: View {
                 .foregroundStyle(BloomColor.violet)
             Text(title)
                 .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var isReviewPricingPreview: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-reviewPricing")
+#else
+        false
+#endif
+    }
+
+    private func reviewPriceCard(title: LocalizedStringKey, period: String, price: String) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(BloomTypography.secondaryMedium)
+                Text(period)
+                    .font(BloomTypography.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(price)
+                .font(BloomTypography.heading)
+        }
+        .padding(16)
+        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(BloomColor.violet.opacity(0.25))
         }
     }
 

@@ -30,7 +30,7 @@ struct AIProcessingPrivacySettingsView: View {
                     )
                 )
             } footer: {
-                Text("This is on by default so WearBloom can create previews. Turn it off at any time to prevent new photo uploads for AI processing.")
+                Text("This is off until you allow it. Turn it off at any time to prevent new photo uploads for AI processing.")
             }
 
             Section("What is shared") {
@@ -46,7 +46,7 @@ struct AIProcessingPrivacySettingsView: View {
 }
 
 struct DiagnosticsPrivacySettingsView: View {
-    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
 
     var body: some View {
         Form {
@@ -56,7 +56,7 @@ struct DiagnosticsPrivacySettingsView: View {
                         Telemetry.setCollectionEnabled(enabled)
                     }
             } footer: {
-                Text("This is on by default to help improve WearBloom. You can turn it off at any time.")
+                Text("This is off by default. You can enable it to help improve WearBloom and turn it off again at any time.")
             }
 
             Section("What is shared") {
@@ -121,7 +121,7 @@ struct PrivacyView: View {
                     .font(BloomTypography.modalTitle)
                 Text("Your working library is stored on this device. Photos selected for a preview are uploaded privately and never made public unless you share them.")
                 Text("With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings.")
-                Text("Product analytics and diagnostics are enabled by default and can be turned off in Settings. WearBloom does not include photos or prompts in analytics.")
+                Text("Product analytics and diagnostics are off by default and can be enabled in Settings. WearBloom does not include photos or prompts in analytics.")
                 Text("Deleting your account removes its associated records and private files. App Store subscription cancellation is managed separately through Apple.")
                 Text("Previews are style inspiration—not a prediction of exact fit or sizing.")
             }

@@ -194,6 +194,9 @@
     "Create a look" : {
 
     },
+    "Create up to %lld private AI outfit previews every month." : {
+
+    },
     "Default" : {
 
     },
@@ -305,6 +308,12 @@
     "Keep browsing" : {
 
     },
+    "Keep every saved look private" : {
+
+    },
+    "Loading App Store plans…" : {
+
+    },
     "Look %lld" : {
 
     },
@@ -317,6 +326,9 @@
     "Looks like you?" : {
 
     },
+    "Manage" : {
+
+    },
     "Manage App Store subscription" : {
 
     },
@@ -327,6 +339,9 @@
 
     },
     "Membership" : {
+
+    },
+    "Monthly" : {
 
     },
     "My look" : {
@@ -345,6 +360,9 @@
 
     },
     "No %@ yet" : {
+
+    },
+    "No active WearBloom Pro purchase was found." : {
 
     },
     "No looks yet" : {
@@ -386,6 +404,9 @@
     "Outerwear" : {
 
     },
+    "Payment is charged to your Apple Account. Plans renew automatically unless canceled at least 24 hours before the end of the current period." : {
+
+    },
     "Personal photo" : {
 
     },
@@ -408,6 +429,9 @@
 
     },
     "Preview" : {
+
+    },
+    "Preview complete outfits before getting dressed" : {
 
     },
     "Previews are style inspiration—not a prediction of exact fit or sizing." : {
@@ -434,7 +458,7 @@
     "Profile and settings" : {
 
     },
-    "Purchases are not allowed on this device." : {
+    "Purchases are not available on this device." : {
 
     },
     "Read the privacy policy" : {
@@ -471,9 +495,6 @@
 
     },
     "Replace" : {
-
-    },
-    "Restore" : {
 
     },
     "Restore purchases" : {
@@ -527,9 +548,6 @@
     "Subscription products are temporarily unavailable: %@." : {
 
     },
-    "Subscriptions are temporarily unavailable." : {
-
-    },
     "Suggested with %@ confidence" : {
 
     },
@@ -545,6 +563,9 @@
     "That image is too large. Choose a smaller photo." : {
 
     },
+    "The App Store returned an unknown purchase result." : {
+
+    },
     "The generation service is not configured." : {
 
     },
@@ -555,9 +576,6 @@
 
     },
     "The photos are used to classify garments and create your requested preview. They are not used for advertising or cross-app tracking. You can withdraw permission in Settings and delete stored photos and account data at any time." : {
-
-    },
-    "The purchase was cancelled." : {
 
     },
     "The reference photo could not be read." : {
@@ -576,9 +594,6 @@
 
     },
     "This permanently deletes your account, private files, garments, photos, looks, and previews. Any App Store subscription continues until you cancel it with Apple." : {
-
-    },
-    "This plan is temporarily unavailable." : {
 
     },
     "This purchase is pending approval. Access will unlock after approval." : {
@@ -617,6 +632,9 @@
     "Use the category buttons above to begin." : {
 
     },
+    "Use your own closet and reference photos" : {
+
+    },
     "Variant %lld" : {
 
     },
@@ -629,7 +647,7 @@
     "View plans" : {
 
     },
-    "We’ll let you know when it’s ready." : {
+    "You can keep browsing. Your result will appear in Looks when it’s ready." : {
 
     },
     "WearBloom" : {
@@ -644,19 +662,22 @@
     "WearBloom Pro" : {
 
     },
-    "WearBloom Pro includes up to %lld AI outfit previews each month. Plans renew automatically until canceled in your App Store subscription settings." : {
-
-    },
     "What is shared" : {
 
     },
     "With your permission, selected reference and garment photos are shared with OpenAI to classify garments and create the preview you request. You can withdraw that permission in Settings." : {
 
     },
+    "Yearly" : {
+
+    },
     "Yes" : {
 
     },
     "You have used this period’s previews." : {
+
+    },
+    "Your account is still loading. Try again in a moment." : {
 
     },
     "Your account was deleted remotely, but local cleanup failed. Restart WearBloom to retry." : {
@@ -684,9 +705,6 @@
 
     },
     "Your photos stay private" : {
-
-    },
-    "Your purchase completed, but access is still syncing. Restore purchases or try again shortly." : {
 
     },
     "Your result stays private. It is saved or shared only when you choose one of these actions." : {

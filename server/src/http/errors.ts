@@ -68,7 +68,10 @@ export function validationHook(result: { success: boolean }, c: Context<ApiEnv>)
 export function errorHandler(error: Error, c: Context<ApiEnv>) {
   if (error instanceof HTTPException) return error.getResponse();
   const code = messages[error.message] ? error.message : "INTERNAL_ERROR";
-  captureException(error, { request_id: String(c.get("requestId") ?? "unknown"), error_code: code });
+  void captureException(error, c.get("userId"), {
+    request_id: String(c.get("requestId") ?? "unknown"),
+    error_code: code,
+  });
   console.error(JSON.stringify({ level: "error", requestId: c.get("requestId"), code, error: error.message }));
   switch (code) {
     case "INTERNAL_ERROR":

@@ -15,7 +15,7 @@ struct SettingsView: View {
     @Query private var references: [ReferencePhoto]
     @State private var isDeleteConfirmationPresented = false
     @State private var isDeletingAccount = false
-    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
     @State private var appleNonce: String?
 
     var body: some View {
@@ -169,7 +169,7 @@ struct SettingsView: View {
         subscriptions.clearAccount()
         Telemetry.event("account_data_deleted")
         Telemetry.resetIdentity()
-        Telemetry.setCollectionEnabled(false)
+        Telemetry.setCollectionEnabled(false, syncWithServer: false)
         dismiss()
     }
 
@@ -194,7 +194,7 @@ struct SettingsView: View {
                     nonce: nonce
                 )
                 session.apply(status)
-                Telemetry.identify(userID: status.userId)
+                await Telemetry.synchronizeServerPreference(userID: status.userId)
                 await subscriptions.configureAccount(
                     appAccountToken: status.appAccountToken,
                     isPro: status.isPro

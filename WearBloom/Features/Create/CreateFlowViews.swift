@@ -297,7 +297,7 @@ struct RenderProgressView: View {
                 Button("Keep browsing") { dismiss() }
                     .buttonStyle(BloomButtonStyle(fill: .white))
                     .padding(.horizontal, 24)
-                Text("We’ll let you know when it’s ready.")
+                Text("You can keep browsing. Your result will appear in Looks when it’s ready.")
                     .font(BloomTypography.caption)
                     .foregroundStyle(.white.opacity(0.5))
             }

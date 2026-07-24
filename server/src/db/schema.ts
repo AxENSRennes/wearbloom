@@ -268,6 +268,17 @@ export const workerHeartbeats = pgTable("worker_heartbeats", {
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const privacyPreferences = pgTable("privacy_preferences", {
+  ownerId: text("owner_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  analyticsEnabled: boolean("analytics_enabled").notNull().default(false),
+  diagnosticsEnabled: boolean("diagnostics_enabled").notNull().default(false),
+  consentVersion: integer("consent_version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const deviceTokens = pgTable(
   "device_tokens",
   {

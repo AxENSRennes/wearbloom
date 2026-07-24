@@ -11,8 +11,8 @@ import { AppleSubscriptionService } from "./subscriptions/apple-subscriptions";
 import { configureTelemetry } from "./telemetry";
 
 const config = loadConfig();
-configureTelemetry(config, "api");
 const { db } = createDatabase(config);
+configureTelemetry(config, "api", db);
 const storage = new LocalPrivateStorage(config.STORAGE_ROOT);
 const openai = config.AI_PROVIDER === "openai" ? new OpenAI({ apiKey: config.OPENAI_API_KEY }) : undefined;
 const detector = openai ? new OpenAIGarmentDetector(openai) : new StubGarmentDetector();

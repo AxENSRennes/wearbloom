@@ -154,7 +154,7 @@ Deleting a variant, look, or account removes the associated business data and fi
 
 ### Analytics, crashes, and privacy
 
-Instrument WearBloom generously with Sentry and PostHog so every important user action, funnel step, render, failure, and performance issue can be understood end to end. Collect as much structured context as useful, but never photos, free-form content, prompts, tokens, or secrets. Session Replay may be used only when all sensitive content is reliably masked.
+Sentry and PostHog are strictly optional and denied by default. The user’s explicit preference is synchronized with the private service, and both the app and server gate every nonessential telemetry event on that preference. Collect only allow-listed structured context, never photos, free-form content, prompts, tokens, or secrets. Session Replay is disabled.
 
 PostgreSQL remains the source of truth for purchases, quotas, generations, costs, and other business state. WearBloom uses no advertising identifier or cross-app tracking at launch.
 

@@ -47,6 +47,8 @@ import {
   feedbackRoute,
   deleteAccountRoute,
   accountStatusRoute,
+  getPrivacyPreferencesRoute,
+  updatePrivacyPreferencesRoute,
   syncAppleSubscriptionRoute,
   registerPushDeviceRoute,
 } from "./route-definitions";
@@ -394,7 +396,7 @@ export function createV1Routes(deps: Dependencies) {
         .values({ ownerId, key, operation: "create_render", responseStatus: 202, responseBody: result });
       return result;
     });
-    track("render_queued", ownerId, { render_id: response.id, provider: deps.config.AI_PROVIDER });
+    await track("render_queued", ownerId, { render_id: response.id, provider: deps.config.AI_PROVIDER });
     return c.json(response, 202);
   });
 
@@ -454,7 +456,7 @@ export function createV1Routes(deps: Dependencies) {
       )
       .returning({ id: schema.renderVariants.id });
     if (!updated.length) return apiError(c, "NOT_FOUND", 404);
-    track("render_feedback_submitted", c.get("userId"), {
+    await track("render_feedback_submitted", c.get("userId"), {
       render_id: c.req.valid("param").id,
       looks_like_me: body.looksLikeMe,
       helpful: body.helpful,
@@ -468,6 +470,58 @@ export function createV1Routes(deps: Dependencies) {
     const entitlement = await deps.subscriptions.ensureAccount(ownerId);
     const quota = await getQuotaSnapshot(deps.db, ownerId, new Date(), deps.config);
     return c.json({ userId: ownerId, appAccountToken: entitlement.appleAppAccountToken, ...quota }, 200);
+  });
+
+  app.openapi(getPrivacyPreferencesRoute, async (c) => {
+    const [preference] = await deps.db
+      .select()
+      .from(schema.privacyPreferences)
+      .where(eq(schema.privacyPreferences.ownerId, c.get("userId")))
+      .limit(1);
+    return c.json(
+      {
+        analyticsEnabled: preference?.analyticsEnabled ?? false,
+        diagnosticsEnabled: preference?.diagnosticsEnabled ?? false,
+        consentVersion: preference?.consentVersion ?? 1,
+        updatedAt: (preference?.updatedAt ?? new Date(0)).toISOString(),
+      },
+      200,
+    );
+  });
+
+  app.openapi(updatePrivacyPreferencesRoute, async (c) => {
+    const ownerId = c.get("userId");
+    const body = c.req.valid("json");
+    const now = new Date();
+    const [preference] = await deps.db
+      .insert(schema.privacyPreferences)
+      .values({
+        ownerId,
+        analyticsEnabled: body.analyticsEnabled,
+        diagnosticsEnabled: body.diagnosticsEnabled,
+        consentVersion: 1,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: schema.privacyPreferences.ownerId,
+        set: {
+          analyticsEnabled: body.analyticsEnabled,
+          diagnosticsEnabled: body.diagnosticsEnabled,
+          consentVersion: 1,
+          updatedAt: now,
+        },
+      })
+      .returning();
+    if (!preference) throw new Error("INTERNAL_ERROR");
+    return c.json(
+      {
+        analyticsEnabled: preference.analyticsEnabled,
+        diagnosticsEnabled: preference.diagnosticsEnabled,
+        consentVersion: preference.consentVersion,
+        updatedAt: preference.updatedAt.toISOString(),
+      },
+      200,
+    );
   });
 
   app.openapi(syncAppleSubscriptionRoute, async (c) => {

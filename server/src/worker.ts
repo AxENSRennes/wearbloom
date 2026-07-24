@@ -15,8 +15,8 @@ import { renderInputSnapshotSchema } from "./domain/render-contract";
 import { errorMessage } from "./errors";
 
 const config = loadConfig({ ...process.env, ROLE: "worker" });
-configureTelemetry(config, "worker");
 const { db } = createDatabase(config);
+configureTelemetry(config, "worker", db);
 const storage = new LocalPrivateStorage(config.STORAGE_ROOT);
 const provider: ImageGenerationProvider =
   config.AI_PROVIDER === "openai"
@@ -133,7 +133,7 @@ async function processRender(id: string): Promise<void> {
         costMicros: config.IMAGE_COST_MICROS,
       }),
     );
-    track("render_succeeded", variant.ownerId, {
+    await track("render_succeeded", variant.ownerId, {
       render_id: id,
       duration_ms: Date.now() - started,
       cost_micros: config.IMAGE_COST_MICROS,
@@ -177,8 +177,8 @@ async function processRender(id: string): Promise<void> {
       );
     });
     console.error(JSON.stringify({ level: "error", message: "Render failed", renderId: id, code }));
-    captureException(error, { render_id: id, error_code: code });
-    track("render_failed", variant.ownerId, { render_id: id, error_code: code, provider: provider.name });
+    await captureException(error, variant.ownerId, { render_id: id, error_code: code });
+    await track("render_failed", variant.ownerId, { render_id: id, error_code: code, provider: provider.name });
   }
 }
 

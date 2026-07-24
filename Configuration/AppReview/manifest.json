@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F8453D80-E985-41C9-9B3C-846DFDDCC68C",
+        "deviceName" : "WearBloom iPhone 17 Pro",
+        "exportedFileName" : "7DDD89EC-EED2-4E91-935A-50023365027F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "WearBloom Pro App Review_0_784D7144-39B9-477E-8359-D25C3EA17DD0.png",
+        "timestamp" : 1784848588.12
+      }
+    ],
+    "testIdentifier" : "WearBloomUITests/testPaywallReviewPricing()",
+    "testIdentifierURL" : "test://com.apple.xcode/WearBloom/WearBloomUITests/WearBloomUITests/testPaywallReviewPricing"
+  }
+]

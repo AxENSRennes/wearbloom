@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     let completion: () -> Void
     @State private var page = 0
-    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = true
+    @AppStorage(PrivacyChoices.diagnosticsConsentKey) private var diagnosticsConsent = false
 
     var body: some View {
         ZStack {
