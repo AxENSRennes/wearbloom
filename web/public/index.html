@@ -1,4 +1,252 @@
 <!doctype html>
-<html lang="en-US"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WearBloom — Your closet, in motion</title>
-<style>body{margin:0;background:#f6f0e7;color:#171717;font:18px/1.55 ui-rounded,system-ui,sans-serif}main{max-width:760px;margin:auto;padding:12vh 24px}h1{font:900 clamp(48px,10vw,92px)/.9 Georgia,serif;letter-spacing:-.06em;color:#5b3df5}p{max-width:580px}a{color:#5b3df5;font-weight:700}.pill{display:inline-block;background:#d8ff3e;border:2px solid;padding:8px 14px;border-radius:999px;font:700 12px ui-monospace,monospace}</style>
-</head><body><main><span class="pill">PRIVATE PERSONAL STYLE</span><h1>Make the look.<br>See the energy.</h1><p>WearBloom helps you compose a look from clothes you own, then create a personal preview to help you decide.</p><p>Private outfit previews, designed for iPhone.</p><p><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/support.html">Support</a></p></main></body></html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WearBloom — See the outfit before you wear it</title>
+  <meta name="description" content="WearBloom is a private personal styling app for iPhone. Build looks from your own closet and preview the full outfit before you get dressed.">
+  <meta name="theme-color" content="#f5efe6">
+  <meta name="color-scheme" content="light">
+  <link rel="canonical" href="https://wearbloom.app/">
+  <link rel="icon" href="/assets/app-icon.png">
+  <link rel="apple-touch-icon" href="/assets/app-icon.png">
+  <link rel="preload" href="/fonts/Fraunces72pt-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/wearbloom-editorial.webp" as="image" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="/styles.css">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="WearBloom — See the outfit before you wear it">
+  <meta property="og:description" content="Your closet, your photo, one clearer decision. Private outfit previews, designed for iPhone.">
+  <meta property="og:url" content="https://wearbloom.app/">
+  <meta property="og:image" content="https://wearbloom.app/assets/wearbloom-editorial.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "WearBloom",
+      "applicationCategory": "LifestyleApplication",
+      "operatingSystem": "iOS",
+      "description": "A private personal styling app that helps you compose and preview outfits from clothes you own.",
+      "url": "https://wearbloom.app/",
+      "publisher": {"@type": "Organization", "name": "MONBONAMI", "url": "https://monbonami.fr"}
+    }
+  </script>
+  <script src="/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" data-header>
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="WearBloom home">
+        <img src="/assets/wearbloom-mark.webp" width="44" height="44" alt="">
+        <span>WearBloom</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+        <span class="sr-only">Open menu</span>
+        <span></span><span></span>
+      </button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation" data-nav>
+        <a href="#how-it-works">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#features">Features</a>
+        <a class="nav-cta" href="mailto:contact@monbonami.fr?subject=WearBloom%20early%20access">Get launch updates</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="hero-copy reveal">
+        <p class="eyebrow"><span></span>Private personal style for iPhone</p>
+        <h1 id="hero-title">See the outfit <em>before</em> you wear it.</h1>
+        <p class="hero-lede">Build a look from clothes you already own. WearBloom turns your choices into a private, personal preview—so getting dressed feels more certain and more creative.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="mailto:contact@monbonami.fr?subject=WearBloom%20early%20access">Get launch updates <span aria-hidden="true">↗</span></a>
+          <a class="text-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
+        </div>
+        <ul class="trust-list" aria-label="WearBloom principles">
+          <li>Private by default</li>
+          <li>No ads or tracking</li>
+          <li>Your own closet</li>
+        </ul>
+      </div>
+
+      <div class="hero-visual reveal" aria-label="WearBloom editorial outfit preview">
+        <div class="hero-image-wrap">
+          <img src="/assets/wearbloom-editorial.webp" width="1122" height="1402" alt="Woman wearing a tailored black outfit with violet, lime and coral accents" fetchpriority="high">
+        </div>
+        <div class="floating-card floating-card-top" aria-hidden="true">
+          <span class="card-label">Today’s look</span>
+          <span class="card-value">Confident / expressive</span>
+        </div>
+        <div class="floating-card floating-card-bottom" aria-hidden="true">
+          <div class="mini-swatch swatch-violet"></div>
+          <div class="mini-swatch swatch-lime"></div>
+          <div class="mini-swatch swatch-coral"></div>
+          <span>3 pieces · 1 clear choice</span>
+        </div>
+        <span class="hero-stamp" aria-hidden="true">YOUR CLOSET<br>IN MOTION</span>
+      </div>
+    </section>
+
+    <div class="signal-strip" aria-hidden="true">
+      <div class="signal-track">
+        <span>YOUR CLOTHES</span><i>✦</i><span>YOUR STYLE</span><i>✦</i><span>YOUR DECISION</span><i>✦</i>
+        <span>YOUR CLOTHES</span><i>✦</i><span>YOUR STYLE</span><i>✦</i><span>YOUR DECISION</span><i>✦</i>
+      </div>
+    </div>
+
+    <section class="intro section shell reveal" aria-labelledby="intro-title">
+      <p class="section-kicker">A calmer way to get dressed</p>
+      <div class="intro-grid">
+        <h2 id="intro-title">The fitting room in your pocket.</h2>
+        <div class="intro-copy">
+          <p>WearBloom helps you move from “maybe” to a look you actually want to wear. No endless inspiration feed. No shopping pressure. Just your wardrobe, composed with intention.</p>
+          <p class="accent-note">Less guessing. More wearing.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps section" id="how-it-works" aria-labelledby="steps-title">
+      <div class="shell">
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">How it works</p>
+            <h2 id="steps-title">Three steps. One complete look.</h2>
+          </div>
+          <p>From individual pieces to a private outfit preview—without turning your wardrobe into a spreadsheet.</p>
+        </div>
+
+        <ol class="step-grid">
+          <li class="step-card reveal">
+            <div class="step-number">01</div>
+            <div class="closet-demo" aria-hidden="true">
+              <div class="garment garment-shirt"><span></span></div>
+              <div class="garment garment-trouser"><span></span></div>
+              <div class="add-dot">+</div>
+            </div>
+            <h3>Add your closet</h3>
+            <p>Photograph the pieces you love and keep a useful, visual wardrobe with you.</p>
+          </li>
+          <li class="step-card reveal">
+            <div class="step-number">02</div>
+            <div class="compose-demo" aria-hidden="true">
+              <span class="choice-chip selected">Top</span>
+              <span class="choice-chip">Bottom</span>
+              <span class="choice-chip">Layer</span>
+              <div class="look-stack"><i></i><i></i><i></i></div>
+            </div>
+            <h3>Compose a look</h3>
+            <p>Mix pieces around a mood, a plan or a single item you want to make work.</p>
+          </li>
+          <li class="step-card step-card-featured reveal">
+            <div class="step-number">03</div>
+            <div class="preview-demo" aria-hidden="true">
+              <img src="/assets/wearbloom-editorial.webp" width="360" height="450" alt="">
+              <span>Private preview</span>
+              <i>Ready</i>
+            </div>
+            <h3>See it together</h3>
+            <p>Create a personal preview, save the strongest version and step out with confidence.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="editorial section shell" aria-labelledby="editorial-title">
+      <div class="editorial-panel reveal">
+        <div class="editorial-copy">
+          <p class="section-kicker section-kicker-light">Built around you</p>
+          <h2 id="editorial-title">Not another feed telling you what to buy.</h2>
+          <p>WearBloom starts with what is already yours. Rediscover forgotten pieces, test a bolder combination and keep the looks that feel like you.</p>
+          <a class="button button-light" href="#privacy">See our privacy approach <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="quote-stack" aria-label="WearBloom benefits">
+          <div><strong>01</strong><span>More value from the clothes you own</span></div>
+          <div><strong>02</strong><span>Fewer last-minute outfit changes</span></div>
+          <div><strong>03</strong><span>A style library that stays personal</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section section shell" id="features" aria-labelledby="features-title">
+      <div class="section-heading reveal">
+        <div>
+          <p class="section-kicker">Designed with restraint</p>
+          <h2 id="features-title">Useful technology, quietly applied.</h2>
+        </div>
+        <p>AI has one job here: help you see a choice more clearly. You stay in control of your photos, your wardrobe and the final decision.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card feature-card-wide reveal">
+          <span class="feature-icon">✦</span>
+          <h3>Your look, not a generic avatar</h3>
+          <p>Add an optional reference photo for previews that feel more personal and useful.</p>
+          <div class="reference-ui" aria-hidden="true">
+            <div><span>Reference photo</span><b>Optional</b></div>
+            <div class="reference-line"><i></i><i></i><i></i></div>
+          </div>
+        </article>
+        <article class="feature-card reveal">
+          <span class="feature-icon">↗</span>
+          <h3>Save what works</h3>
+          <p>Keep looks and variations together, ready for the next morning or the next occasion.</p>
+        </article>
+        <article class="feature-card feature-card-lime reveal">
+          <span class="feature-icon">◎</span>
+          <h3>Private by design</h3>
+          <p>Your library is not a social profile. Nothing is published for other users to browse.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="privacy-section section" id="privacy" aria-labelledby="privacy-title">
+      <div class="shell privacy-grid">
+        <div class="privacy-copy reveal">
+          <p class="section-kicker">Privacy, in plain language</p>
+          <h2 id="privacy-title">Your photos deserve more than fine print.</h2>
+          <p>WearBloom asks before selected personal data is used for AI processing. Optional analytics and diagnostics are off by default. We do not sell personal information, use advertising identifiers or track you across other companies’ apps and websites.</p>
+          <a class="text-link" href="/privacy.html">Read the full Privacy Policy <span aria-hidden="true">↗</span></a>
+        </div>
+        <ul class="privacy-list reveal">
+          <li><span>01</span><div><strong>Explicit permission</strong><p>You choose whether selected photos can be processed to create a preview.</p></div></li>
+          <li><span>02</span><div><strong>Optional diagnostics</strong><p>Usage analytics and crash reporting remain off unless you opt in.</p></div></li>
+          <li><span>03</span><div><strong>Real deletion controls</strong><p>Manage photos, permissions and account deletion from the app.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="closing section shell" aria-labelledby="closing-title">
+      <div class="closing-mark" aria-hidden="true"><img src="/assets/wearbloom-mark.webp" width="260" height="260" alt=""></div>
+      <div class="closing-copy reveal">
+        <p class="section-kicker">Coming soon to iPhone</p>
+        <h2 id="closing-title">Your closet already has possibilities.</h2>
+        <p>WearBloom helps you see them.</p>
+        <a class="button button-primary" href="mailto:contact@monbonami.fr?subject=WearBloom%20early%20access">Get launch updates <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-grid">
+      <div>
+        <a class="brand brand-footer" href="/" aria-label="WearBloom home">
+          <img src="/assets/wearbloom-mark.webp" width="44" height="44" alt="">
+          <span>WearBloom</span>
+        </a>
+        <p>Private personal style, designed for iPhone.</p>
+      </div>
+      <div class="footer-links">
+        <div><strong>Product</strong><a href="#how-it-works">How it works</a><a href="#features">Features</a><a href="/support.html">Support</a></div>
+        <div><strong>Legal</strong><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></div>
+        <div><strong>Contact</strong><a href="mailto:contact@monbonami.fr">contact@monbonami.fr</a></div>
+      </div>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© 2026 MONBONAMI. All rights reserved.</span>
+      <span>Made thoughtfully in France.</span>
+    </div>
+  </footer>
+</body>
+</html>

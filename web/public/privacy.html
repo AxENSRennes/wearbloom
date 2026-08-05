@@ -1,53 +1,93 @@
 <!doctype html>
 <html lang="en-US">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WearBloom Privacy Policy</title>
-<style>body{max-width:760px;margin:8vh auto;padding:0 24px;background:#f6f0e7;color:#171717;font:17px/1.6 system-ui}h1,h2{font-family:Georgia,serif}a{color:#5b3df5}li{margin:.45rem 0}.note{padding:14px 16px;background:#fff;border-radius:12px}</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — WearBloom</title>
+  <meta name="description" content="How WearBloom collects, uses, shares, retains and deletes information.">
+  <meta name="theme-color" content="#f5efe6">
+  <link rel="canonical" href="https://wearbloom.app/privacy.html">
+  <link rel="icon" href="/assets/app-icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/site.js" defer></script>
 </head>
-<body>
-<h1>WearBloom Privacy Policy</h1>
-<p>Effective July 24, 2026.</p>
-<p>This policy explains how WearBloom collects, uses, shares, retains, and deletes information when you use the WearBloom iPhone app and service.</p>
-
-<h2>Information you choose to provide</h2>
-<ul>
-  <li><strong>Photos and generated images.</strong> Reference photos, garment photos, and requested outfit previews.</li>
-  <li><strong>Account information.</strong> An automatically created private account identifier and, if you optionally link Sign in with Apple, the Apple account identifier and email address Apple provides (which may be a private relay address).</li>
-  <li><strong>Closet and look information.</strong> Garment names and categories, saved looks, generation status, allowances, and feedback you submit about a preview.</li>
-  <li><strong>Purchases.</strong> Subscription product, status, and expiration information supplied by Apple. WearBloom does not receive your full payment-card details.</li>
-</ul>
-
-<h2>Information collected with your permission</h2>
-<p><strong>AI processing.</strong> Before any selected personal data is sent for third-party AI processing, the app asks for your explicit permission. If allowed, WearBloom uploads the selected reference and garment photos to its private server and shares the inputs with OpenAI to classify garments and create the preview you requested. You can withdraw this permission in Settings. Withdrawing permission stops future third-party AI processing but does not delete previously created items; use the in-app deletion controls for that.</p>
-<p><strong>Optional analytics and diagnostics.</strong> If you enable “Share diagnostics and usage” in Settings, WearBloom sends limited product-interaction and app-lifecycle data to PostHog and crash, performance, and reliability data to Sentry. These events may be associated with your private WearBloom account identifier and technical device or session identifiers so we can understand reliability across the app and service. They exclude photos, image contents, prompts, closet names, Apple tokens, and free-form user content. This permission is off by default, is synchronized with the private service, and can be withdrawn in Settings at any time.</p>
-
-<h2>How information is used</h2>
-<p>We use information to provide and secure the app, create requested previews, store your private library, operate subscriptions and allowances, prevent fraud and abuse, respond to support requests, and—only when you opt in—understand reliability and product usage. We do not sell personal information, use advertising identifiers, or track you across other companies’ apps or websites.</p>
-
-<h2>Service providers and protection</h2>
-<p>WearBloom uses Apple for sign-in and purchases, OpenAI for requested AI image processing, PostHog for optional analytics, Sentry for optional diagnostics, and infrastructure providers to host the private service. Providers receive only the information needed for their role. We require providers to protect it consistently with this policy and applicable law and not use it for their independent advertising. Their processing is also governed by their applicable privacy and data-processing terms.</p>
-
-<h2>Storage, retention, and deletion</h2>
-<p>Your working library is stored on your device. Items used with online AI features are also stored privately on WearBloom’s server so the requested service can operate. They are not published or visible to other users.</p>
-<ul>
-  <li>Account records and active private files are kept until you delete the related item or your account, unless a longer period is legally required.</li>
-  <li>When you delete your account in Settings, active account records are deleted and private-file cleanup is queued. Operational and disaster-recovery backups expire within 8 days.</li>
-  <li>Optional PostHog product analytics may be retained for up to 84 months, which is the current default retention period for the WearBloom PostHog project.</li>
-  <li>Optional Sentry crash and diagnostic data are retained for no more than 12 months.</li>
-  <li>Service providers may keep limited security or processing records for the periods in their applicable terms or when required by law.</li>
-</ul>
-<p class="note">Deleting a WearBloom account does not cancel an App Store subscription. You can manage or cancel it in the app or in your App Store subscription settings.</p>
-
-<h2>Your choices</h2>
-<p>In Profile &amp; Settings you can withdraw AI-processing permission, opt in or out of diagnostics and analytics, manage reference photos, manage your App Store subscription, and permanently delete your WearBloom account and associated data. You can also contact us to ask a privacy question or exercise a right available in your location.</p>
-
-<h2>Children</h2>
-<p>WearBloom is not directed to children under 13, and we do not knowingly collect personal information from children under 13. Contact us if you believe a child provided information.</p>
-
-<h2>Contact</h2>
-<p>Privacy requests: <a href="mailto:contact@monbonami.fr">contact@monbonami.fr</a><br>Support: <a href="mailto:contact@monbonami.fr">contact@monbonami.fr</a></p>
-<p><a href="/">Home</a> · <a href="/terms.html">Terms</a> · <a href="/support.html">Support</a></p>
+<body class="legal-body">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" data-header>
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="WearBloom home"><img src="/assets/wearbloom-mark.webp" width="44" height="44" alt=""><span>WearBloom</span></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle><span class="sr-only">Open menu</span><span></span><span></span></button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation" data-nav><a href="/">Home</a><a href="/terms.html">Terms</a><a href="/support.html">Support</a><a class="nav-cta" href="mailto:contact@monbonami.fr">Contact us</a></nav>
+    </div>
+  </header>
+  <main class="legal-main shell" id="main">
+    <div class="legal-hero">
+      <p class="section-kicker">Legal · Effective July 24, 2026</p>
+      <h1>Privacy Policy</h1>
+      <p>This policy explains how WearBloom collects, uses, shares, retains and deletes information when you use the WearBloom iPhone app and service.</p>
+    </div>
+    <div class="legal-layout">
+      <nav class="legal-nav" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#provided">Information you provide</a>
+        <a href="#permission">With your permission</a>
+        <a href="#use">How information is used</a>
+        <a href="#providers">Service providers</a>
+        <a href="#retention">Storage and deletion</a>
+        <a href="#choices">Your choices</a>
+        <a href="#children">Children</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <article class="legal-content">
+        <section id="provided">
+          <h2>Information you choose to provide</h2>
+          <ul>
+            <li><strong>Photos and generated images.</strong> Reference photos, garment photos and requested outfit previews.</li>
+            <li><strong>Account information.</strong> An automatically created private account identifier and, if you optionally link Sign in with Apple, the Apple account identifier and email address Apple provides (which may be a private relay address).</li>
+            <li><strong>Closet and look information.</strong> Garment names and categories, saved looks, generation status, allowances and feedback you submit about a preview.</li>
+            <li><strong>Purchases.</strong> Subscription product, status and expiration information supplied by Apple. WearBloom does not receive your full payment-card details.</li>
+          </ul>
+        </section>
+        <section id="permission">
+          <h2>Information collected with your permission</h2>
+          <p><strong>AI processing.</strong> Before any selected personal data is sent for third-party AI processing, the app asks for your explicit permission. If allowed, WearBloom uploads the selected reference and garment photos to its private server and shares the inputs with OpenAI to classify garments and create the preview you requested. You can withdraw this permission in Settings. Withdrawing permission stops future third-party AI processing but does not delete previously created items; use the in-app deletion controls for that.</p>
+          <p><strong>Optional analytics and diagnostics.</strong> If you enable “Share diagnostics and usage” in Settings, WearBloom sends limited product-interaction and app-lifecycle data to PostHog and crash, performance and reliability data to Sentry. These events may be associated with your private WearBloom account identifier and technical device or session identifiers so we can understand reliability across the app and service. They exclude photos, image contents, prompts, closet names, Apple tokens and free-form user content. This permission is off by default, is synchronized with the private service and can be withdrawn in Settings at any time.</p>
+        </section>
+        <section id="use">
+          <h2>How information is used</h2>
+          <p>We use information to provide and secure the app, create requested previews, store your private library, operate subscriptions and allowances, prevent fraud and abuse, respond to support requests and—only when you opt in—understand reliability and product usage. We do not sell personal information, use advertising identifiers or track you across other companies’ apps or websites.</p>
+        </section>
+        <section id="providers">
+          <h2>Service providers and protection</h2>
+          <p>WearBloom uses Apple for sign-in and purchases, OpenAI for requested AI image processing, PostHog for optional analytics, Sentry for optional diagnostics and infrastructure providers to host the private service. Providers receive only the information needed for their role. We require providers to protect it consistently with this policy and applicable law and not use it for their independent advertising. Their processing is also governed by their applicable privacy and data-processing terms.</p>
+        </section>
+        <section id="retention">
+          <h2>Storage, retention and deletion</h2>
+          <p>Your working library is stored on your device. Items used with online AI features are also stored privately on WearBloom’s server so the requested service can operate. They are not published or visible to other users.</p>
+          <ul>
+            <li>Account records and active private files are kept until you delete the related item or your account, unless a longer period is legally required.</li>
+            <li>When you delete your account in Settings, active account records are deleted and private-file cleanup is queued. Operational and disaster-recovery backups expire within 8 days.</li>
+            <li>Optional PostHog product analytics may be retained for up to 84 months, which is the current default retention period for the WearBloom PostHog project.</li>
+            <li>Optional Sentry crash and diagnostic data are retained for no more than 12 months.</li>
+            <li>Service providers may keep limited security or processing records for the periods in their applicable terms or when required by law.</li>
+          </ul>
+          <p class="legal-note">Deleting a WearBloom account does not cancel an App Store subscription. You can manage or cancel it in the app or in your App Store subscription settings.</p>
+        </section>
+        <section id="choices">
+          <h2>Your choices</h2>
+          <p>In Profile &amp; Settings you can withdraw AI-processing permission, opt in or out of diagnostics and analytics, manage reference photos, manage your App Store subscription and permanently delete your WearBloom account and associated data. You can also contact us to ask a privacy question or exercise a right available in your location.</p>
+        </section>
+        <section id="children">
+          <h2>Children</h2>
+          <p>WearBloom is not directed to children under 13, and we do not knowingly collect personal information from children under 13. Contact us if you believe a child provided information.</p>
+        </section>
+        <section id="contact">
+          <h2>Contact</h2>
+          <p>Privacy requests and support: <a href="mailto:contact@monbonami.fr">contact@monbonami.fr</a></p>
+        </section>
+      </article>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="shell footer-bottom"><span>© 2026 MONBONAMI. All rights reserved.</span><span><a href="/">Home</a> · <a href="/terms.html">Terms</a> · <a href="/support.html">Support</a></span></div></footer>
 </body>
 </html>
