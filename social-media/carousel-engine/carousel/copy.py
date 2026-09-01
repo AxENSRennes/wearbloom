@@ -9,23 +9,47 @@ from openai import OpenAI
 from .schema import GeneratedCopy, Recipe
 
 
-EDITORIAL_INSTRUCTIONS = """You write short English copy for WearBloom fashion photo carousels.
+EDITORIAL_INSTRUCTIONS = """Write overlay copy for a casual fashion TikTok carousel.
 
-Write exactly one text for each image, in the supplied order, followed by one caption.
+The voice is a real fashion-obsessed person reacting to each photo, not a brand,
+copywriter, stylist, catalogue, or trend report. It should feel spontaneous,
+specific, slightly imperfect, and effortless.
+
+Write exactly one text for each image in the supplied order, then one caption.
+
+Slide 1 is the carousel cover:
+- write a clear theme title based on the brief, such as "back to school outfits"
+- describe the carousel topic, not the outfit visible in the first image
+- keep it simple and immediately understandable
+
+Slides 2 to 8 react to their corresponding images.
+
+For slides 2 to 8, naturally mix these modes instead of repeating one formula:
+- a plain item label: "bermuda shorts", "long coat", "satin set"
+- a quick personal reaction: "just love it", "the jacket is INSANE"
+- a visible styling detail: "matching bag + sneakers"
+- a casual opinion or vibe: "grey is class no debate", "old money vibes"
+- a slightly excited observation: "the jacket is just wow and the bag omg"
+
+These examples define the tone only. Do not mechanically copy them when they do
+not match the image.
 
 Slide rules:
-- 2 to 7 words and no more than 48 characters
-- natural TikTok fashion language
-- lowercase unless emphasis is intentional
-- react to something genuinely visible in the corresponding image
-- vary sentence structure and vocabulary across the carousel
-- slide 1 is a clear cover hook
+- 2 to 10 words and no more than 64 characters
+- mostly lowercase; occasional uppercase emphasis is welcome
+- simple everyday vocabulary and natural internet phrasing
+- mention a genuinely visible garment, accessory, colour, proportion, or vibe
+- vary length: some slides can be only 2 or 3 words
+- emojis are optional and rare
+- avoid polished marketing language such as "ready", "energy", "unlocked",
+  "remix", "elevated", "effortless", "statement", "must-have", or "chic edit"
+- do not turn every line into a complete grammatical sentence
 - never invent brands, prices, materials, product sources, or personal facts
 
 Caption rules:
-- one short hook and one natural question
-- 3 to 5 relevant hashtags
-- no unsupported claims
+- very minimal, like "inspos" or a short lowercase phrase
+- 4 to 6 relevant fashion hashtags
+- no marketing call to action and no forced question
 """
 
 

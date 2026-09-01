@@ -6,14 +6,14 @@ from pydantic import BaseModel, Field, field_validator
 
 def _validate_short_copy(value: str) -> str:
     value = value.strip()
-    if len(value.split()) > 7:
-        raise ValueError("slide copy must contain at most seven words")
+    if len(value.split()) > 10:
+        raise ValueError("slide copy must contain at most ten words")
     return value
 
 
 class Slide(BaseModel):
     source: str
-    text: str = Field(min_length=2, max_length=48)
+    text: str = Field(min_length=2, max_length=64)
     cover: bool = False
 
     @field_validator("text")
@@ -23,7 +23,7 @@ class Slide(BaseModel):
 
 
 class GeneratedSlideCopy(BaseModel):
-    text: str = Field(min_length=2, max_length=48)
+    text: str = Field(min_length=2, max_length=64)
 
     @field_validator("text")
     @classmethod

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from hashlib import blake2b
 import colorsys
+from pathlib import Path
 
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+
+HUMAN_SEGMENTATION_MODEL = Path(__file__).parent / "models" / "human_segmentation_pphumanseg_2023mar.onnx"
 
 
 @dataclass(frozen=True)
@@ -42,6 +47,32 @@ def visual_complexity(image: Image.Image, analysis_width: int = 420) -> np.ndarr
     mean_sq = cv2.GaussianBlur(gray * gray, (0, 0), 7)
     local_std = np.sqrt(np.maximum(mean_sq - mean * mean, 0))
     return 0.68 * _normalise(edges) + 0.32 * _normalise(local_std)
+
+
+@lru_cache(maxsize=1)
+def _human_segmentation_net() -> cv2.dnn.Net:
+    return cv2.dnn.readNet(str(HUMAN_SEGMENTATION_MODEL))
+
+
+def human_subject_mask(image: Image.Image, width: int, height: int) -> np.ndarray | None:
+    """Return a cheap, deliberately padded person mask at analysis resolution."""
+    if not HUMAN_SEGMENTATION_MODEL.exists():
+        return None
+    try:
+        sample = np.asarray(image.resize((192, 192), Image.Resampling.BILINEAR).convert("RGB"))
+        bgr = cv2.cvtColor(sample, cv2.COLOR_RGB2BGR).astype(np.float32) / 255.0
+        blob = cv2.dnn.blobFromImage((bgr - 0.5) / 0.5)
+        net = _human_segmentation_net()
+        net.setInput(blob)
+        prediction = net.forward("save_infer_model/scale_0.tmp_1")[0]
+        mask = np.argmax(prediction, axis=0).astype(np.uint8)
+        mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_NEAREST)
+        # Keep text off the silhouette edges, hair and clothing outlines too.
+        radius = max(3, round(min(width, height) * 0.025))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (radius * 2 + 1, radius * 2 + 1))
+        return cv2.dilate(mask, kernel)
+    except cv2.error:
+        return None
 
 
 def _relative_luminance(hex_color: str) -> float:
@@ -135,6 +166,7 @@ def choose_placement(
     draw = ImageDraw.Draw(image)
     spacing = max(1, round(font_size * 0.02))
     complexity = visual_complexity(image)
+    human_mask = human_subject_mask(image, complexity.shape[1], complexity.shape[0])
     image_palette = _image_palette(image)
     # Pick the image-derived colour once. Placement must adapt to the colour,
     # never the other way around.
@@ -147,7 +179,6 @@ def choose_placement(
     xs = np.linspace(0.08, 0.92, 15)
     ys = np.linspace(0.13, 0.79, 12)
     candidates: list[Placement] = []
-    readable_candidates: list[Placement] = []
 
     for nx in xs:
         for ny in ys:
@@ -178,9 +209,12 @@ def choose_placement(
             grid_y, grid_x = np.mgrid[ay0:ay1, ax0:ax1]
             norm_x = grid_x / max(complexity.shape[1] - 1, 1)
             norm_y = grid_y / max(complexity.shape[0] - 1, 1)
-            central_body = (norm_x >= 0.27) & (norm_x <= 0.73) & (norm_y >= 0.07) & (norm_y <= 0.91)
-            subject_ellipse = (((norm_x - 0.50) / 0.31) ** 2 + ((norm_y - 0.48) / 0.48) ** 2) <= 1
-            subject_prior = central_body | subject_ellipse
+            if human_mask is not None:
+                subject_prior = human_mask[ay0:ay1, ax0:ax1].astype(bool)
+            else:
+                central_body = (norm_x >= 0.33) & (norm_x <= 0.67) & (norm_y >= 0.07) & (norm_y <= 0.91)
+                subject_ellipse = (((norm_x - 0.50) / 0.24) ** 2 + ((norm_y - 0.48) / 0.48) ** 2) <= 1
+                subject_prior = central_body | subject_ellipse
             subject_overlap = float(np.mean(subject_prior))
 
             rgb_patch = np.asarray(image.resize(complexity.shape[::-1], Image.Resampling.BILINEAR).convert("RGB"))[ay0:ay1, ax0:ax1]
@@ -199,14 +233,10 @@ def choose_placement(
             nearest_previous = 1.0 if not previous else min(np.hypot(nx - px, ny - py) for px, py in previous)
             diversity = min(nearest_previous / 0.38, 1.0)
             reuse_penalty = 0.34 if previous and nearest_previous < 0.18 else 0.0
-            score = 0.18 * quietness + 0.31 * uniformity + 0.52 * contrast_score + 0.04 * min(edge_clearance, 1.0) + 0.10 * diversity - 0.06 * subject_overlap - 0.40 * reuse_penalty
+            score = 0.22 * quietness + 0.24 * uniformity + 0.48 * contrast_score + 0.04 * min(edge_clearance, 1.0) + 0.08 * diversity - 0.42 * subject_overlap - 0.34 * reuse_penalty
             candidate = Placement(left, top, text_width, text_height, anchor, align, text_align, color, stroke, font_size, score, f"{nx:.2f},{ny:.2f}")
             candidates.append(candidate)
-            if robust_contrast >= 3.0 and uniformity >= 0.52 and quietness >= 0.48:
-                readable_candidates.append(candidate)
 
     if not candidates:
         raise RuntimeError(f"no valid text placement for {source}")
-    # Readability is now a hard priority; randomness never moves text back onto
-    # a tone-on-tone area.
-    return max(readable_candidates or candidates, key=lambda item: item.score)
+    return max(candidates, key=lambda item: item.score)
