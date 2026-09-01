@@ -1,0 +1,13 @@
+{
+  "name": "wearbloom-social-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate.mjs",
+    "sample": "node src/generate.mjs --count 10 --seed launch-001",
+    "check": "node src/check.mjs"
+  },
+  "dependencies": {
+    "sharp": "^0.34.0"
+  }
+}

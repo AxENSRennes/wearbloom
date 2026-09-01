@@ -1,0 +1,4 @@
+node_modules/
+output/
+recipes/generated/
+.DS_Store

@@ -27,4 +27,4 @@ server/src/db/auth-schema.generated.ts
 .claude/
 
 # Local social-media source assets
-Réseaux sociaux/dataset images/
+social-media/datasets/

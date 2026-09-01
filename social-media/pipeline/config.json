@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "language": "en",
+  "account": "generic-fashion-advice",
+  "formats": {
+    "instagram": { "width": 1080, "height": 1350 },
+    "tiktok": { "width": 1080, "height": 1920 }
+  },
+  "style": {
+    "background": "#FFFFFF",
+    "ink": "#111111",
+    "muted": "#666666",
+    "line": "#E5E5E5",
+    "font": "Arial, Helvetica, sans-serif"
+  },
+  "rules": {
+    "minSlides": 5,
+    "maxSlides": 7,
+    "maxAssetsPerSlide": 4,
+    "maxTitleCharacters": 58,
+    "maxCaptionCharacters": 650
+  },
+  "hashtags": [
+    "#stylingtips",
+    "#outfitideas",
+    "#fashiontips",
+    "#capsulewardrobe"
+  ]
+}
