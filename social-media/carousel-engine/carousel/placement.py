@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from hashlib import blake2b
 import colorsys
@@ -100,10 +100,13 @@ def _rect_sum(integral: np.ndarray, x0: int, y0: int, x1: int, y1: int) -> float
     return float(integral[y1, x1] - integral[y0, x1] - integral[y1, x0] + integral[y0, x0])
 
 
-def _image_palette(image: Image.Image, count: int = 18) -> list[str]:
-    sample = image.copy()
-    sample.thumbnail((240, 240), Image.Resampling.LANCZOS)
-    quantized = sample.convert("RGB").quantize(colors=12, method=Image.Quantize.MEDIANCUT)
+def _palette_from_pixels(pixels: np.ndarray, count: int = 18) -> list[str]:
+    if not pixels.size:
+        return ["#FF6B6B"]
+    # Quantization needs only a representative sample, not every source pixel.
+    step = max(1, len(pixels) // 12_000)
+    sample = Image.fromarray(pixels[::step].reshape(-1, 1, 3).astype(np.uint8), "RGB")
+    quantized = sample.quantize(colors=12, method=Image.Quantize.MEDIANCUT)
     palette = quantized.getpalette()
     ranked = sorted(quantized.getcolors() or [], reverse=True)
     accents: list[tuple[float, str]] = []
@@ -124,17 +127,30 @@ def _image_palette(image: Image.Image, count: int = 18) -> list[str]:
     return [color for _, color in sorted(accents, reverse=True)[:count]] or ["#FF6B6B"]
 
 
-def _select_slide_color(palette: list[str], previous: list[str]) -> str:
-    if not previous:
-        return palette[0]
+def _image_palette(image: Image.Image, count: int = 18) -> list[str]:
+    sample = image.copy()
+    sample.thumbnail((240, 240), Image.Resampling.LANCZOS)
+    return _palette_from_pixels(np.asarray(sample.convert("RGB")).reshape(-1, 3), count)
 
+
+def _select_slide_color(palette: list[str], previous: list[str], background: np.ndarray) -> str:
     previous_hues = [colorsys.rgb_to_hsv(*(int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)))[0] for color in previous]
 
     def score(color: str) -> float:
         rgb = tuple(int(color[index:index + 2], 16) / 255 for index in (1, 3, 5))
         hue, saturation, value = colorsys.rgb_to_hsv(*rgb)
-        hue_distance = min(min(abs(hue - old), 1 - abs(hue - old)) for old in previous_hues)
-        return 2.4 * hue_distance + 0.55 * saturation + 0.20 * value
+        luminance = _relative_luminance(color)
+        contrasts = (np.maximum(luminance, background) + 0.05) / (np.minimum(luminance, background) + 0.05)
+        robust_contrast = float(np.percentile(contrasts, 20))
+        contrast_score = min(robust_contrast / 4.5, 1.0)
+        if previous_hues:
+            hue_distance = min(min(abs(hue - old), 1 - abs(hue - old)) for old in previous_hues)
+            diversity = min(hue_distance / 0.33, 1.0)
+            similarity_penalty = max(0.0, 1.0 - hue_distance / 0.14)
+        else:
+            diversity = 1.0
+            similarity_penalty = 0.0
+        return 0.46 * contrast_score + 0.40 * diversity + 0.10 * saturation + 0.04 * value - 0.38 * similarity_penalty
 
     return max(palette, key=score)
 
@@ -175,16 +191,15 @@ def choose_placement(
     spacing = max(1, round(font_size * 0.02))
     complexity = visual_complexity(image)
     human_mask = human_subject_mask(image, complexity.shape[1], complexity.shape[0])
-    image_palette = _image_palette(image)
-    # Pick the image-derived colour once. Placement must adapt to the colour,
-    # never the other way around.
-    color = _select_slide_color(image_palette, previous_colors)
-    color_luminance = _relative_luminance(color)
     scale_x = complexity.shape[1] / image.width
     scale_y = complexity.shape[0] / image.height
     analysis_rgb = np.asarray(
         image.resize(complexity.shape[::-1], Image.Resampling.BILINEAR).convert("RGB")
     )
+    if human_mask is not None and np.any(human_mask):
+        image_palette = _palette_from_pixels(analysis_rgb[human_mask.astype(bool)])
+    else:
+        image_palette = _image_palette(image)
     analysis_lab = cv2.cvtColor(analysis_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
     analysis_luminance = _luminance_map(analysis_rgb)
     complexity_integral = _integral(complexity)
@@ -241,22 +256,24 @@ def choose_placement(
                 channel_stds.append(np.sqrt(max(channel_mean_square - channel_mean**2, 0.0)))
             colour_variation = float(np.mean(channel_stds))
             uniformity = float(np.clip(1.0 - colour_variation / 42.0, 0.0, 1.0))
-            luminances = analysis_luminance[ay0:ay1, ax0:ax1]
-            pixel_contrasts = (np.maximum(color_luminance, luminances) + 0.05) / (np.minimum(color_luminance, luminances) + 0.05)
-            # The lower percentile catches patches where a few letters would
-            # disappear even though the area's average contrast looks fine.
-            robust_contrast = float(np.percentile(pixel_contrasts, 20))
-            median_luminance = float(np.median(luminances))
-            contrast_score = min(robust_contrast / 4.5, 1.0)
-            stroke = "#111111" if median_luminance > color_luminance else "#FFFFFF"
             edge_clearance = min(nx - safe_left, safe_right - nx, ny - safe_top, safe_bottom - ny) / 0.25
             nearest_previous = 1.0 if not previous else min(np.hypot(nx - px, ny - py) for px, py in previous)
             diversity = min(nearest_previous / 0.38, 1.0)
             reuse_penalty = 0.34 if previous and nearest_previous < 0.18 else 0.0
-            score = 0.22 * quietness + 0.24 * uniformity + 0.48 * contrast_score + 0.04 * min(edge_clearance, 1.0) + 0.08 * diversity - 0.42 * subject_overlap - 0.34 * reuse_penalty
-            candidate = Placement(left, top, text_width, text_height, anchor, align, text_align, color, stroke, font_size, score, f"{nx:.2f},{ny:.2f}")
+            score = 0.38 * quietness + 0.38 * uniformity + 0.06 * min(edge_clearance, 1.0) + 0.10 * diversity - 0.48 * subject_overlap - 0.34 * reuse_penalty
+            candidate = Placement(left, top, text_width, text_height, anchor, align, text_align, "", "", font_size, score, f"{nx:.2f},{ny:.2f}")
             candidates.append(candidate)
 
     if not candidates:
         raise RuntimeError(f"no valid text placement for {source}")
-    return max(candidates, key=lambda item: item.score)
+    placement = max(candidates, key=lambda item: item.score)
+    padding = max(5, round(font_size * 0.10))
+    ax0 = max(0, round((placement.x - padding) * scale_x))
+    ay0 = max(0, round((placement.y - padding) * scale_y))
+    ax1 = min(complexity.shape[1], round((placement.x + placement.width + padding) * scale_x))
+    ay1 = min(complexity.shape[0], round((placement.y + placement.height + padding) * scale_y))
+    background = analysis_luminance[ay0:ay1, ax0:ax1]
+    color = _select_slide_color(image_palette, previous_colors, background)
+    color_luminance = _relative_luminance(color)
+    stroke = "#111111" if float(np.median(background)) > color_luminance else "#FFFFFF"
+    return replace(placement, color=color, stroke=stroke)
