@@ -92,6 +92,14 @@ def _luminance_map(rgb: np.ndarray) -> np.ndarray:
     return 0.2126 * linear[..., 0] + 0.7152 * linear[..., 1] + 0.0722 * linear[..., 2]
 
 
+def _integral(values: np.ndarray) -> np.ndarray:
+    return cv2.integral(values.astype(np.float64))
+
+
+def _rect_sum(integral: np.ndarray, x0: int, y0: int, x1: int, y1: int) -> float:
+    return float(integral[y1, x1] - integral[y0, x1] - integral[y1, x0] + integral[y0, x0])
+
+
 def _image_palette(image: Image.Image, count: int = 18) -> list[str]:
     sample = image.copy()
     sample.thumbnail((240, 240), Image.Resampling.LANCZOS)
@@ -174,6 +182,16 @@ def choose_placement(
     color_luminance = _relative_luminance(color)
     scale_x = complexity.shape[1] / image.width
     scale_y = complexity.shape[0] / image.height
+    analysis_rgb = np.asarray(
+        image.resize(complexity.shape[::-1], Image.Resampling.BILINEAR).convert("RGB")
+    )
+    analysis_lab = cv2.cvtColor(analysis_rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    analysis_luminance = _luminance_map(analysis_rgb)
+    complexity_integral = _integral(complexity)
+    human_integral = _integral(human_mask) if human_mask is not None else None
+    lab_integrals = [_integral(analysis_lab[..., channel]) for channel in range(3)]
+    lab_square_integrals = [_integral(analysis_lab[..., channel] ** 2) for channel in range(3)]
+    text_width, text_height = _measure(draw, text, font, text_align, spacing)
     safe_left, safe_right = 0.06, 0.94
     safe_top, safe_bottom = 0.10, 0.80
     xs = np.linspace(0.08, 0.92, 15)
@@ -184,7 +202,6 @@ def choose_placement(
         for ny in ys:
             align = "left" if nx < 0.42 else "right" if nx > 0.58 else "center"
             anchor = "lm" if align == "left" else "rm" if align == "right" else "mm"
-            text_width, text_height = _measure(draw, text, font, text_align, spacing)
             padding = max(5, round(font_size * 0.10))
             if align == "left":
                 left = round(nx * image.width)
@@ -203,25 +220,28 @@ def choose_placement(
             ay0 = max(0, round((top - padding) * scale_y))
             ax1 = min(complexity.shape[1], round((right + padding) * scale_x))
             ay1 = min(complexity.shape[0], round((bottom + padding) * scale_y))
-            patch = complexity[ay0:ay1, ax0:ax1]
-            quietness = 1.0 - float(np.mean(patch))
+            area = max(1, (ax1 - ax0) * (ay1 - ay0))
+            quietness = 1.0 - _rect_sum(complexity_integral, ax0, ay0, ax1, ay1) / area
 
-            grid_y, grid_x = np.mgrid[ay0:ay1, ax0:ax1]
-            norm_x = grid_x / max(complexity.shape[1] - 1, 1)
-            norm_y = grid_y / max(complexity.shape[0] - 1, 1)
             if human_mask is not None:
-                subject_prior = human_mask[ay0:ay1, ax0:ax1].astype(bool)
+                subject_overlap = _rect_sum(human_integral, ax0, ay0, ax1, ay1) / area
             else:
+                grid_y, grid_x = np.mgrid[ay0:ay1, ax0:ax1]
+                norm_x = grid_x / max(complexity.shape[1] - 1, 1)
+                norm_y = grid_y / max(complexity.shape[0] - 1, 1)
                 central_body = (norm_x >= 0.33) & (norm_x <= 0.67) & (norm_y >= 0.07) & (norm_y <= 0.91)
                 subject_ellipse = (((norm_x - 0.50) / 0.24) ** 2 + ((norm_y - 0.48) / 0.48) ** 2) <= 1
                 subject_prior = central_body | subject_ellipse
-            subject_overlap = float(np.mean(subject_prior))
+                subject_overlap = float(np.mean(subject_prior))
 
-            rgb_patch = np.asarray(image.resize(complexity.shape[::-1], Image.Resampling.BILINEAR).convert("RGB"))[ay0:ay1, ax0:ax1]
-            lab_patch = cv2.cvtColor(rgb_patch, cv2.COLOR_RGB2LAB).astype(np.float32)
-            colour_variation = float(np.mean(np.std(lab_patch.reshape(-1, 3), axis=0)))
+            channel_stds = []
+            for lab_integral, square_integral in zip(lab_integrals, lab_square_integrals, strict=True):
+                channel_mean = _rect_sum(lab_integral, ax0, ay0, ax1, ay1) / area
+                channel_mean_square = _rect_sum(square_integral, ax0, ay0, ax1, ay1) / area
+                channel_stds.append(np.sqrt(max(channel_mean_square - channel_mean**2, 0.0)))
+            colour_variation = float(np.mean(channel_stds))
             uniformity = float(np.clip(1.0 - colour_variation / 42.0, 0.0, 1.0))
-            luminances = _luminance_map(rgb_patch)
+            luminances = analysis_luminance[ay0:ay1, ax0:ax1]
             pixel_contrasts = (np.maximum(color_luminance, luminances) + 0.05) / (np.minimum(color_luminance, luminances) + 0.05)
             # The lower percentile catches patches where a few letters would
             # disappear even though the area's average contrast looks fine.

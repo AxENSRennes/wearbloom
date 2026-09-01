@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import textwrap
@@ -8,6 +9,10 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from .placement import Placement, choose_placement
 from .schema import Recipe
+
+
+def _save_jpeg(image: Image.Image, destination: Path) -> None:
+    image.save(destination, quality=95, subsampling=0)
 
 
 def _wrap_copy(text: str, cover: bool) -> str:
@@ -90,43 +95,47 @@ def render_recipe(recipe: Recipe, output_dir: Path) -> Path:
     previous: list[tuple[float, float]] = []
     previous_colors: list[str] = []
 
-    for index, slide in enumerate(recipe.slides, start=1):
-        source = recipe.dataset / slide.source
-        image = ImageOps.exif_transpose(Image.open(source)).convert("RGB")
-        display_text = _wrap_copy(slide.text, slide.cover)
-        placement = choose_placement(
-            image,
-            display_text,
-            str(recipe.font),
-            recipe.seed,
-            slide.source,
-            previous,
-            previous_colors,
-            recipe.text_align,
-            slide.cover,
-        )
-        rendered = _draw_text(image, display_text, placement, recipe.font)
-        filename = f"{index:02d}.jpg"
-        rendered.save(original_dir / filename, quality=95, subsampling=0)
-        instagram = _instagram_canvas(image, placement, display_text, recipe.font)
-        instagram.save(instagram_dir / filename, quality=95, subsampling=0)
-        preview_images.append(instagram)
-        center_x = (placement.x + placement.width / 2) / image.width
-        center_y = (placement.y + placement.height / 2) / image.height
-        previous.append((center_x, center_y))
-        previous_colors.append(placement.color)
-        manifest.append({
-            "slide": index,
-            "source": slide.source,
-            "text": slide.text,
-            "display_text": display_text,
-            "font_size": placement.font_size,
-            "position": {"x": round(center_x, 4), "y": round(center_y, 4), "region": placement.region},
-            "align": placement.align,
-            "text_align": placement.text_align,
-            "color": placement.color,
-            "score": round(placement.score, 4),
-        })
+    save_futures = []
+    with ThreadPoolExecutor(max_workers=4) as save_pool:
+        for index, slide in enumerate(recipe.slides, start=1):
+            source = recipe.dataset / slide.source
+            image = ImageOps.exif_transpose(Image.open(source)).convert("RGB")
+            display_text = _wrap_copy(slide.text, slide.cover)
+            placement = choose_placement(
+                image,
+                display_text,
+                str(recipe.font),
+                recipe.seed,
+                slide.source,
+                previous,
+                previous_colors,
+                recipe.text_align,
+                slide.cover,
+            )
+            rendered = _draw_text(image, display_text, placement, recipe.font)
+            filename = f"{index:02d}.jpg"
+            save_futures.append(save_pool.submit(_save_jpeg, rendered, original_dir / filename))
+            instagram = _instagram_canvas(image, placement, display_text, recipe.font)
+            save_futures.append(save_pool.submit(_save_jpeg, instagram, instagram_dir / filename))
+            preview_images.append(instagram)
+            center_x = (placement.x + placement.width / 2) / image.width
+            center_y = (placement.y + placement.height / 2) / image.height
+            previous.append((center_x, center_y))
+            previous_colors.append(placement.color)
+            manifest.append({
+                "slide": index,
+                "source": slide.source,
+                "text": slide.text,
+                "display_text": display_text,
+                "font_size": placement.font_size,
+                "position": {"x": round(center_x, 4), "y": round(center_y, 4), "region": placement.region},
+                "align": placement.align,
+                "text_align": placement.text_align,
+                "color": placement.color,
+                "score": round(placement.score, 4),
+            })
+        for future in save_futures:
+            future.result()
 
     preview_path = output_dir / "preview-adaptive.jpg"
     _preview(preview_images, preview_path)
