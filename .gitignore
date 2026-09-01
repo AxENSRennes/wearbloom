@@ -25,3 +25,6 @@ server/src/db/auth-schema.generated.ts
 # Local tools
 .codex/
 .claude/
+
+# Local social-media source assets
+Réseaux sociaux/dataset images/
