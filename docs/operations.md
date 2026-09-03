@@ -1,6 +1,6 @@
 # WearBloom operations
 
-`server/compose.production.yml` is the Dokploy/Traefik production template. Pin `WEARBLOOM_IMAGE` and `WEARBLOOM_WEB_IMAGE` to immutable registry tags or digests, deploy them to staging, run the smoke checks below, and promote those exact values to production. Retain the previous values for rollback.
+`server/compose.production.yml` is the Komodo/Caddy production template. Pin `WEARBLOOM_IMAGE` and `WEARBLOOM_WEB_IMAGE` to immutable registry tags or digests, deploy them to staging, run the smoke checks below, and promote those exact values to production. Retain the previous values for rollback.
 
 The GitHub Actions workflow publishes `ghcr.io/axensrennes/wearbloom:server-<commit-sha>` and `ghcr.io/axensrennes/wearbloom:web-<commit-sha>` after validation. Production should use their resolved manifest digests. It must never deploy the mutable `latest` tag.
 

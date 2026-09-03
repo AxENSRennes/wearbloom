@@ -70,7 +70,10 @@ services:
       <<: *wearbloom-environment
       ROLE: api
     volumes: [private-images:/app/data/private]
-    networks: [private, dokploy-network]
+    networks:
+      private:
+      proxy:
+        aliases: [wearbloom-api]
     depends_on:
       postgres: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
@@ -80,13 +83,6 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.wearbloom-api.rule=Host(`api.wearbloom.app`)
-      - traefik.http.routers.wearbloom-api.entrypoints=websecure
-      - traefik.http.routers.wearbloom-api.tls.certresolver=letsencrypt
-      - traefik.http.services.wearbloom-api.loadbalancer.server.port=3000
 
   worker:
     image: ${WEARBLOOM_IMAGE:?pin the promoted image tag or digest}
@@ -104,17 +100,9 @@ services:
   web:
     image: ${WEARBLOOM_WEB_IMAGE:?pin the promoted web image tag or digest}
     restart: unless-stopped
-    networks: [dokploy-network]
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.wearbloom-web.rule=Host(`wearbloom.app`) || Host(`www.wearbloom.app`)
-      - traefik.http.routers.wearbloom-web.entrypoints=websecure
-      - traefik.http.routers.wearbloom-web.tls.certresolver=letsencrypt
-      - traefik.http.routers.wearbloom-web.middlewares=wearbloom-www-redirect
-      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.regex=^https?://www\.wearbloom\.app/(.*)
-      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.replacement=https://wearbloom.app/$${1}
-      - traefik.http.middlewares.wearbloom-www-redirect.redirectregex.permanent=true
-      - traefik.http.services.wearbloom-web.loadbalancer.server.port=8080
+    networks:
+      proxy:
+        aliases: [wearbloom-web]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 30s
@@ -150,7 +138,9 @@ services:
 
 networks:
   private: { internal: true }
-  dokploy-network: { external: true }
+  proxy:
+    external: true
+    name: komodo_proxy
 
 volumes:
   postgres-data:
