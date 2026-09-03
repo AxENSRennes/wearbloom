@@ -1,0 +1,18 @@
+{
+  "id": "everyday-outfits-005",
+  "seed": 20260905,
+  "dataset": "../../datasets/alimweber_fall-2025",
+  "font": "/System/Library/Fonts/Supplemental/Arial.ttf",
+  "text_align": "center",
+  "brief": "general everyday outfit ideas, casual chic transitional fashion, varied wearable looks with denim, knits and jackets, spontaneous short TikTok fashion commentary",
+  "slides": [
+    {"source": "732046114471942180.jpg", "cover": true},
+    {"source": "732046114471921670.jpg"},
+    {"source": "732046114471942167.webp"},
+    {"source": "732046114471966025.jpg"},
+    {"source": "732046114471966033.jpg"},
+    {"source": "732046114471966228.jpg"},
+    {"source": "732046114471966343.jpg"},
+    {"source": "732046114471966518.jpg"}
+  ]
+}
