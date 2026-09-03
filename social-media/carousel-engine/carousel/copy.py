@@ -6,7 +6,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from .schema import GeneratedCopy, Recipe
+from .schema import GeneratedCopy, ResolvedRecipe, ResolvedSlide, SourceRecipe
 
 
 EDITORIAL_INSTRUCTIONS = """Write overlay copy for a casual fashion TikTok carousel.
@@ -60,16 +60,15 @@ def _image_data_url(path: Path) -> str:
 
 
 def generate_copy(
-    recipe: Recipe,
-    brief: str,
+    recipe: SourceRecipe,
     *,
     model: str = "gpt-5.6-luna",
     reasoning_effort: str = "low",
     client: OpenAI | None = None,
-) -> Recipe:
+) -> ResolvedRecipe:
     content: list[dict[str, str]] = [{
         "type": "input_text",
-        "text": f"Creative brief: {brief.strip() or 'Create a cohesive fashion carousel.'}",
+        "text": f"Creative brief: {recipe.brief}",
     }]
     for index, slide in enumerate(recipe.slides, start=1):
         source = recipe.dataset / slide.source
@@ -92,7 +91,11 @@ def generate_copy(
         raise RuntimeError("Luna returned no structured copy")
 
     slides = [
-        slide.model_copy(update={"text": generated_slide.text})
+        ResolvedSlide(**slide.model_dump(), text=generated_slide.text)
         for slide, generated_slide in zip(recipe.slides, generated.slides, strict=True)
     ]
-    return recipe.model_copy(update={"slides": slides, "caption": generated.caption})
+    return ResolvedRecipe(
+        **recipe.model_dump(exclude={"brief", "slides"}),
+        slides=slides,
+        caption=generated.caption,
+    )

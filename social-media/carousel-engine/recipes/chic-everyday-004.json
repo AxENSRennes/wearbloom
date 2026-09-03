@@ -1,0 +1,18 @@
+{
+  "id": "chic-everyday-004",
+  "seed": 20260904,
+  "dataset": "../../datasets/alimweber_fall-2025",
+  "font": "/System/Library/Fonts/Supplemental/Arial.ttf",
+  "text_align": "center",
+  "brief": "general chic everyday outfit ideas, casual fall fashion, varied wearable looks, spontaneous short TikTok fashion commentary",
+  "slides": [
+    {"source": "732046114471966044.jpg", "cover": true},
+    {"source": "732046114471918793.jpg"},
+    {"source": "732046114471918795.jpg"},
+    {"source": "732046114471942125.jpg"},
+    {"source": "732046114471942143.jpg"},
+    {"source": "732046114471966160.jpg"},
+    {"source": "732046114471966201.jpg"},
+    {"source": "732046114471966219.jpg"}
+  ]
+}

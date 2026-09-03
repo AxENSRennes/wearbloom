@@ -8,7 +8,7 @@ import textwrap
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from .placement import Placement, choose_placement
-from .schema import Recipe
+from .schema import ResolvedRecipe
 
 
 def _save_jpeg(image: Image.Image, destination: Path) -> None:
@@ -46,8 +46,6 @@ def _draw_text(image: Image.Image, text: str, placement: Placement, font_path: P
         anchor=placement.anchor,
         align=placement.text_align,
         spacing=max(1, round(placement.font_size * 0.02)),
-        stroke_width=max(1, round(placement.font_size * 0.025)),
-        stroke_fill=placement.stroke + "55",
     )
     return Image.alpha_composite(output, overlay).convert("RGB")
 
@@ -85,7 +83,7 @@ def _preview(images: list[Image.Image], destination: Path) -> None:
     preview.save(destination, quality=94, subsampling=0)
 
 
-def render_recipe(recipe: Recipe, output_dir: Path) -> Path:
+def render_recipe(recipe: ResolvedRecipe, output_dir: Path) -> Path:
     original_dir = output_dir / "tiktok-original"
     instagram_dir = output_dir / "instagram-4x5"
     original_dir.mkdir(parents=True, exist_ok=True)

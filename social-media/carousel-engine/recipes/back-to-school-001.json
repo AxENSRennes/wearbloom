@@ -4,15 +4,15 @@
   "dataset": "../../datasets/alimweber_fall-2025",
   "font": "/System/Library/Fonts/Supplemental/Arial.ttf",
   "text_align": "center",
-  "caption": "back to school outfits I’d actually wear 🍂 which one is your first-week pick?\n\n#backtoschooloutfits #falloutfits #outfitinspo #styleinspo #wearbloom",
+  "brief": "back-to-school outfits, casual and editorial",
   "slides": [
-    {"source": "732046114470552574.jpg", "text": "back to school\noutfits", "cover": true},
-    {"source": "732046114471020934.jpg", "text": "layers done right"},
-    {"source": "732046114471916613.jpg", "text": "this knit is everything"},
-    {"source": "732046114471918752.jpg", "text": "blazer + denim always works"},
-    {"source": "732046114471918801.jpg", "text": "the jacket makes it"},
-    {"source": "732046114471966041.jpg", "text": "double denim >>>"},
-    {"source": "732046114471966296.jpg", "text": "first week energy"},
-    {"source": "732046114472421963.jpg", "text": "the burgundy details"}
+    {"source": "732046114470552574.jpg", "cover": true},
+    {"source": "732046114471020934.jpg"},
+    {"source": "732046114471916613.jpg"},
+    {"source": "732046114471918752.jpg"},
+    {"source": "732046114471918801.jpg"},
+    {"source": "732046114471966041.jpg"},
+    {"source": "732046114471966296.jpg"},
+    {"source": "732046114472421963.jpg"}
   ]
 }

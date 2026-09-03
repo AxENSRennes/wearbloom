@@ -1,0 +1,18 @@
+{
+  "id": "leopard-print-003",
+  "seed": 20260903,
+  "dataset": "../../datasets/alimweber_fall-2025",
+  "font": "/System/Library/Fonts/Supplemental/Arial.ttf",
+  "text_align": "center",
+  "brief": "leopard print outfit ideas, chic fall outfits, casual spontaneous TikTok fashion commentary",
+  "slides": [
+    {"source": "732046114471942122.jpg", "cover": true},
+    {"source": "732046114471918741.png"},
+    {"source": "732046114471935246.jpg"},
+    {"source": "732046114471935259.png"},
+    {"source": "732046114471942153.jpg"},
+    {"source": "732046114471942241.jpg"},
+    {"source": "732046114471942253.jpg"},
+    {"source": "732046114471942391.jpg"}
+  ]
+}

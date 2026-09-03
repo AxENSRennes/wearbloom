@@ -1,0 +1,18 @@
+{
+  "id": "back-to-school-002",
+  "seed": 20260902,
+  "dataset": "../../datasets/alimweber_fall-2025",
+  "font": "/System/Library/Fonts/Supplemental/Arial.ttf",
+  "text_align": "center",
+  "brief": "back-to-school outfit ideas, casual chic fall fashion, spontaneous TikTok fashion commentary",
+  "slides": [
+    {"source": "732046114470551646.jpg", "cover": true},
+    {"source": "732046114470551659.jpg"},
+    {"source": "732046114470928249.jpg"},
+    {"source": "732046114470928869.jpg"},
+    {"source": "732046114470928877.jpg"},
+    {"source": "732046114471020929.jpg"},
+    {"source": "732046114471344231.jpg"},
+    {"source": "732046114471916643.jpg"}
+  ]
+}

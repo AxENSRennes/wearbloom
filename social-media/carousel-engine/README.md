@@ -5,22 +5,32 @@ Independent Python renderer for photo carousels. It analyses local texture and c
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e .
-.venv/bin/wearbloom-carousel
+.venv/bin/wearbloom-carousel generate \
+  --recipe recipes/back-to-school-001.json \
+  --output output/back-to-school-001
 ```
 
 Outputs include the uncropped TikTok originals, 1080 × 1350 Instagram variants, a preview, caption and placement manifest.
 
-## Generate the copy with Luna
+## Copy generation with Luna
 
-Set `OPENAI_API_KEY` in the environment, then run one Luna request for the eight images before rendering:
+Source recipes contain only the creative brief, images and visual settings. They never contain manually written slide copy or a caption. Set `OPENAI_API_KEY` in the environment, then run:
 
 ```bash
-.venv/bin/wearbloom-carousel \
-  --generate-copy \
-  --brief "back-to-school outfits, casual and editorial"
+.venv/bin/wearbloom-carousel generate \
+  --recipe recipes/back-to-school-001.json \
+  --output output/back-to-school-001
 ```
 
-The command uses `gpt-5.6-luna` with Structured Outputs, validates the result with Pydantic, saves `resolved-recipe.json` in the output directory, and renders it through the normal deterministic pipeline. Use `--model` or `--reasoning-effort` to override the defaults.
+The `generate` command uses `gpt-5.6-luna` with Structured Outputs, validates the result with Pydantic, saves `resolved-recipe.json`, and renders it through the deterministic pipeline. Use `--model` or `--reasoning-effort` to override the defaults.
+
+To render an existing generated recipe without calling Luna:
+
+```bash
+.venv/bin/wearbloom-carousel render \
+  --recipe output/back-to-school-001/resolved-recipe.json \
+  --output output/back-to-school-001
+```
 
 The editorial voice intentionally follows casual TikTok fashion commentary: short item labels, visible styling details, spontaneous reactions, and simple opinions rather than polished brand copy.
 
